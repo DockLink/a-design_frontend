@@ -9,9 +9,12 @@ import { Label } from "@/components/ui/label";
 import type { CreateUserRequest } from "@/types/users-api";
 import type { UserRole } from "@/types/users";
 
-const ROLE_OPTIONS: UserRole[] = ["ADMIN", "TEAM_LEAD", "MEMBER"];
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "ADMIN", label: "Admin" },
+  { value: "MEMBER", label: "Member" },
+];
 
-export function InviteUserSheet({
+export function CreateUserSheet({
   open,
   onClose,
   onSubmit,
@@ -55,7 +58,7 @@ export function InviteUserSheet({
       setRole("MEMBER");
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to invite user");
+      setError(err instanceof Error ? err.message : "Failed to create user");
     }
   }
 
@@ -98,7 +101,7 @@ export function InviteUserSheet({
           }}
         >
           <span style={{ fontSize: "17px", fontWeight: 500, color: "#1A1410" }}>
-            Invite new user
+            Create user
           </span>
           <button
             onClick={onClose}
@@ -121,9 +124,9 @@ export function InviteUserSheet({
         >
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div className="space-y-2">
-              <Label htmlFor="invite-first-name">First name</Label>
+              <Label htmlFor="create-first-name">First name</Label>
               <Input
-                id="invite-first-name"
+                id="create-first-name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First"
@@ -131,9 +134,9 @@ export function InviteUserSheet({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="invite-last-name">Last name</Label>
+              <Label htmlFor="create-last-name">Last name</Label>
               <Input
-                id="invite-last-name"
+                id="create-last-name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last"
@@ -143,9 +146,9 @@ export function InviteUserSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invite-email">Email address</Label>
+            <Label htmlFor="create-email">Email address</Label>
             <Input
-              id="invite-email"
+              id="create-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -155,9 +158,9 @@ export function InviteUserSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invite-password">Temporary password</Label>
+            <Label htmlFor="create-password">Password</Label>
             <Input
-              id="invite-password"
+              id="create-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -167,9 +170,9 @@ export function InviteUserSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invite-role">Role</Label>
+            <Label htmlFor="create-role">Organisation role</Label>
             <select
-              id="invite-role"
+              id="create-role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
               style={{
@@ -184,11 +187,14 @@ export function InviteUserSheet({
               }}
             >
               {ROLE_OPTIONS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+                <option key={item.value} value={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>
+            <p style={{ fontSize: "12px", color: "#9C8573", margin: 0 }}>
+              Project lead is assigned per project, not here.
+            </p>
           </div>
 
           {error && (
@@ -203,7 +209,7 @@ export function InviteUserSheet({
               disabled={!canSubmit || isSubmitting}
               className="h-9 w-full rounded-lg bg-[#D4A96A] hover:bg-[#C4956A]"
             >
-              {isSubmitting ? "Sending..." : "Send invite"}
+              {isSubmitting ? "Creating…" : "Create user"}
             </Button>
             <Button
               type="button"

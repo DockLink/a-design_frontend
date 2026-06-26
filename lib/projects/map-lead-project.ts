@@ -1,4 +1,5 @@
 import type { LeadProjectView, Project, ProjectWithMembers } from "@/types/projects";
+import { PROJECT_LEAD_ROLE } from "@/types/projects";
 
 export function mapToLeadProjectView(
   project: Project | ProjectWithMembers,
@@ -7,7 +8,7 @@ export function mapToLeadProjectView(
 ): LeadProjectView {
   const members = "members" in project ? project.members ?? [] : [];
   const isAssigned = members.some(
-    (m) => m.user_id === currentUserId && m.status === "ACTIVE"
+    (m) => m.user_id === currentUserId && m.status === "ACTIVE" && m.role === PROJECT_LEAD_ROLE
   );
 
   let status: LeadProjectView["status"] = "In Progress";

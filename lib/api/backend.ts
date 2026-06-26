@@ -3,27 +3,15 @@ import type { ApiErrorBody } from "@/types/api";
 const BACKEND_API_URL =
   process.env.BACKEND_API_URL ?? "http://localhost:3000/v2";
 
-const BACKEND_ORIGIN =
-  process.env.BACKEND_ORIGIN ??
-  BACKEND_API_URL.replace(/\/v\d+\/?$/, "");
-
-export type BackendScope = "versioned" | "shared";
-
 type BackendResult<T> =
   | { ok: true; data: T; status: number }
   | { ok: false; error: ApiErrorBody; status: number };
 
-function resolveBaseUrl(scope: BackendScope): string {
-  return scope === "shared" ? BACKEND_ORIGIN : BACKEND_API_URL;
-}
-
 export async function backendFetch<T>(
   path: string,
-  init?: RequestInit,
-  scope: BackendScope = "versioned"
+  init?: RequestInit
 ): Promise<BackendResult<T>> {
-  const base = resolveBaseUrl(scope);
-  const res = await fetch(`${base}${path}`, {
+  const res = await fetch(`${BACKEND_API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

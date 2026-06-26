@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
@@ -9,6 +9,17 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useMemberProjects } from "@/hooks/use-member-projects";
 import { useTasks } from "@/hooks/use-tasks";
 import { canOpenProjectDetail } from "@/lib/navigation/sidebar-role";
+import {
+  dsActionBtn,
+  dsBody,
+  dsCallout,
+  dsCaption,
+  dsCard,
+  dsFootnote,
+  dsLargeTitle,
+  dsSectionLabel,
+  dsSubtitle,
+} from "@/lib/styles/dashboard-tokens";
 import { mapTaskToMemberRow } from "@/lib/tasks/map-tasks";
 import { getUserDisplayName } from "@/lib/user/display";
 import { NAV_ROUTES, projectRoute } from "@/types/navigation";
@@ -39,24 +50,6 @@ const URGENCY_COLOR: Record<TaskUrgency, string> = {
   overdue: "#FF3B30",
   today: "#FF9F0A",
   soon: "#8E8E93",
-};
-
-const card: CSSProperties = {
-  background: "#FFFFFF",
-  borderRadius: "14px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-  overflow: "hidden",
-};
-
-const sectionLabel: CSSProperties = {
-  fontSize: "12px",
-  fontWeight: 500,
-  color: "#8E8E93",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  marginBottom: "8px",
-  marginTop: "24px",
-  padding: "0 2px",
 };
 
 export function MemberDashboard({
@@ -140,42 +133,36 @@ export function MemberDashboard({
 
   return (
     <div>
-      <div style={{ fontSize: "28px", fontWeight: 600, color: "#1C1C1E", letterSpacing: "-0.5px" }}>
+      <div style={dsLargeTitle}>
         {greeting}, {displayName.split(" ")[0]}.
       </div>
-      <div style={{ fontSize: "14px", color: "#8E8E93", marginTop: "4px" }}>{dateStr}</div>
+      <div style={{ ...dsSubtitle, marginTop: "6px" }}>{dateStr}</div>
 
       {overdueCount > 0 && (
         <div
           style={{
-            marginTop: "16px",
+            marginTop: "20px",
             background: "rgba(255,59,48,0.08)",
-            borderRadius: "10px",
-            padding: "12px 16px",
+            borderRadius: "var(--ds-radius-control)",
+            padding: "14px 18px",
             display: "flex",
             alignItems: "center",
             gap: "10px",
           }}
         >
-          <span style={{ fontSize: "14px", color: "#FF3B30", fontWeight: 500 }}>
+          <span style={{ fontSize: "var(--ds-text-callout)", color: "#FF3B30", fontWeight: 500 }}>
             {overdueCount} overdue {overdueCount === 1 ? "task" : "tasks"} need your attention
           </span>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "8px", marginTop: "16px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "20px", flexWrap: "wrap", alignItems: "center" }}>
         <button
           onClick={goToTasks}
           style={{
-            height: "36px",
-            padding: "0 18px",
+            ...dsActionBtn,
             background: "#D4A96A",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "14px",
-            fontWeight: 500,
             color: "white",
-            cursor: "pointer",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
@@ -185,15 +172,9 @@ export function MemberDashboard({
         <button
           onClick={goToProjects}
           style={{
-            height: "36px",
-            padding: "0 18px",
+            ...dsActionBtn,
             background: "rgba(212,169,106,0.12)",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "14px",
-            fontWeight: 500,
             color: "#C9894A",
-            cursor: "pointer",
           }}
         >
           Browse projects
@@ -203,22 +184,22 @@ export function MemberDashboard({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 260px",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 300px",
           gap: "20px",
           alignItems: "start",
         }}
       >
         <div>
-          <div style={sectionLabel}>My tasks</div>
+          <div style={dsSectionLabel}>My tasks</div>
           {tasksLoading && (
-            <div style={{ fontSize: "14px", color: "#8E8E93" }}>Loading tasks…</div>
+            <div style={dsCallout}>Loading tasks…</div>
           )}
           {tasksError && (
-            <div style={{ fontSize: "14px", color: "#FF3B30" }}>{tasksError}</div>
+            <div style={{ ...dsCallout, color: "#FF3B30" }}>{tasksError}</div>
           )}
-          <div style={card}>
+          <div style={dsCard}>
             {tasks.length === 0 && !tasksLoading && (
-              <div style={{ padding: "16px", fontSize: "14px", color: "#8E8E93" }}>
+              <div style={{ padding: "18px", ...dsCallout }}>
                 No tasks assigned yet.
               </div>
             )}
@@ -231,8 +212,8 @@ export function MemberDashboard({
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    padding: "0 16px",
-                    height: "52px",
+                    padding: "0 18px",
+                    height: "56px",
                     borderBottom:
                       i < tasks.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
                     background:
@@ -274,9 +255,9 @@ export function MemberDashboard({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: "14px",
+                        ...dsBody,
                         fontWeight: 500,
-                        color: done ? "#C7C7CC" : "#1C1C1E",
+                        color: done ? "#C7C7CC" : "var(--ds-label)",
                         textDecoration: done ? "line-through" : "none",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -285,14 +266,14 @@ export function MemberDashboard({
                     >
                       {task.title}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#8E8E93", marginTop: "1px" }}>
+                    <div style={{ ...dsCaption, marginTop: "2px" }}>
                       {task.project}
                     </div>
                   </div>
 
                   <span
                     style={{
-                      fontSize: "12px",
+                      ...dsCaption,
                       flexShrink: 0,
                       color: done ? "#C7C7CC" : URGENCY_COLOR[task.urgency],
                       fontWeight: task.urgency !== "soon" ? 500 : 400,
@@ -307,16 +288,16 @@ export function MemberDashboard({
         </div>
 
         <div>
-          <div style={sectionLabel}>My projects</div>
+          <div style={dsSectionLabel}>My projects</div>
           {projectsLoading && (
-            <div style={{ fontSize: "13px", color: "#8E8E93" }}>Loading projects…</div>
+            <div style={dsFootnote}>Loading projects…</div>
           )}
           {projectsError && (
-            <div style={{ fontSize: "13px", color: "#FF3B30" }}>{projectsError}</div>
+            <div style={{ ...dsFootnote, color: "#FF3B30" }}>{projectsError}</div>
           )}
-          <div style={card}>
+          <div style={dsCard}>
             {memberProjects.length === 0 && !projectsLoading && (
-              <div style={{ padding: "14px", fontSize: "13px", color: "#8E8E93" }}>
+              <div style={{ padding: "16px", ...dsFootnote }}>
                 No assigned projects yet.
               </div>
             )}
@@ -330,7 +311,7 @@ export function MemberDashboard({
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
-                  padding: "14px 14px",
+                  padding: "16px",
                   background: "transparent",
                   border: "none",
                   borderBottom:
@@ -358,11 +339,11 @@ export function MemberDashboard({
                       marginBottom: project.progress != null ? "7px" : 0,
                     }}
                   >
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#1C1C1E" }}>
+                    <span style={{ ...dsFootnote, fontWeight: 500, color: "var(--ds-label)" }}>
                       {project.name}
                     </span>
                     {project.progress != null && (
-                      <span style={{ fontSize: "12px", color: "#8E8E93" }}>
+                      <span style={dsCaption}>
                         {project.progress}%
                       </span>
                     )}
@@ -370,7 +351,7 @@ export function MemberDashboard({
                   {project.progress != null && (
                     <div
                       style={{
-                        height: "3px",
+                        height: "4px",
                         borderRadius: "9999px",
                         background: "#F2EDE8",
                         overflow: "hidden",
@@ -401,7 +382,7 @@ export function MemberDashboard({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontSize: "14px",
+                fontSize: "var(--ds-text-callout)",
                 color: "#D4A96A",
                 padding: 0,
                 fontWeight: 500,

@@ -5,6 +5,7 @@ import { Bell, Search } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
 
@@ -39,53 +40,52 @@ export function AppHeader({ hasUnreadNotifications = false }: { hasUnreadNotific
   return (
     <header
       style={{
-        height: "52px",
-        background: "rgba(252,248,244,0.88)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        height: "var(--ds-header-height)",
+        background: "rgba(252,248,244,0.82)",
+        ...dsVibrancy,
         borderBottom: "0.5px solid rgba(60,60,67,0.14)",
         position: "fixed",
         top: 0,
-        left: isMobile ? 0 : "216px",
+        left: isMobile ? 0 : "var(--ds-sidebar-width)",
         right: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 20px",
+        padding: "0 var(--ds-content-padding-x)",
         zIndex: 10,
       }}
     >
       <span
         style={{
-          fontSize: "17px",
+          fontSize: "var(--ds-text-title-2)",
           fontWeight: 600,
-          color: "#1C1C1E",
-          letterSpacing: "-0.2px",
+          color: "var(--ds-label)",
+          letterSpacing: "-0.02em",
         }}
       >
         {isMobile ? "A-Design" : title}
       </span>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <HeaderBtn title="Search">
-          <Search size={17} />
+          <Search size={18} />
         </HeaderBtn>
 
         <HeaderBtn
           title="Notifications"
           onClick={() => router.push(NAV_ROUTES.notifications)}
         >
-          <Bell size={17} />
+          <Bell size={18} />
           {hasUnreadNotifications && (
             <span
               style={{
                 position: "absolute",
                 top: "7px",
                 right: "7px",
-                width: "7px",
-                height: "7px",
+                width: "8px",
+                height: "8px",
                 borderRadius: "50%",
-                background: "#D4A96A",
+                background: "var(--ds-accent)",
               }}
             />
           )}
@@ -95,14 +95,14 @@ export function AppHeader({ hasUnreadNotifications = false }: { hasUnreadNotific
           <div
             title={getUserDisplayName(user)}
             style={{
-              width: "30px",
-              height: "30px",
+              width: "34px",
+              height: "34px",
               borderRadius: "50%",
               background: "rgba(212,169,106,0.18)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "11px",
+              fontSize: "var(--ds-text-caption-2)",
               fontWeight: 600,
               color: "#C9894A",
               cursor: "default",
@@ -131,13 +131,13 @@ function HeaderBtn({
       title={title}
       onClick={onClick}
       style={{
-        width: "32px",
-        height: "32px",
-        borderRadius: "8px",
+        width: "36px",
+        height: "36px",
+        borderRadius: "var(--ds-radius-control)",
         background: "transparent",
         border: "none",
         cursor: "pointer",
-        color: "#6C6C70",
+        color: "var(--ds-secondary-label)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

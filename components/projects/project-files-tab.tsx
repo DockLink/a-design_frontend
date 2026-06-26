@@ -5,20 +5,17 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectContext } from "@/components/projects/project-context";
+import { useProjectMembers } from "@/hooks/use-project-members";
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { useUploadFile } from "@/hooks/use-upload-file";
 import { canManageProject } from "@/lib/projects/permissions";
-import { useAuth } from "@/hooks/use-auth";
-import { getPrimaryRole } from "@/lib/auth/rbac";
-import { toSidebarRole } from "@/lib/navigation/sidebar-role";
 
 export function ProjectFilesTab() {
   const { project, refetch } = useProjectContext();
   const { updateProject } = useUpdateProject(project!.id);
   const { uploadFile } = useUploadFile();
-  const { user } = useAuth();
-  const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
-  const canManage = canManageProject(sidebarRole);
+  const { effectiveRole } = useProjectMembers();
+  const canManage = canManageProject(effectiveRole);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 

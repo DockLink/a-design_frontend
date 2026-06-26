@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { useAuth } from "@/hooks/use-auth";
-import { toSidebarRole } from "@/lib/navigation/sidebar-role";
+import { useProjectContext } from "@/components/projects/project-context";
+import { ProjectHeaderBanner } from "@/components/projects/project-header-banner";
+import { useProjectMembers } from "@/hooks/use-project-members";
 import { canViewHoldRequests } from "@/lib/projects/permissions";
-import { getPrimaryRole } from "@/lib/auth/rbac";
 import { NAV_ROUTES, PROJECT_TABS, projectTabRoute, type ProjectTab } from "@/types/navigation";
 
 function tabFromPathname(pathname: string, projectId: string): ProjectTab {
@@ -27,12 +27,12 @@ export function ProjectShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
+  const { project } = useProjectContext();
+  const { effectiveRole } = useProjectMembers();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const activeTab = tabFromPathname(pathname, projectId);
-  const tabs = PROJECT_TABS.filter((t) => !t.adminOnly || canViewHoldRequests(sidebarRole));
+  const tabs = PROJECT_TABS.filter((t) => !t.adminOnly || canViewHoldRequests(effectiveRole));
 
   return (
     <div style={{ margin: "-28px" }}>
@@ -94,6 +94,10 @@ export function ProjectShell({
           })}
         </div>
       </div>
+
+      {project && (
+        <ProjectHeaderBanner projectName={project.name} images={project.images} />
+      )}
 
       <div style={{ padding: "24px 28px" }}>{children}</div>
     </div>

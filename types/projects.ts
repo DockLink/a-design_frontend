@@ -46,6 +46,8 @@ export interface ProjectsQueryParams {
   status?: ProjectStatus;
   search?: string;
   clients?: string[];
+  as_member?: boolean;
+  as_member_role?: ProjectMemberProjectRole;
 }
 
 /** UI card — maps from real API data */
@@ -66,6 +68,7 @@ export interface ProjectMember {
   user_id: string;
   assigned_by: string;
   status: "ACTIVE" | "INACTIVE";
+  role?: ProjectMemberProjectRole;
   assignee?: {
     id: string;
     email?: string;
@@ -109,7 +112,18 @@ export interface UpdateProjectRequest {
 }
 
 export interface ProjectMemberAssignRequest {
-  members: { user_id: string; status?: "ACTIVE" | "INACTIVE" }[];
+  members: ProjectMemberAssignItem[];
+}
+
+/** DB enum value for per-project lead (Project Responsible User). */
+export const PROJECT_LEAD_ROLE = "PRU" as const;
+
+export type ProjectMemberProjectRole = "PRU" | "MEMBER" | "VIEWER";
+
+export interface ProjectMemberAssignItem {
+  user_id: string;
+  status?: "ACTIVE" | "INACTIVE";
+  role?: ProjectMemberProjectRole;
 }
 
 export interface CreateProjectStageInput {

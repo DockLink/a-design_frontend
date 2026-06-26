@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
@@ -9,6 +9,18 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useLedProjects } from "@/hooks/use-led-projects";
 import { useTasks } from "@/hooks/use-tasks";
 import { canOpenProjectDetail } from "@/lib/navigation/sidebar-role";
+import {
+  dsActionBtn,
+  dsBody,
+  dsCallout,
+  dsCaption,
+  dsCaption2,
+  dsCard,
+  dsFootnote,
+  dsLargeTitle,
+  dsSectionLabel,
+  dsSubtitle,
+} from "@/lib/styles/dashboard-tokens";
 import { mapTaskToLeadRow } from "@/lib/tasks/map-tasks";
 import { getUserDisplayName } from "@/lib/user/display";
 import { NAV_ROUTES, projectRoute } from "@/types/navigation";
@@ -26,24 +38,6 @@ const STATUS_CONFIG: Record<string, { bg: string; color: string }> = {
   Review: { bg: "rgba(52,199,89,0.12)", color: "#248A3D" },
   Planning: { bg: "rgba(0,122,255,0.10)", color: "#0071E3" },
   Completed: { bg: "rgba(52,199,89,0.12)", color: "#248A3D" },
-};
-
-const card: CSSProperties = {
-  background: "#FFFFFF",
-  borderRadius: "14px",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-  overflow: "hidden",
-};
-
-const sectionLabel: CSSProperties = {
-  fontSize: "12px",
-  fontWeight: 500,
-  color: "#8E8E93",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  marginBottom: "8px",
-  marginTop: "24px",
-  padding: "0 2px",
 };
 
 export function LeadDashboard() {
@@ -104,17 +98,17 @@ export function LeadDashboard() {
 
   return (
     <div>
-      <div style={{ fontSize: "28px", fontWeight: 600, color: "#1C1C1E", letterSpacing: "-0.5px" }}>
+      <div style={dsLargeTitle}>
         {greeting}, {displayName.split(" ")[0]}.
       </div>
-      <div style={{ fontSize: "14px", color: "#8E8E93", marginTop: "4px" }}>{dateStr}</div>
+      <div style={{ ...dsSubtitle, marginTop: "6px" }}>{dateStr}</div>
 
-      <div style={{ display: "flex", gap: "8px", marginTop: "20px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "24px", flexWrap: "wrap", alignItems: "center" }}>
         <button
           onClick={() => router.push(NAV_ROUTES.myTasks)}
           style={{
-            background: "#D4A96A", color: "white", fontSize: "14px", fontWeight: 500,
-            borderRadius: "10px", height: "36px", padding: "0 18px", border: "none", cursor: "pointer",
+            ...dsActionBtn,
+            background: "#D4A96A", color: "white",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
@@ -124,9 +118,8 @@ export function LeadDashboard() {
         <button
           onClick={() => router.push(NAV_ROUTES.accessRequests)}
           style={{
-            background: "rgba(212,169,106,0.12)", border: "none", color: "#C9894A",
-            fontSize: "14px", fontWeight: 500, borderRadius: "10px", height: "36px",
-            padding: "0 18px", cursor: "pointer",
+            ...dsActionBtn,
+            background: "rgba(212,169,106,0.12)", color: "#C9894A",
           }}
         >
           Access requests
@@ -136,19 +129,19 @@ export function LeadDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 280px",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 320px",
           gap: "20px",
           alignItems: "start",
         }}
       >
         {/* LEFT — tasks */}
         <div>
-          <div style={sectionLabel}>Your tasks</div>
-          {tasksLoading && <div style={{ fontSize: "14px", color: "#8E8E93" }}>Loading tasks…</div>}
-          {error && <div style={{ fontSize: "14px", color: "#FF3B30" }}>{error}</div>}
-          <div style={card}>
+          <div style={dsSectionLabel}>Your tasks</div>
+          {tasksLoading && <div style={dsCallout}>Loading tasks…</div>}
+          {error && <div style={{ ...dsCallout, color: "#FF3B30" }}>{error}</div>}
+          <div style={dsCard}>
             {TASKS.length === 0 && !tasksLoading && (
-              <div style={{ padding: "16px", fontSize: "14px", color: "#8E8E93" }}>No tasks on your led projects.</div>
+              <div style={{ padding: "18px", ...dsCallout }}>No tasks on your led projects.</div>
             )}
             {TASKS.map((task, i) => {
               const done = doneTasks.has(task.id);
@@ -157,7 +150,7 @@ export function LeadDashboard() {
                   key={task.id}
                   style={{
                     display: "flex", alignItems: "center", gap: "12px",
-                    padding: "0 16px", height: "52px",
+                    padding: "0 18px", height: "56px",
                     borderBottom: i < TASKS.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
                   }}
                 >
@@ -180,16 +173,16 @@ export function LeadDashboard() {
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: "14px", fontWeight: 500,
-                      color: done ? "#C7C7CC" : "#1C1C1E",
+                      ...dsBody, fontWeight: 500,
+                      color: done ? "#C7C7CC" : "var(--ds-label)",
                       textDecoration: done ? "line-through" : "none",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {task.title}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#8E8E93", marginTop: "1px" }}>{task.project}</div>
+                    <div style={{ ...dsCaption, marginTop: "2px" }}>{task.project}</div>
                   </div>
-                  <span style={{ fontSize: "12px", color: done ? "#C7C7CC" : task.dueColor, flexShrink: 0, fontWeight: 500 }}>
+                  <span style={{ ...dsCaption, color: done ? "#C7C7CC" : task.dueColor, flexShrink: 0, fontWeight: 500 }}>
                     {task.due}
                   </span>
                 </div>
@@ -199,7 +192,7 @@ export function LeadDashboard() {
           <div style={{ marginTop: "12px", padding: "0 2px" }}>
             <button
               onClick={() => router.push(NAV_ROUTES.myTasks)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#D4A96A", padding: 0, fontWeight: 500 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--ds-text-callout)", color: "#D4A96A", padding: 0, fontWeight: 500 }}
             >
               View all tasks →
             </button>
@@ -208,11 +201,11 @@ export function LeadDashboard() {
 
         {/* RIGHT — projects + team */}
         <div>
-          <div style={sectionLabel}>Projects you lead</div>
-          {isLoading && <div style={{ fontSize: "13px", color: "#8E8E93" }}>Loading…</div>}
-          <div style={card}>
+          <div style={dsSectionLabel}>Projects you lead</div>
+          {isLoading && <div style={dsFootnote}>Loading…</div>}
+          <div style={dsCard}>
             {ledProjects.length === 0 && !isLoading && (
-              <div style={{ padding: "14px", fontSize: "13px", color: "#8E8E93" }}>
+              <div style={{ padding: "16px", ...dsFootnote }}>
                 No assigned lead projects yet.
               </div>
             )}
@@ -225,8 +218,8 @@ export function LeadDashboard() {
                   onMouseEnter={() => setHoveredProject(project.id)}
                   onMouseLeave={() => setHoveredProject(null)}
                   style={{
-                    width: "100%", display: "flex", alignItems: "center", minHeight: "52px",
-                    padding: "10px 14px", gap: "10px",
+                    width: "100%", display: "flex", alignItems: "center", minHeight: "56px",
+                    padding: "12px 16px", gap: "12px",
                     background: hoveredProject === project.id ? "rgba(60,60,67,0.04)" : "transparent",
                     border: "none",
                     borderBottom: i < ledProjects.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
@@ -236,14 +229,14 @@ export function LeadDashboard() {
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 500, color: "#1C1C1E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ ...dsFootnote, fontWeight: 500, color: "var(--ds-label)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {project.name}
                     </div>
-                    <div style={{ marginTop: "5px", height: "3px", borderRadius: "9999px", background: "#F2EDE8", overflow: "hidden" }}>
+                    <div style={{ marginTop: "6px", height: "4px", borderRadius: "9999px", background: "#F2EDE8", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${project.progress}%`, background: "#D4A96A", borderRadius: "9999px" }} />
                     </div>
                   </div>
-                  <span style={{ background: cfg.bg, color: cfg.color, fontSize: "11px", fontWeight: 500, borderRadius: "6px", padding: "3px 7px", flexShrink: 0 }}>
+                  <span style={{ background: cfg.bg, color: cfg.color, fontSize: "var(--ds-text-caption-2)", fontWeight: 500, borderRadius: "8px", padding: "4px 8px", flexShrink: 0 }}>
                     {project.status}
                   </span>
                   {project.isAssigned && <ChevronRight size={14} color="#C7C7CC" style={{ flexShrink: 0 }} />}
@@ -252,30 +245,30 @@ export function LeadDashboard() {
             })}
           </div>
 
-          <div style={sectionLabel}>Team</div>
-          <div style={card}>
+          <div style={dsSectionLabel}>Team</div>
+          <div style={dsCard}>
             {teamMembers.length === 0 && (
-              <div style={{ padding: "14px", fontSize: "13px", color: "#8E8E93" }}>No team members yet.</div>
+              <div style={{ padding: "16px", ...dsFootnote }}>No team members yet.</div>
             )}
             {teamMembers.map((member, i) => (
               <div
                 key={member.id}
                 style={{
-                  display: "flex", alignItems: "center", height: "48px",
-                  padding: "0 14px", gap: "10px",
+                  display: "flex", alignItems: "center", height: "52px",
+                  padding: "0 16px", gap: "12px",
                   borderBottom: i < teamMembers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
                 }}
               >
                 <div style={{
-                  width: "28px", height: "28px", borderRadius: "50%",
+                  width: "32px", height: "32px", borderRadius: "50%",
                   background: "rgba(212,169,106,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "10px", fontWeight: 600, color: "#C9894A", flexShrink: 0,
+                  fontSize: "var(--ds-text-caption-2)", fontWeight: 600, color: "#C9894A", flexShrink: 0,
                 }}>
                   {member.initials}
                 </div>
-                <span style={{ fontSize: "14px", color: "#1C1C1E", flex: 1 }}>{member.name}</span>
-                <span style={{ fontSize: "12px", color: "#8E8E93" }}>{member.tasks} tasks</span>
+                <span style={{ ...dsBody, flex: 1 }}>{member.name}</span>
+                <span style={dsCaption}>{member.tasks} tasks</span>
               </div>
             ))}
           </div>

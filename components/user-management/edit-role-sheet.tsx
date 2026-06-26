@@ -9,7 +9,6 @@ import type { User, UserRole } from "@/types/users";
 
 const ASSIGNABLE_ROLES: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
-  { value: "TEAM_LEAD", label: "Team Lead" },
   { value: "MEMBER", label: "Member" },
 ];
 
@@ -31,7 +30,11 @@ export function EditRoleSheet({
 
   useEffect(() => {
     if (user) {
-      setRole(user.roles[0] ?? "MEMBER");
+      const current = user.roles[0] ?? "MEMBER";
+      const assignable = ASSIGNABLE_ROLES.some((r) => r.value === current)
+        ? current
+        : "MEMBER";
+      setRole(assignable);
       setError(null);
     }
   }, [user]);
@@ -125,7 +128,7 @@ export function EditRoleSheet({
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-role">Role</Label>
+            <Label htmlFor="edit-role">Organisation role</Label>
             <select
               id="edit-role"
               value={role}

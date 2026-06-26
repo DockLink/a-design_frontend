@@ -16,6 +16,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
 import {
   HOME_ROUTE,
   ROLE_LABEL,
@@ -59,8 +60,7 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
           right: 0,
           height: "60px",
           background: "rgba(247,241,235,0.95)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          ...dsVibrancy,
           borderTop: "0.5px solid rgba(60,60,67,0.18)",
           display: "flex",
           alignItems: "center",
@@ -88,11 +88,10 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
   return (
     <nav
       style={{
-        width: "216px",
+        width: "var(--ds-sidebar-width)",
         height: "100vh",
-        background: "rgba(247,241,235,0.92)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: "rgba(247,241,235,0.88)",
+        ...dsVibrancy,
         borderRight: "0.5px solid rgba(60,60,67,0.14)",
         position: "fixed",
         left: 0,
@@ -104,21 +103,37 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
     >
       <div
         style={{
-          height: "52px",
+          height: "var(--ds-header-height)",
           display: "flex",
           alignItems: "center",
-          padding: "0 16px",
+          gap: "10px",
+          padding: "0 18px",
           borderBottom: "0.5px solid rgba(60,60,67,0.08)",
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: "15px", fontWeight: 600, color: "#D4A96A", letterSpacing: "-0.2px" }}>
+        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF5F57" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FEBC2E" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28C840" }} />
+        </div>
+        <span
+          style={{
+            fontSize: "var(--ds-text-callout)",
+            fontWeight: 600,
+            color: "var(--ds-accent)",
+            letterSpacing: "-0.02em",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           A-Design Studio
         </span>
       </div>
 
-      <div style={{ flex: 1, padding: "8px", overflowY: "auto" }}>
-        <div style={{ marginBottom: "4px" }}>
+      <div style={{ flex: 1, padding: "10px", overflowY: "auto" }}>
+        <div style={{ marginBottom: "6px" }}>
           <SidebarItem icon={Home} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
           <SidebarItem icon={Folder} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
           {sidebarRole !== "admin" && (
@@ -129,7 +144,7 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
 
         {sidebarRole !== "member" && (
           <>
-            <div style={{ height: "0.5px", background: "rgba(60,60,67,0.10)", margin: "6px 4px" }} />
+            <div style={{ height: "0.5px", background: "rgba(60,60,67,0.10)", margin: "8px 6px" }} />
             {sidebarRole === "admin" && (
               <SidebarItem icon={Users} label="Team" active={isActive([NAV_ROUTES.userManagement, NAV_ROUTES.accessRequests])} onClick={() => go(NAV_ROUTES.userManagement)} />
             )}
@@ -140,23 +155,23 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
         )}
       </div>
 
-      <div style={{ flexShrink: 0, padding: "8px", borderTop: "0.5px solid rgba(60,60,67,0.10)" }}>
+      <div style={{ flexShrink: 0, padding: "10px", borderTop: "0.5px solid rgba(60,60,67,0.10)" }}>
         <SidebarItem icon={Settings} label="Settings" active={false} onClick={() => {}} />
 
         <button
           onClick={handleLogout}
           style={{
             width: "100%",
-            height: "44px",
+            height: "48px",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
-            padding: "0 10px",
-            borderRadius: "10px",
+            gap: "12px",
+            padding: "0 12px",
+            borderRadius: "var(--ds-radius-control)",
             background: "transparent",
             border: "none",
             cursor: "pointer",
-            marginTop: "2px",
+            marginTop: "4px",
             transition: "background 0.12s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(60,60,67,0.06)")}
@@ -164,28 +179,39 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
         >
           <div
             style={{
-              width: "28px",
-              height: "28px",
+              width: "32px",
+              height: "32px",
               borderRadius: "50%",
               background: "rgba(212,169,106,0.18)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "11px",
+              fontSize: "var(--ds-text-caption-2)",
               fontWeight: 600,
-              color: "#D4A96A",
+              color: "var(--ds-accent)",
               flexShrink: 0,
             }}
           >
             {getUserInitials(user)}
           </div>
           <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
-            <div style={{ fontSize: "13px", fontWeight: 500, color: "#1C1C1E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div
+              style={{
+                fontSize: "var(--ds-text-footnote)",
+                fontWeight: 500,
+                color: "var(--ds-label)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {getUserDisplayName(user)}
             </div>
-            <div style={{ fontSize: "11px", color: "#8E8E93" }}>{ROLE_LABEL[sidebarRole]}</div>
+            <div style={{ fontSize: "var(--ds-text-caption-2)", color: "var(--ds-tertiary-label)" }}>
+              {ROLE_LABEL[sidebarRole]}
+            </div>
           </div>
-          <LogOut size={14} color="#8E8E93" />
+          <LogOut size={16} color="var(--ds-tertiary-label)" />
         </button>
       </div>
     </nav>
@@ -204,29 +230,29 @@ function SidebarItem({ icon: Icon, label, active, onClick, badge }: {
       onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%",
-        height: "34px",
+        height: "38px",
         display: "flex",
         alignItems: "center",
-        gap: "9px",
-        padding: "0 10px",
-        borderRadius: "8px",
+        gap: "10px",
+        padding: "0 12px",
+        borderRadius: "var(--ds-radius-control)",
         background: active ? "rgba(212,169,106,0.14)" : hovered ? "rgba(60,60,67,0.06)" : "transparent",
         border: "none",
         cursor: "pointer",
-        color: active ? "#C9894A" : "#3C3C43",
-        fontSize: "14px",
+        color: active ? "#C9894A" : "var(--ds-label)",
+        fontSize: "var(--ds-text-body)",
         fontWeight: active ? 500 : 400,
         textAlign: "left",
         transition: "background 0.12s",
         position: "relative",
-        marginBottom: "1px",
+        marginBottom: "2px",
         flexShrink: 0,
       }}
     >
-      <Icon size={16} />
+      <Icon size={18} strokeWidth={active ? 2.25 : 2} />
       <span style={{ flex: 1 }}>{label}</span>
       {badge && (
-        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#D4A96A", flexShrink: 0 }} />
+        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--ds-accent)", flexShrink: 0 }} />
       )}
     </button>
   );
@@ -248,7 +274,7 @@ function TabBtn({ icon, label, active, onClick, badge }: {
         border: "none",
         cursor: "pointer",
         padding: "4px 12px",
-        color: active ? "#D4A96A" : "#8E8E93",
+        color: active ? "var(--ds-accent)" : "var(--ds-tertiary-label)",
         position: "relative",
         minWidth: "48px",
         transition: "color 0.12s",
@@ -257,7 +283,7 @@ function TabBtn({ icon, label, active, onClick, badge }: {
       {icon}
       <span style={{ fontSize: "10px", fontWeight: active ? 500 : 400 }}>{label}</span>
       {badge && (
-        <span style={{ position: "absolute", top: "4px", right: "8px", width: "7px", height: "7px", borderRadius: "50%", background: "#D4A96A" }} />
+        <span style={{ position: "absolute", top: "4px", right: "8px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--ds-accent)" }} />
       )}
     </button>
   );

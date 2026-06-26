@@ -25,6 +25,33 @@ export interface Task {
   projectId: string;
   created_at?: string;
   updated_at?: string;
+  subtasks?: Task[];
+  children?: Task[];
+}
+
+export interface TaskAssigneeRecord {
+  taskable_id: string;
+  user_id: string;
+  assigned_by: string;
+  assigned_at: string;
+  status: string;
+  assignee?: {
+    id: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface TaskWithAssignees extends Task {
+  assignees: TaskAssigneeRecord[];
+}
+
+export interface TaskAssigneeUpdate {
+  user_id: string;
+  status?: "ACTIVE" | "INACTIVE";
 }
 
 export interface TasksListResponse {

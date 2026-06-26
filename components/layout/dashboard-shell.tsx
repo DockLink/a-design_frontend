@@ -38,19 +38,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FCF8F4" }}>
+    <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
       <Toaster position="top-right" richColors />
       <AppSidebar />
       <AppHeader />
       <main
         style={{
           minHeight: "100vh",
-          paddingTop: "52px",
-          paddingBottom: isMobile ? "72px" : "32px",
-          marginLeft: isMobile ? 0 : "216px",
+          paddingTop: "var(--ds-header-height)",
+          paddingBottom: isMobile ? "72px" : "40px",
+          marginLeft: isMobile ? 0 : "var(--ds-sidebar-width)",
         }}
       >
-        <div style={{ padding: "24px 20px" }}>{children}</div>
+        <div
+          style={{
+            padding: "var(--ds-content-padding-y) var(--ds-content-padding-x)",
+            maxWidth: "var(--ds-content-max-width)",
+            margin: "0 auto",
+          }}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

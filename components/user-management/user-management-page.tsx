@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
 import { EditRoleSheet } from "@/components/user-management/edit-role-sheet";
-import { InviteUserSheet } from "@/components/user-management/invite-user-sheet";
+import { CreateUserSheet } from "@/components/user-management/create-user-sheet";
 import { UserActionMenu } from "@/components/user-management/user-action-menu";
 import { UserAvatar } from "@/components/user-management/user-avatar";
 import { UserPagination } from "@/components/user-management/user-pagination";
@@ -14,14 +14,13 @@ import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/use-users";
 import type { User, UserRole, UserStatus } from "@/types/users";
 
-type FilterType = "ALL" | "ADMINS" | "TEAM_LEADS" | "MEMBERS" | "INACTIVE";
+type FilterType = "ALL" | "ADMINS" | "MEMBERS" | "INACTIVE";
 
 const PAGE_SIZE = 20;
 
 const FILTER_TABS: { key: FilterType; label: string }[] = [
   { key: "ALL", label: "All users" },
   { key: "ADMINS", label: "Admins" },
-  { key: "TEAM_LEADS", label: "Team Leads" },
   { key: "MEMBERS", label: "Members" },
   { key: "INACTIVE", label: "Inactive" },
 ];
@@ -55,7 +54,7 @@ export function UserManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [page, setPage] = useState(1);
-  const [showInviteSheet, setShowInviteSheet] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [editRoleUser, setEditRoleUser] = useState<User | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -71,7 +70,6 @@ export function UserManagementPage() {
 
   const apiFilterRoles = useMemo<UserRole[] | undefined>(() => {
     if (activeFilter === "ADMINS") return ["ADMIN", "SUPER_ADMIN"];
-    if (activeFilter === "TEAM_LEADS") return ["TEAM_LEAD"];
     if (activeFilter === "MEMBERS") return ["MEMBER"];
     return undefined;
   }, [activeFilter]);
@@ -102,9 +100,9 @@ export function UserManagementPage() {
     setFeedback("Role updated successfully.");
   }
 
-  async function handleInvite(payload: Parameters<typeof createUser>[0]) {
+  async function handleCreateUser(payload: Parameters<typeof createUser>[0]) {
     await createUser(payload);
-    setFeedback("User invited successfully.");
+    setFeedback("User created successfully.");
   }
 
   return (
@@ -142,10 +140,10 @@ export function UserManagementPage() {
             />
           </div>
           <Button
-            onClick={() => setShowInviteSheet(true)}
+            onClick={() => setShowCreateSheet(true)}
             className="h-8 rounded-lg bg-[#D4A96A] px-3 text-sm font-medium text-white hover:bg-[#C4956A]"
           >
-            + Invite user
+            + Create user
           </Button>
         </div>
       </div>
@@ -379,10 +377,10 @@ export function UserManagementPage() {
         disabled={isLoading || isMutating}
       />
 
-      <InviteUserSheet
-        open={showInviteSheet}
-        onClose={() => setShowInviteSheet(false)}
-        onSubmit={handleInvite}
+      <CreateUserSheet
+        open={showCreateSheet}
+        onClose={() => setShowCreateSheet(false)}
+        onSubmit={handleCreateUser}
         isSubmitting={isMutating}
       />
 

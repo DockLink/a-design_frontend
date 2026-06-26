@@ -10,6 +10,7 @@ import type {
   ProjectMemberAssignRequest,
   ProjectWithMembers,
 } from "@/types/projects";
+import { PROJECT_LEAD_ROLE } from "@/types/projects";
 import type { CreateTaskRequest } from "@/types/tasks";
 
 export function useCreateProject() {
@@ -18,7 +19,8 @@ export function useCreateProject() {
       payload: CreateProjectRequest,
       options?: {
         stages?: CreateProjectStageInput[];
-        memberUserId?: string;
+        memberUserIds?: string[];
+        projectLeadUserId?: string | null;
       }
     ) => {
       const project = await authApiClient<Project>("/projects", {
@@ -43,23 +45,20 @@ export function useCreateProject() {
         }
       }
 
-      if (options?.memberUserId) {
+      if (options?.memberUserIds?.length) {
+        const uniqueIds = [...new Set(options.memberUserIds)];
+        const leadId = options.projectLeadUserId ?? null;
         const membersPayload: ProjectMemberAssignRequest = {
-          members: [{ user_id: options.memberUserId, status: "ACTIVE" }],
+          members: uniqueIds.map((user_id) => ({
+            user_id,
+            status: "ACTIVE",
+            role: leadId && user_id === leadId ? PROJECT_LEAD_ROLE : "MEMBER",
+          })),
         };
-        const withMembers = await authApiClient<ProjectWithMembers>(
-          `/projects/${project.id}/members`,
-          {
-            method: "PUT",
-            body: JSON.stringify(membersPayload),
-          }
-        );
-        if (typeof window !== "undefined" && withMembers.members) {
-          sessionStorage.setItem(
-            `adesign_project_members:${project.id}`,
-            JSON.stringify(withMembers.members)
-          );
-        }
+        await authApiClient<ProjectWithMembers>(`/projects/${project.id}/members`, {
+          method: "PUT",
+          body: JSON.stringify(membersPayload),
+        });
       }
 
       return project;

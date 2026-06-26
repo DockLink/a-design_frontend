@@ -8,18 +8,21 @@ import { ProjectMemberAvatar } from "@/components/projects/project-recent-tasks"
 import { useUsers } from "@/hooks/use-users";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import type { ProjectMember } from "@/types/projects";
+import { PROJECT_LEAD_ROLE } from "@/types/projects";
 import type { User } from "@/types/users";
 
 export function ManageTeamSheet({
   projectName,
   members,
+  projectLeadUserIds,
   onSave,
   onClose,
   isSaving,
 }: {
   projectName: string;
   members: ProjectMember[];
-  onSave: (userIds: string[]) => Promise<void>;
+  projectLeadUserIds: string[];
+  onSave: (userIds: string[], leadUserIds: string[]) => Promise<void>;
   onClose: () => void;
   isSaving?: boolean;
 }) {
@@ -27,8 +30,13 @@ export function ManageTeamSheet({
   const [draftIds, setDraftIds] = useState<string[]>(
     members.filter((m) => m.status === "ACTIVE").map((m) => m.user_id)
   );
+  const [draftLeadIds, setDraftLeadIds] = useState<string[]>(
+    projectLeadUserIds.length > 0
+      ? projectLeadUserIds
+      : members.filter((m) => m.status === "ACTIVE" && m.role === PROJECT_LEAD_ROLE).map((m) => m.user_id)
+  );
 
-  const { users: orgUsers, isLoading } = useUsers({ page: 1, limit: 100, status: "ACTIVE" });
+  const { users: orgUsers, isLoading } = useUsers({ page: 1, limit: 200, status: "ACTIVE" });
 
   const memberUsers = useMemo(() => {
     return draftIds
@@ -57,14 +65,30 @@ export function ManageTeamSheet({
       getUserDisplayName(u).toLowerCase().includes(search.toLowerCase())
   );
 
+  function toggleLead(userId: string) {
+    setDraftLeadIds((ids) =>
+      ids.includes(userId) ? ids.filter((id) => id !== userId) : [...ids, userId]
+    );
+  }
+
   async function handleDone() {
+    const invalidLeads = draftLeadIds.filter((id) => !draftIds.includes(id));
+    if (invalidLeads.length > 0) {
+      toast.error("Project leads must be assigned members");
+      return;
+    }
     try {
-      await onSave(draftIds);
+      await onSave(draftIds, draftLeadIds);
       toast.success("Team updated");
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update team");
     }
+  }
+
+  function removeMember(userId: string) {
+    setDraftIds((ids) => ids.filter((id) => id !== userId));
+    setDraftLeadIds((ids) => ids.filter((id) => id !== userId));
   }
 
   return (
@@ -112,32 +136,64 @@ export function ManageTeamSheet({
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+          <div
+            style={{
+              fontSize: "var(--ds-text-footnote)",
+              color: "#6C6C70",
+              background: "rgba(212,169,106,0.08)",
+              borderRadius: "10px",
+              padding: "12px 14px",
+              marginBottom: "18px",
+              lineHeight: 1.45,
+            }}
+          >
+            <strong>Project leads:</strong> check one or more members below. Leads get project management controls on{" "}
+            <em>this project only</em>. Everyone else is a regular member.
+          </div>
+
           <div style={{ fontSize: "12px", fontWeight: 500, color: "#8E8E93", marginBottom: "8px", textTransform: "uppercase" }}>
-            Current members · {memberUsers.length}
+            Project members · {memberUsers.length}
           </div>
           <div style={{ border: "0.5px solid rgba(60,60,67,0.12)", borderRadius: "12px", marginBottom: "20px" }}>
-            {memberUsers.map((user, i) => (
-              <div
-                key={user.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 14px",
-                  borderBottom: i < memberUsers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
-                }}
-              >
-                <ProjectMemberAvatar initials={getUserInitials(user)} size={32} fontSize={11} />
-                <div style={{ flex: 1, fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
-                <button
-                  type="button"
-                  onClick={() => setDraftIds((ids) => ids.filter((id) => id !== user.id))}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#8E8E93" }}
+            {memberUsers.length === 0 && (
+              <div style={{ padding: "14px", fontSize: "13px", color: "#8E8E93" }}>No members yet.</div>
+            )}
+            {memberUsers.map((user, i) => {
+              const isLead = draftLeadIds.includes(user.id);
+              return (
+                <div
+                  key={user.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "10px 14px",
+                    borderBottom: i < memberUsers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
+                  }}
                 >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="checkbox"
+                    checked={isLead}
+                    onChange={() => toggleLead(user.id)}
+                    title="Set as project lead"
+                  />
+                  <ProjectMemberAvatar initials={getUserInitials(user)} size={32} fontSize={11} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
+                    {isLead && (
+                      <div style={{ fontSize: "11px", color: "#C9894A", marginTop: "2px" }}>Project lead</div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMember(user.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#8E8E93" }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           <div style={{ fontSize: "12px", fontWeight: 500, color: "#8E8E93", marginBottom: "8px", textTransform: "uppercase" }}>
@@ -184,7 +240,9 @@ export function ManageTeamSheet({
                   <div style={{ flex: 1, fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
                   <button
                     type="button"
-                    onClick={() => setDraftIds((ids) => [...ids, user.id])}
+                    onClick={() => {
+                      setDraftIds((ids) => [...ids, user.id]);
+                    }}
                     style={{
                       height: "28px",
                       padding: "0 12px",

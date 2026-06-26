@@ -3,31 +3,15 @@
 import { Plus } from "lucide-react";
 
 import { ProjectMemberAvatar } from "@/components/projects/project-recent-tasks";
-import { getPrimaryRole } from "@/lib/auth/rbac";
-import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
+import { useUsers } from "@/hooks/use-users";
+import { memberDisplayInitials, memberDisplayName } from "@/lib/projects/member-display";
+import { memberRoleLabel } from "@/lib/projects/project-member-roles";
 import type { ProjectMember } from "@/types/projects";
-import type { UserRole } from "@/types/users";
-
-const ROLE_LABEL: Record<UserRole, string> = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  TEAM_LEAD: "Team Lead",
-  MEMBER: "Member",
-  GUEST: "Guest",
-};
 
 const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
-  "Team Lead": { bg: "rgba(212,169,106,0.14)", color: "#C9894A" },
-  Admin: { bg: "rgba(212,169,106,0.14)", color: "#C9894A" },
+  "Project Lead": { bg: "rgba(212,169,106,0.14)", color: "#C9894A" },
   Member: { bg: "rgba(60,60,67,0.08)", color: "#3C3C43" },
 };
-
-function memberRoleLabel(member: ProjectMember): string {
-  const roles = member.assignee?.roles as UserRole[] | undefined;
-  if (!roles?.length) return "Member";
-  const primary = getPrimaryRole(roles);
-  return primary ? ROLE_LABEL[primary] : "Member";
-}
 
 export function ProjectTeamPanel({
   members,
@@ -38,6 +22,7 @@ export function ProjectTeamPanel({
   canManage: boolean;
   onManage: () => void;
 }) {
+  const { users: orgUsers } = useUsers({ page: 1, limit: 200, status: "ACTIVE" });
   const active = members.filter((m) => m.status === "ACTIVE");
 
   return (
@@ -64,7 +49,7 @@ export function ProjectTeamPanel({
             }}
           >
             <Plus size={12} />
-            Manage
+            Manage team
           </button>
         )}
       </div>
@@ -83,28 +68,9 @@ export function ProjectTeamPanel({
           </div>
         ) : (
           active.map((member, i) => {
-            const assignee = member.assignee;
-            const name = assignee
-              ? getUserDisplayName({
-                  id: member.user_id,
-                  email: assignee.email ?? "",
-                  first_name: assignee.first_name ?? assignee.firstName ?? "",
-                  last_name: assignee.last_name ?? assignee.lastName ?? "",
-                  roles: (assignee.roles as UserRole[]) ?? ["MEMBER"],
-                  status: "ACTIVE",
-                })
-              : member.user_id;
-            const initials = assignee
-              ? getUserInitials({
-                  id: member.user_id,
-                  email: assignee.email ?? "",
-                  first_name: assignee.first_name ?? assignee.firstName ?? "",
-                  last_name: assignee.last_name ?? assignee.lastName ?? "",
-                  roles: (assignee.roles as UserRole[]) ?? ["MEMBER"],
-                  status: "ACTIVE",
-                })
-              : "?";
-            const roleLabel = memberRoleLabel(member);
+            const name = memberDisplayName(member, orgUsers);
+            const initials = memberDisplayInitials(member, orgUsers);
+            const roleLabel = memberRoleLabel(member.role);
             const rcfg = ROLE_STYLE[roleLabel] ?? ROLE_STYLE.Member;
 
             return (

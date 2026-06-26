@@ -10,6 +10,8 @@ export function toProjectsQueryString(params: ProjectsQueryParams = {}): string 
   if (params.clients?.length) {
     qs.set("clients", JSON.stringify(params.clients));
   }
+  if (params.as_member) qs.set("as_member", "true");
+  if (params.as_member_role) qs.set("as_member_role", params.as_member_role);
 
   const str = qs.toString();
   return str ? `?${str}` : "";

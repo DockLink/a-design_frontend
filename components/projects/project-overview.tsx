@@ -20,18 +20,16 @@ import { ProjectRecentTasks } from "@/components/projects/project-recent-tasks";
 import { ProjectStatCard } from "@/components/projects/project-stat-card";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { StageManagementModal } from "@/components/projects/stage-management-modal";
-import { useAuth } from "@/hooks/use-auth";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
-import { getPrimaryRole } from "@/lib/auth/rbac";
 import { formatProjectStatus } from "@/lib/projects/duration";
 import {
   canManageProject,
   canViewAdminInsights,
 } from "@/lib/projects/permissions";
 import { computeProjectStats, mapStageToView } from "@/lib/projects/map-stages";
-import { toSidebarRole } from "@/lib/navigation/sidebar-role";
 import { projectTabRoute } from "@/types/navigation";
+import { PROJECT_LEAD_ROLE } from "@/types/projects";
 
 const STATUS_CFG: Record<string, { bg: string; color: string }> = {
   Active: { bg: "rgba(52,199,89,0.12)", color: "#248A3D" },
@@ -40,11 +38,9 @@ const STATUS_CFG: Record<string, { bg: string; color: string }> = {
 
 export function ProjectOverview() {
   const { project, refetch } = useProjectContext();
-  const { user } = useAuth();
-  const { members, updateMembers, isLoading: membersSaving } = useProjectMembers();
-  const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
-  const canManage = canManageProject(sidebarRole);
-  const showAdminInsights = canViewAdminInsights(sidebarRole);
+  const { members, updateMembers, effectiveRole, projectLeadUserIds, isLoading: membersSaving } = useProjectMembers();
+  const canManage = canManageProject(effectiveRole);
+  const showAdminInsights = canViewAdminInsights(effectiveRole);
 
   const [showManageTeam, setShowManageTeam] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
@@ -63,10 +59,18 @@ export function ProjectOverview() {
   const statusLabel = formatProjectStatus(project!.status);
   const statusCfg = STATUS_CFG[statusLabel] ?? STATUS_CFG.Inactive;
 
-  async function handleSaveTeam(userIds: string[]) {
-    await updateMembers({
-      members: userIds.map((user_id) => ({ user_id, status: "ACTIVE" as const })),
-    });
+  async function handleSaveTeam(userIds: string[], leadUserIds: string[]) {
+    const leadSet = new Set(leadUserIds);
+    await updateMembers(
+      {
+        members: userIds.map((user_id) => ({
+          user_id,
+          status: "ACTIVE" as const,
+          role: leadSet.has(user_id) ? PROJECT_LEAD_ROLE : "MEMBER",
+        })),
+      },
+      leadUserIds
+    );
   }
 
   return (
@@ -239,6 +243,7 @@ export function ProjectOverview() {
         <ManageTeamSheet
           projectName={project!.name}
           members={members}
+          projectLeadUserIds={projectLeadUserIds}
           onSave={handleSaveTeam}
           onClose={() => setShowManageTeam(false)}
           isSaving={membersSaving}
