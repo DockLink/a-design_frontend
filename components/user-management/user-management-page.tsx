@@ -57,6 +57,11 @@ const SUPER_ADMIN_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "MEMBER", label: "Member" },
 ];
 
+// Admins can only create/manage members — only super admins can mint admins.
+const ADMIN_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "MEMBER", label: "Member" },
+];
+
 export function UserManagementPage() {
   const { primaryRole } = useAuth();
   const isSuperAdmin = isSuperAdminRole(primaryRole);
@@ -67,6 +72,7 @@ export function UserManagementPage() {
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [editRoleUser, setEditRoleUser] = useState<User | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,14 +85,14 @@ export function UserManagementPage() {
   }, [debouncedSearch, activeFilter]);
 
   const apiFilterRoles = useMemo<UserRole[] | undefined>(() => {
-    if (activeFilter === "ADMINS") return ["ADMIN", "SUPER_ADMIN"];
+    if (activeFilter === "ADMINS") return isSuperAdmin ? ["ADMIN", "SUPER_ADMIN"] : ["ADMIN"];
     if (activeFilter === "MEMBERS") return ["MEMBER"];
     return undefined;
-  }, [activeFilter]);
+  }, [activeFilter, isSuperAdmin]);
 
   const apiFilterStatus = activeFilter === "INACTIVE" ? "INACTIVE" : undefined;
 
-  const { users, meta, isLoading, isMutating, error, createUser, setUserRole, setUserStatus } =
+  const { users, meta, isLoading, isMutating, error, createUser, setUserRole, setUserStatus, deleteUser } =
     useUsers({
       page,
       limit: PAGE_SIZE,
@@ -94,6 +100,21 @@ export function UserManagementPage() {
       roles: apiFilterRoles,
       status: apiFilterStatus,
     });
+
+  // Admins must not see super admin accounts in team management.
+  const visibleUsers = useMemo(
+    () => (isSuperAdmin ? users : users.filter((u) => !u.roles.includes("SUPER_ADMIN"))),
+    [users, isSuperAdmin]
+  );
+
+  const activeUsers = useMemo(
+    () => visibleUsers.filter((u) => u.status === "ACTIVE"),
+    [visibleUsers]
+  );
+  const inactiveUsers = useMemo(
+    () => visibleUsers.filter((u) => u.status === "INACTIVE"),
+    [visibleUsers]
+  );
 
   async function confirmDeactivate(userId: string) {
     try {
@@ -105,9 +126,166 @@ export function UserManagementPage() {
     }
   }
 
+  async function confirmDelete(user: User) {
+    try {
+      await deleteUser(user.id);
+      setDeleteTarget(null);
+      setFeedback("Account permanently deleted.");
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : "Failed to delete user");
+    }
+  }
+
   async function handleRoleSave(userId: string, role: UserRole) {
     await setUserRole(userId, role);
     setFeedback("Role updated successfully.");
+  }
+
+  function renderRow(user: User, idx: number, list: User[]) {
+    const role = getPrimaryRole(user);
+    const roleCfg = ROLE_PILL[role];
+    const statusCfg = STATUS_PILL[user.status];
+    const showConfirm = deactivateTarget === user.id;
+    const isLast = idx === list.length - 1 && !showConfirm;
+    const canDelete = isSuperAdmin && user.status === "INACTIVE";
+
+    return (
+      <div key={user.id} style={{ minWidth: "900px" }}>
+        <div
+          style={{
+            height: "56px",
+            borderBottom: showConfirm ? "none" : isLast ? "none" : "1px solid rgba(90,60,30,0.08)",
+            padding: "0 16px",
+            display: "grid",
+            gridTemplateColumns: "1fr 220px 130px 110px 130px 40px",
+            alignItems: "center",
+            cursor: "default",
+            opacity: isMutating && (deactivateTarget === user.id || editRoleUser?.id === user.id) ? 0.7 : 1,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+            <UserAvatar user={user} />
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#1A1410",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {[user.first_name, user.last_name].filter(Boolean).join(" ") || "Unnamed"}
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#9C8573",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {user.email}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: "13px", color: "#6B5744", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {user.email}
+          </div>
+
+          <div>
+            <UserPill bg={roleCfg.bg} color={roleCfg.color}>
+              {roleCfg.label}
+            </UserPill>
+          </div>
+
+          <div>
+            <UserPill bg={statusCfg.bg} color={statusCfg.color}>
+              {user.status === "ACTIVE" ? "Active" : "Inactive"}
+            </UserPill>
+          </div>
+
+          <div style={{ fontSize: "13px", color: "#9C8573" }}>{formatLastActive(user)}</div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <UserActionMenu
+              disabled={isMutating}
+              canDeactivate={user.status === "ACTIVE"}
+              onEditRole={() => setEditRoleUser(user)}
+              onDeactivate={() => setDeactivateTarget(user.id)}
+              onDelete={canDelete ? () => setDeleteTarget(user) : undefined}
+            />
+          </div>
+        </div>
+
+        {showConfirm && (
+          <div
+            style={{
+              background: "#FEE2E2",
+              borderBottom: idx === list.length - 1 ? "none" : "1px solid rgba(90,60,30,0.08)",
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <span style={{ fontSize: "13px", color: "#9B1C1C", flex: 1 }}>
+              <strong>{[user.first_name, user.last_name].filter(Boolean).join(" ")}</strong> will no longer be able to sign in. Continue?
+            </span>
+            <Button variant="outline" onClick={() => setDeactivateTarget(null)} className="h-8" disabled={isMutating}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void confirmDeactivate(user.id)}
+              className="h-8 bg-[#9B1C1C] text-white hover:bg-[#7f1919]"
+              disabled={isMutating}
+            >
+              {isMutating ? "Deactivating…" : "Deactivate"}
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderTable(list: User[]) {
+    return (
+      <div
+        style={{
+          background: "#FDFAF6",
+          borderRadius: "12px",
+          border: "1px solid rgba(90,60,30,0.12)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            minWidth: "900px",
+            height: "40px",
+            background: "#F5EFE6",
+            borderBottom: "1px solid rgba(90,60,30,0.10)",
+            padding: "0 16px",
+            display: "grid",
+            gridTemplateColumns: "1fr 220px 130px 110px 130px 40px",
+            alignItems: "center",
+            fontSize: "12px",
+            color: "#9C8573",
+            fontWeight: 500,
+          }}
+        >
+          <span>Name</span>
+          <span>Email</span>
+          <span>Role</span>
+          <span>Status</span>
+          <span>Last active</span>
+          <span />
+        </div>
+        {list.map((user, idx) => renderRow(user, idx, list))}
+      </div>
+    );
   }
 
   async function handleCreateUser(payload: Parameters<typeof createUser>[0]) {
@@ -222,163 +400,58 @@ export function UserManagementPage() {
         })}
       </div>
 
-      <div
-        style={{
-          background: "#FDFAF6",
-          borderRadius: "12px",
-          border: "1px solid rgba(90,60,30,0.12)",
-          overflow: "hidden",
-        }}
-      >
+      {isLoading ? (
         <div
           style={{
-            minWidth: "900px",
-            height: "40px",
-            background: "#F5EFE6",
-            borderBottom: "1px solid rgba(90,60,30,0.10)",
-            padding: "0 16px",
-            display: "grid",
-            gridTemplateColumns: "1fr 220px 130px 110px 130px 40px",
-            alignItems: "center",
-            fontSize: "12px",
+            background: "#FDFAF6",
+            borderRadius: "12px",
+            border: "1px solid rgba(90,60,30,0.12)",
+            padding: "24px",
+            fontSize: "13px",
             color: "#9C8573",
-            fontWeight: 500,
           }}
         >
-          <span>Name</span>
-          <span>Email</span>
-          <span>Role</span>
-          <span>Status</span>
-          <span>Last active</span>
-          <span />
+          Loading users...
         </div>
+      ) : visibleUsers.length === 0 ? (
+        <div
+          style={{
+            background: "#FDFAF6",
+            borderRadius: "12px",
+            border: "1px solid rgba(90,60,30,0.12)",
+            padding: "24px",
+            fontSize: "13px",
+            color: "#9C8573",
+          }}
+        >
+          No users match your filters.
+        </div>
+      ) : (
+        <>
+          {activeUsers.length > 0 && renderTable(activeUsers)}
 
-        {isLoading ? (
-          <div style={{ padding: "24px", fontSize: "13px", color: "#9C8573" }}>
-            Loading users...
-          </div>
-        ) : users.length === 0 ? (
-          <div style={{ padding: "24px", fontSize: "13px", color: "#9C8573" }}>
-            No users match your filters.
-          </div>
-        ) : (
-          users.map((user, idx) => {
-            const role = getPrimaryRole(user);
-            const roleCfg = ROLE_PILL[role];
-            const statusCfg = STATUS_PILL[user.status];
-            const showConfirm = deactivateTarget === user.id;
-            const isLast = idx === users.length - 1 && !showConfirm;
-
-            return (
-              <div key={user.id} style={{ minWidth: "900px" }}>
-                <div
-                  style={{
-                    height: "56px",
-                    borderBottom: showConfirm
-                      ? "none"
-                      : isLast
-                        ? "none"
-                        : "1px solid rgba(90,60,30,0.08)",
-                    padding: "0 16px",
-                    display: "grid",
-                    gridTemplateColumns: "1fr 220px 130px 110px 130px 40px",
-                    alignItems: "center",
-                    cursor: "default",
-                    opacity: isMutating && (deactivateTarget === user.id || editRoleUser?.id === user.id) ? 0.7 : 1,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                    <UserAvatar user={user} />
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "#1A1410",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {[user.first_name, user.last_name].filter(Boolean).join(" ") || "Unnamed"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#9C8573",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {user.email}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: "13px", color: "#6B5744", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {user.email}
-                  </div>
-
-                  <div>
-                    <UserPill bg={roleCfg.bg} color={roleCfg.color}>
-                      {roleCfg.label}
-                    </UserPill>
-                  </div>
-
-                  <div>
-                    <UserPill bg={statusCfg.bg} color={statusCfg.color}>
-                      {user.status === "ACTIVE" ? "Active" : "Inactive"}
-                    </UserPill>
-                  </div>
-
-                  <div style={{ fontSize: "13px", color: "#9C8573" }}>{formatLastActive(user)}</div>
-
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <UserActionMenu
-                      disabled={user.status === "INACTIVE" || isMutating}
-                      onEditRole={() => setEditRoleUser(user)}
-                      onDeactivate={() => setDeactivateTarget(user.id)}
-                    />
-                  </div>
-                </div>
-
-                {showConfirm && (
-                  <div
-                    style={{
-                      background: "#FEE2E2",
-                      borderBottom: idx === users.length - 1 ? "none" : "1px solid rgba(90,60,30,0.08)",
-                      padding: "12px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <span style={{ fontSize: "13px", color: "#9B1C1C", flex: 1 }}>
-                      <strong>{[user.first_name, user.last_name].filter(Boolean).join(" ")}</strong> will no longer be able to sign in. Continue?
-                    </span>
-                    <Button
-                      variant="outline"
-                      onClick={() => setDeactivateTarget(null)}
-                      className="h-8"
-                      disabled={isMutating}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => void confirmDeactivate(user.id)}
-                      className="h-8 bg-[#9B1C1C] text-white hover:bg-[#7f1919]"
-                      disabled={isMutating}
-                    >
-                      {isMutating ? "Deactivating…" : "Deactivate"}
-                    </Button>
-                  </div>
-                )}
+          {inactiveUsers.length > 0 && (
+            <div style={{ marginTop: activeUsers.length > 0 ? "28px" : 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "10px",
+                }}
+              >
+                <span style={{ fontSize: "14px", fontWeight: 600, color: "#1A1410" }}>
+                  Deactivated accounts
+                </span>
+                <span style={{ fontSize: "12px", color: "#9C8573" }}>
+                  ({inactiveUsers.length})
+                </span>
               </div>
-            );
-          })
-        )}
-      </div>
+              {renderTable(inactiveUsers)}
+            </div>
+          )}
+        </>
+      )}
 
       <UserPagination
         meta={meta}
@@ -392,11 +465,11 @@ export function UserManagementPage() {
         onClose={() => setShowCreateSheet(false)}
         onSubmit={handleCreateUser}
         isSubmitting={isMutating}
-        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : undefined}
+        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : ADMIN_ROLE_OPTIONS}
         subtitle={
           isSuperAdmin
             ? "Super admins can create administrators and team leads."
-            : "Project lead is assigned per project, not here."
+            : "Only super admins can create admins. Project lead is assigned per project."
         }
       />
 
@@ -406,8 +479,61 @@ export function UserManagementPage() {
         onClose={() => setEditRoleUser(null)}
         onSave={handleRoleSave}
         isSaving={isMutating}
-        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : undefined}
+        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : ADMIN_ROLE_OPTIONS}
       />
+
+      {deleteTarget && (
+        <>
+          <div
+            onClick={() => !isMutating && setDeleteTarget(null)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 60 }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#FDFAF6",
+              borderRadius: "16px",
+              padding: "28px",
+              maxWidth: "440px",
+              width: "90%",
+              zIndex: 61,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+            }}
+          >
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "#FF3B30", marginBottom: "8px" }}>
+              Delete account permanently?
+            </div>
+            <p style={{ fontSize: "14px", color: "#6B5744", margin: "0 0 20px", lineHeight: 1.5 }}>
+              <strong style={{ color: "#1A1410" }}>
+                {[deleteTarget.first_name, deleteTarget.last_name].filter(Boolean).join(" ") || deleteTarget.email}
+              </strong>{" "}
+              will be permanently removed from the database and the authentication provider. Their project
+              memberships and access requests are deleted; data they created (files, assignments) is reassigned to you.
+              This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                onClick={() => void confirmDelete(deleteTarget)}
+                disabled={isMutating}
+                className="h-10 flex-1 bg-[#FF3B30] text-white hover:bg-[#e0352b]"
+              >
+                {isMutating ? "Deleting…" : "Delete permanently"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isMutating}
+                className="h-10 flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

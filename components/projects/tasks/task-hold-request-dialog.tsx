@@ -35,11 +35,13 @@ export function TaskHoldRequestDialog({
   open,
   onOpenChange,
   task,
+  stageRange,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: ProjectTaskView;
+  stageRange?: { start: string; end: string } | null;
   onSubmit: (input: {
     taskId: string;
     reason: string;
@@ -48,8 +50,13 @@ export function TaskHoldRequestDialog({
     note?: string;
   }) => Promise<unknown>;
 }) {
-  const taskStart = task.startDate.slice(0, 10);
-  const taskEnd = task.dueDate;
+  // A hold may fall OUTSIDE the milestone/task window, but must stay within the
+  // parent STAGE range. Fall back to the task's own window if the stage range
+  // isn't available.
+  const hasStage = Boolean(stageRange);
+  const taskStart = stageRange ? stageRange.start.slice(0, 10) : task.startDate.slice(0, 10);
+  const taskEnd = stageRange ? stageRange.end.slice(0, 10) : task.dueDate;
+  const windowLabel = hasStage ? "stage" : "task";
   const today = new Date().toISOString().slice(0, 10);
 
   const defaultStart = useMemo(
@@ -84,7 +91,11 @@ export function TaskHoldRequestDialog({
       return;
     }
     if (startDate < taskStart || startDate > taskEnd) {
-      toast.error(`Hold must start within the task period (${formatBoardDate(taskStart)} – ${formatBoardDate(taskEnd)})`);
+      toast.error(`Hold must start within the ${windowLabel} period (${formatBoardDate(taskStart)} – ${formatBoardDate(taskEnd)})`);
+      return;
+    }
+    if (endDate > taskEnd) {
+      toast.error(`Hold must end within the ${windowLabel} period (${formatBoardDate(taskStart)} – ${formatBoardDate(taskEnd)})`);
       return;
     }
 
@@ -117,7 +128,7 @@ export function TaskHoldRequestDialog({
         <DialogBody className="space-y-3.5">
           <p className="text-sm text-[#9C8573]">
             Request a pause on <span className="font-medium text-[#1A1410]">{task.title}</span>. The hold
-            period must fall within the task window ({formatBoardDate(taskStart)} – {formatBoardDate(taskEnd)}).
+            period must fall within the {windowLabel} window ({formatBoardDate(taskStart)} – {formatBoardDate(taskEnd)}).
           </p>
 
           <div>

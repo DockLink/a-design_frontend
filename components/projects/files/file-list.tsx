@@ -5,6 +5,7 @@ import {
   Clock,
   Download,
   Folder,
+  Pencil,
   Share2,
   Trash2,
   UploadCloud,
@@ -28,9 +29,11 @@ export function FileList({
   folderPath,
   isVersioned,
   canDelete,
+  canRename,
   onDownload,
   onShare,
   onDelete,
+  onRename,
   onVersionHistory,
   onUploadNewVersion,
 }: {
@@ -40,9 +43,11 @@ export function FileList({
   folderPath: string | null;
   isVersioned: boolean;
   canDelete: boolean;
+  canRename: boolean;
   onDownload: (file: ProjectFile) => void;
   onShare: (file: ProjectFile) => void;
   onDelete: (file: ProjectFile) => void;
+  onRename: (file: ProjectFile) => void;
   onVersionHistory: (file: ProjectFile) => void;
   onUploadNewVersion: (file: ProjectFile, picked: File) => void;
 }) {
@@ -98,12 +103,14 @@ export function FileList({
           file={file}
           isVersioned={isVersioned}
           canDelete={canDelete}
+          canRename={canRename}
           hovered={hoveredId === file.id}
           onMouseEnter={() => setHoveredId(file.id)}
           onMouseLeave={() => setHoveredId(null)}
           onDownload={onDownload}
           onShare={onShare}
           onDelete={onDelete}
+          onRename={onRename}
           onVersionHistory={onVersionHistory}
           onUploadNewVersion={onUploadNewVersion}
         />
@@ -116,24 +123,28 @@ function FileRow({
   file,
   isVersioned,
   canDelete,
+  canRename,
   hovered,
   onMouseEnter,
   onMouseLeave,
   onDownload,
   onShare,
   onDelete,
+  onRename,
   onVersionHistory,
   onUploadNewVersion,
 }: {
   file: ProjectFile;
   isVersioned: boolean;
   canDelete: boolean;
+  canRename: boolean;
   hovered: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onDownload: (file: ProjectFile) => void;
   onShare: (file: ProjectFile) => void;
   onDelete: (file: ProjectFile) => void;
+  onRename: (file: ProjectFile) => void;
   onVersionHistory: (file: ProjectFile) => void;
   onUploadNewVersion: (file: ProjectFile, picked: File) => void;
 }) {
@@ -147,9 +158,9 @@ function FileRow({
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
     if (!picked) return;
-    // Force the original filename so the backend's version detection fires
-    const renamed = new File([picked], file.fileName, { type: picked.type });
-    onUploadNewVersion(file, renamed);
+    // Keep the uploaded file's own name — the backend supersedes the targeted
+    // file by id, so no client-side rename is needed.
+    onUploadNewVersion(file, picked);
     // Reset so the same file can be re-picked if needed
     e.target.value = "";
   }
@@ -227,6 +238,13 @@ function FileRow({
                 onClick={() => onVersionHistory(file)}
               />
             )}
+            {canRename && (
+              <ActionButton
+                icon={<Pencil size={13} />}
+                title="Rename"
+                onClick={() => onRename(file)}
+              />
+            )}
             {canDelete && (
               <ActionButton
                 icon={<Trash2 size={13} />}
@@ -248,6 +266,13 @@ function FileRow({
           <Share2 size={13} />
           Share
         </ContextMenuItem>
+
+        {canRename && (
+          <ContextMenuItem onSelect={() => onRename(file)}>
+            <Pencil size={13} />
+            Rename
+          </ContextMenuItem>
+        )}
 
         {isVersioned && (
           <>

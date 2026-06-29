@@ -10,7 +10,6 @@ import {
   Home,
   LogOut,
   Settings,
-  Shield,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -80,9 +79,9 @@ export function AppSidebar() {
         )}
         <TabBtn icon={<Bell size={22} />} label="Inbox" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
         {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
-          <TabBtn icon={<Users size={22} />} label="Team" active={isActive([NAV_ROUTES.userManagement, NAV_ROUTES.accessRequests])} onClick={() => go(NAV_ROUTES.userManagement)} />
+          <TabBtn icon={<Users size={22} />} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
         )}
-        {sidebarRole === "lead" && (
+        {sidebarRole !== "member" && (
           <TabBtn icon={<ClipboardList size={22} />} label="Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
         )}
       </div>
@@ -149,20 +148,10 @@ export function AppSidebar() {
         {sidebarRole !== "member" && (
           <>
             <div style={{ height: "0.5px", background: "rgba(60,60,67,0.10)", margin: "8px 6px" }} />
-            {sidebarRole === "superadmin" && (
-              <SidebarItem
-                icon={Shield}
-                label="System Control"
-                active={isActive(NAV_ROUTES.superAdminDashboard)}
-                onClick={() => go(NAV_ROUTES.superAdminDashboard)}
-              />
-            )}
             {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
-              <SidebarItem icon={Users} label="Team" active={isActive([NAV_ROUTES.userManagement, NAV_ROUTES.accessRequests])} onClick={() => go(NAV_ROUTES.userManagement)} />
+              <SidebarItem icon={Users} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
             )}
-            {sidebarRole === "lead" && (
-              <SidebarItem icon={ClipboardList} label="Access Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
-            )}
+            <SidebarItem icon={ClipboardList} label="Access Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
           </>
         )}
       </div>

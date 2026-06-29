@@ -88,10 +88,11 @@ export function useProjectFiles(projectId: string) {
   }, []);
 
   const uploadFile = useCallback(
-    async (folderPath: string, file: File) => {
+    async (folderPath: string, file: File, replaceFileId?: string) => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folderPath", folderPath);
+      if (replaceFileId) formData.append("replaceFileId", replaceFileId);
 
       const token = (await import("@/stores/auth-store")).useAuthStore
         .getState()
@@ -143,6 +144,23 @@ export function useProjectFiles(projectId: string) {
     []
   );
 
+  const renameFile = useCallback(
+    async (fileId: string, fileName: string): Promise<ProjectFile> => {
+      const res = await authApiClient<{ data: ProjectFile }>(
+        `/files/${fileId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ fileName }),
+        }
+      );
+      setFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? res.data : f))
+      );
+      return res.data;
+    },
+    []
+  );
+
   const createShareLink = useCallback(
     async (fileId: string, payload: CreateShareLinkPayload): Promise<ShareLinkResponse> => {
       const res = await authApiClient<{ data: ShareLinkResponse }>(
@@ -176,6 +194,7 @@ export function useProjectFiles(projectId: string) {
     getDownloadUrl,
     getVersionHistory,
     deleteFile,
+    renameFile,
     createShareLink,
     revokeShareLink,
     reloadFiles: () => currentFolderPath ? loadFiles(currentFolderPath) : Promise.resolve(),

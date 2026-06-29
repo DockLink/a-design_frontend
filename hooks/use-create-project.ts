@@ -31,10 +31,11 @@ export function useCreateProject() {
 
       if (options?.stages?.length) {
         for (const stage of options.stages) {
-          const taskPayload: CreateTaskRequest = {
+          const taskPayload: CreateTaskRequest & { end_date?: string; duration?: string } = {
             project_id: project.id,
             title: stage.name,
             start_date: stage.start_date,
+            end_date: stage.end_date,
             duration: stage.duration,
             order: stage.order,
             taskable_type: "STAGE",

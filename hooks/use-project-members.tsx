@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
 import { authApiClient } from "@/lib/api/authenticated-client";
@@ -11,6 +12,7 @@ import {
   getEffectiveProjectRole,
   getProjectLeadUserIds,
 } from "@/lib/projects/project-member-roles";
+import { queryKeys } from "@/lib/query/keys";
 import type { ProjectMember, ProjectMemberAssignRequest, ProjectWithMembers } from "@/types/projects";
 import { PROJECT_LEAD_ROLE } from "@/types/projects";
 
@@ -39,32 +41,64 @@ export function ProjectMembersProvider({
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const qKey = queryKeys.projects.members(projectId);
 
   const orgSidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
 
-  const fetchMembers = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: qKey,
+    queryFn: async () => {
       const result = await authApiClient<{ members: ProjectMember[] }>(
         `/projects/${projectId}/members`
       );
-      setMembers(result.members ?? []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load members";
-      setError(message);
-      setMembers([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
+      return result.members ?? [];
+    },
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    void fetchMembers();
-  }, [fetchMembers]);
+  const members: ProjectMember[] = data ?? [];
+
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      payload,
+      leadUserIds,
+    }: {
+      payload: ProjectMemberAssignRequest;
+      leadUserIds?: string[] | null;
+    }) => {
+      const resolvedLeads =
+        leadUserIds !== undefined
+          ? leadUserIds
+          : payload.members
+              .filter((m) => m.role === PROJECT_LEAD_ROLE)
+              .map((m) => m.user_id);
+
+      const leadSet = new Set(resolvedLeads);
+
+      const body = {
+        members: payload.members.map(({ user_id, status, role }) => ({
+          user_id,
+          status,
+          role: leadSet.has(user_id) ? PROJECT_LEAD_ROLE : role ?? "MEMBER",
+        })),
+      };
+
+      return authApiClient<ProjectWithMembers>(`/projects/${projectId}/members`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+    },
+    onSuccess: (result) => {
+      qc.setQueryData<ProjectMember[]>(qKey, result.members ?? []);
+    },
+  });
+
+  const updateMembers = useCallback(
+    (payload: ProjectMemberAssignRequest, leadUserIds?: string[] | null) =>
+      updateMutation.mutateAsync({ payload, leadUserIds }),
+    [updateMutation]
+  );
 
   const projectLeadUserIds = useMemo(() => getProjectLeadUserIds(members), [members]);
   const projectLeadUserId = useMemo(() => projectLeadUserIds[0] ?? null, [projectLeadUserIds]);
@@ -73,52 +107,26 @@ export function ProjectMembersProvider({
     [user?.id, members, orgSidebarRole]
   );
 
-  const updateMembers = useCallback(
-    async (payload: ProjectMemberAssignRequest, leadUserIds?: string[] | null) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const resolvedLeads =
-          leadUserIds !== undefined
-            ? leadUserIds
-            : payload.members
-                .filter((m) => m.role === PROJECT_LEAD_ROLE)
-                .map((m) => m.user_id);
-
-        const leadSet = new Set(resolvedLeads);
-
-        const body = {
-          members: payload.members.map(({ user_id, status, role }) => ({
-            user_id,
-            status,
-            role: leadSet.has(user_id) ? PROJECT_LEAD_ROLE : role ?? "MEMBER",
-          })),
-        };
-
-        const result = await authApiClient<ProjectWithMembers>(
-          `/projects/${projectId}/members`,
-          { method: "PUT", body: JSON.stringify(body) }
-        );
-        setMembers(result.members ?? []);
-        return result;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update members";
-        setError(message);
-        throw err;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [projectId]
-  );
-
   const isAssigned = useCallback(
     (userId: string) => members.some((m) => m.user_id === userId && m.status === "ACTIVE"),
     [members]
   );
 
-  const value = useMemo(
+  const refetchMembers = useCallback(() => refetch().then(() => undefined), [refetch]);
+
+  const value = useMemo<ProjectMembersContextValue>(
     () => ({
+      members,
+      projectLeadUserId,
+      projectLeadUserIds,
+      effectiveRole,
+      isLoading,
+      error: error ? (error instanceof Error ? error.message : "Failed to load members") : null,
+      isAssigned,
+      updateMembers,
+      refetchMembers,
+    }),
+    [
       members,
       projectLeadUserId,
       projectLeadUserIds,
@@ -127,9 +135,8 @@ export function ProjectMembersProvider({
       error,
       isAssigned,
       updateMembers,
-      refetchMembers: fetchMembers,
-    }),
-    [members, projectLeadUserId, projectLeadUserIds, effectiveRole, isLoading, error, isAssigned, updateMembers, fetchMembers]
+      refetchMembers,
+    ]
   );
 
   return (

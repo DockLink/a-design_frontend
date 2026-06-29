@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { RequestAccessDialog } from "@/components/access-requests/request-access-dialog";
 import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
 import { useAuth } from "@/hooks/use-auth";
+import { useAccessRequests } from "@/hooks/use-access-requests";
 import { useProjects } from "@/hooks/use-projects";
+import { authApiClient } from "@/lib/api/authenticated-client";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
+import { mapProjectToCard } from "@/lib/projects/map-projects";
+import { toProjectsQueryString } from "@/lib/projects/query-string";
 import {
   dsActionBtn,
   dsCallout,
@@ -20,19 +25,205 @@ import {
   dsSubtitle,
 } from "@/lib/styles/dashboard-tokens";
 import { projectRoute } from "@/types/navigation";
-import type { ProjectCardView } from "@/types/projects";
+import type { ProjectCardView, ProjectsListResponse } from "@/types/projects";
+import { PROJECT_LEAD_ROLE } from "@/types/projects";
+
+function ProjectCardGrid({
+  cards,
+  isSuperAdmin,
+  isDeleting,
+  onOpen,
+  onDelete,
+  renderExtra,
+}: {
+  cards: ProjectCardView[];
+  isSuperAdmin: boolean;
+  isDeleting: boolean;
+  onOpen: (id: string) => void;
+  onDelete: (card: ProjectCardView) => void;
+  renderExtra?: (card: ProjectCardView) => React.ReactNode;
+}) {
+  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+
+  if (cards.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+      {cards.map((p) => {
+        const isHovered = hoveredProject === p.id;
+        return (
+          <div
+            key={p.id}
+            style={{ ...dsCard, position: "relative", overflow: "hidden" }}
+            onMouseEnter={() => setHoveredProject(p.id)}
+            onMouseLeave={() => setHoveredProject(null)}
+          >
+            <div
+              role="button"
+              tabIndex={0}
+              style={{ cursor: renderExtra ? "default" : "pointer" }}
+              onClick={() => !renderExtra && onOpen(p.id)}
+              onKeyDown={(e) => !renderExtra && e.key === "Enter" && onOpen(p.id)}
+            >
+              <div
+                style={{
+                  height: "160px",
+                  backgroundImage: `url(${p.thumbnail})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+              <div style={{ padding: "18px" }}>
+                <div style={dsHeadline}>{p.name}</div>
+                <div style={{ ...dsFootnote, marginTop: "6px" }}>{p.client}</div>
+                {p.currentStage && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(212,169,106,0.14)",
+                      color: "#C9894A",
+                      borderRadius: "9999px",
+                      padding: "3px 10px",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "#D4A96A" }} />
+                    {p.currentStage}
+                  </div>
+                )}
+                {renderExtra?.(p)}
+              </div>
+            </div>
+
+            {isSuperAdmin && isHovered && (
+              <button
+                type="button"
+                title="Delete project permanently"
+                disabled={isDeleting}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(p);
+                }}
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "rgba(255,59,48,0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                }}
+              >
+                <Trash2 size={15} color="white" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ProjectsListPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { projects, isLoading, error, refetch, deleteProject, isDeleting } = useProjects({ page: 1, limit: 100, status: "ACTIVE" });
   const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
   const canCreateProject = sidebarRole === "admin" || sidebarRole === "superadmin";
   const isSuperAdmin = sidebarRole === "superadmin";
+  const showSplitView = !canCreateProject;
 
+  const { projects: allProjects, isLoading: allLoading, error, refetch, deleteProject, isDeleting } =
+    useProjects({ page: 1, limit: 100, status: "ACTIVE" });
+
+  const [myProjects, setMyProjects] = useState<ProjectCardView[]>([]);
+  const [ledProjectIds, setLedProjectIds] = useState<Set<string>>(new Set());
+  const [myLoading, setMyLoading] = useState(showSplitView);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProjectCardView | null>(null);
-  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+  const [requestTarget, setRequestTarget] = useState<ProjectCardView | null>(null);
+
+  const userId = user?.id;
+  const { requests: myAccessRequests, createRequest } = useAccessRequests(
+    { page: 1, limit: 100, requested_by_id: userId },
+    { enabled: showSplitView && !!userId }
+  );
+
+  const pendingByProjectId = useMemo(() => {
+    const map = new Set<string>();
+    for (const r of myAccessRequests) {
+      if (r.status === "PENDING") map.add(r.projectId);
+    }
+    return map;
+  }, [myAccessRequests]);
+
+  const fetchMyProjects = useCallback(async () => {
+    if (!showSplitView) return;
+
+    setMyLoading(true);
+    // Resolve the two queries independently so a failure in the "led" lookup
+    // never wipes out the member projects (and vice-versa).
+    const [memberRes, ledRes] = await Promise.allSettled([
+      authApiClient<ProjectsListResponse>(
+        `/projects${toProjectsQueryString({ page: 1, limit: 100, status: "ACTIVE", as_member: true })}`
+      ),
+      authApiClient<ProjectsListResponse>(
+        `/projects${toProjectsQueryString({
+          page: 1,
+          limit: 100,
+          status: "ACTIVE",
+          as_member: true,
+          as_member_role: PROJECT_LEAD_ROLE,
+        })}`
+      ),
+    ]);
+
+    if (memberRes.status === "fulfilled") {
+      setMyProjects(memberRes.value.data.map(mapProjectToCard));
+    } else {
+      setMyProjects([]);
+    }
+
+    setLedProjectIds(
+      ledRes.status === "fulfilled"
+        ? new Set(ledRes.value.data.map((p) => p.id))
+        : new Set()
+    );
+
+    setMyLoading(false);
+  }, [showSplitView]);
+
+  useEffect(() => {
+    void fetchMyProjects();
+  }, [fetchMyProjects]);
+
+  const myProjectIds = useMemo(() => new Set(myProjects.map((p) => p.id)), [myProjects]);
+
+  const leadProjects = useMemo(
+    () => myProjects.filter((p) => ledProjectIds.has(p.id)),
+    [myProjects, ledProjectIds]
+  );
+
+  const memberProjects = useMemo(
+    () => myProjects.filter((p) => !ledProjectIds.has(p.id)),
+    [myProjects, ledProjectIds]
+  );
+
+  const discoverProjects = useMemo(
+    () => (showSplitView ? allProjects.filter((p) => !myProjectIds.has(p.id)) : []),
+    [showSplitView, allProjects, myProjectIds]
+  );
 
   async function handleDeleteProject() {
     if (!deleteTarget) return;
@@ -45,7 +236,14 @@ export default function ProjectsListPage() {
     }
   }
 
-  const cards = projects;
+  async function handleRequestAccess(note?: string) {
+    if (!requestTarget) return;
+    await createRequest({ project_id: requestTarget.id, request_note: note });
+    toast.success("Access request submitted");
+    setRequestTarget(null);
+  }
+
+  const isLoading = allLoading || (showSplitView && myLoading);
 
   return (
     <div>
@@ -55,7 +253,7 @@ export default function ProjectsListPage() {
           <div style={{ ...dsSubtitle, marginTop: "8px" }}>
             {canCreateProject
               ? "All organisation projects"
-              : "Browse projects — open assigned projects from your dashboard"}
+              : "Your assigned projects and others you can request access to"}
           </div>
         </div>
         {canCreateProject && (
@@ -81,7 +279,97 @@ export default function ProjectsListPage() {
 
       {isLoading ? (
         <div style={dsCallout}>Loading projects…</div>
-      ) : cards.length === 0 ? (
+      ) : showSplitView ? (
+        <>
+          {leadProjects.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+                Projects you lead ({leadProjects.length})
+              </div>
+              <ProjectCardGrid
+                cards={leadProjects}
+                isSuperAdmin={false}
+                isDeleting={isDeleting}
+                onOpen={(id) => router.push(projectRoute(id))}
+                onDelete={() => undefined}
+              />
+            </div>
+          )}
+
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+              Projects you&apos;re a member of ({memberProjects.length})
+            </div>
+            {memberProjects.length === 0 ? (
+              <div style={dsCallout}>You are not a member of any other projects yet.</div>
+            ) : (
+              <ProjectCardGrid
+                cards={memberProjects}
+                isSuperAdmin={false}
+                isDeleting={isDeleting}
+                onOpen={(id) => router.push(projectRoute(id))}
+                onDelete={() => undefined}
+              />
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+              Other projects ({discoverProjects.length})
+            </div>
+            {discoverProjects.length === 0 ? (
+              <div style={dsCallout}>No other projects to discover.</div>
+            ) : (
+              <ProjectCardGrid
+                cards={discoverProjects}
+                isSuperAdmin={false}
+                isDeleting={isDeleting}
+                onOpen={() => undefined}
+                onDelete={() => undefined}
+                renderExtra={(p) => (
+                  <div style={{ marginTop: 12 }}>
+                    {pendingByProjectId.has(p.id) ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          height: 32,
+                          padding: "0 12px",
+                          borderRadius: 8,
+                          background: "rgba(212,169,106,0.14)",
+                          color: "#C9894A",
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Request pending
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setRequestTarget(p)}
+                        style={{
+                          height: 32,
+                          padding: "0 14px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: "#D4A96A",
+                          color: "white",
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Request access
+                      </button>
+                    )}
+                  </div>
+                )}
+              />
+            )}
+          </div>
+        </>
+      ) : allProjects.length === 0 ? (
         <div style={dsCallout}>
           No projects found.
           {canCreateProject && (
@@ -98,91 +386,15 @@ export default function ProjectsListPage() {
           )}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-          {cards.map((p) => {
-            const isHovered = hoveredProject === p.id;
-            return (
-              <div
-                key={p.id}
-                style={{ ...dsCard, position: "relative", overflow: "hidden" }}
-                onMouseEnter={() => setHoveredProject(p.id)}
-                onMouseLeave={() => setHoveredProject(null)}
-              >
-                <div
-                  role="button"
-                  tabIndex={0}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => router.push(projectRoute(p.id))}
-                  onKeyDown={(e) => e.key === "Enter" && router.push(projectRoute(p.id))}
-                >
-                  <div
-                    style={{
-                      height: "160px",
-                      backgroundImage: `url(${p.thumbnail})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  />
-                  <div style={{ padding: "18px" }}>
-                    <div style={dsHeadline}>{p.name}</div>
-                    <div style={{ ...dsFootnote, marginTop: "6px" }}>{p.client}</div>
-                    {p.currentStage && (
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          background: "rgba(212,169,106,0.14)",
-                          color: "#C9894A",
-                          borderRadius: "9999px",
-                          padding: "3px 10px",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                        }}
-                      >
-                        <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "#D4A96A" }} />
-                        {p.currentStage}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {isSuperAdmin && isHovered && (
-                  <button
-                    type="button"
-                    title="Delete project permanently"
-                    disabled={isDeleting}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(p);
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: "10px",
-                      right: "10px",
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      border: "none",
-                      background: "rgba(255,59,48,0.85)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: isDeleting ? "not-allowed" : "pointer",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                    }}
-                  >
-                    <Trash2 size={15} color="white" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <ProjectCardGrid
+          cards={allProjects}
+          isSuperAdmin={isSuperAdmin}
+          isDeleting={isDeleting}
+          onOpen={(id) => router.push(projectRoute(id))}
+          onDelete={(p) => setDeleteTarget(p)}
+        />
       )}
 
-      {/* Delete confirmation */}
       {deleteTarget && (
         <>
           <div
@@ -252,11 +464,19 @@ export default function ProjectsListPage() {
         </>
       )}
 
+      <RequestAccessDialog
+        open={!!requestTarget}
+        onOpenChange={(open) => !open && setRequestTarget(null)}
+        projectName={requestTarget?.name ?? ""}
+        onSubmit={handleRequestAccess}
+      />
+
       <CreateProjectSheet
         open={showCreateProject}
         onClose={() => setShowCreateProject(false)}
         onCreated={(id) => {
           void refetch();
+          void fetchMyProjects();
           router.push(projectRoute(id));
         }}
       />

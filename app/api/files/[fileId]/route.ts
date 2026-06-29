@@ -26,6 +26,29 @@ export async function GET(req: NextRequest, context: RouteContext) {
   return NextResponse.json(result.data);
 }
 
+export async function PATCH(req: NextRequest, context: RouteContext) {
+  const authorization = req.headers.get("authorization");
+  if (!authorization) return unauthorized();
+
+  const { fileId } = await context.params;
+  const body = await req.json().catch(() => ({}));
+
+  const result = await backendFileFetch<{ data: ProjectFile }>(
+    `/files/${fileId}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: authorization },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!result.ok) {
+    return NextResponse.json(result.error, { status: result.status });
+  }
+
+  return NextResponse.json(result.data);
+}
+
 export async function DELETE(req: NextRequest, context: RouteContext) {
   const authorization = req.headers.get("authorization");
   if (!authorization) return unauthorized();

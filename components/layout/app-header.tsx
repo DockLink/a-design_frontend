@@ -11,7 +11,7 @@ import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
 
 const PAGE_TITLES: Record<string, string> = {
-  [NAV_ROUTES.superAdminDashboard]: "System Control",
+  [NAV_ROUTES.superAdminDashboard]: "Dashboard",
   [NAV_ROUTES.adminDashboard]: "Dashboard",
   [NAV_ROUTES.leadDashboard]: "Dashboard",
   [NAV_ROUTES.memberDashboard]: "Dashboard",

@@ -11,7 +11,7 @@ import { mapMilestoneToView, mapStageToView } from "@/lib/projects/map-stages";
 import {
   buildTimelineGroups,
   computeChartBounds,
-  deriveTimelineStatus,
+  mapTaskToTimelineItem,
   type TimelineStageGroup,
   type TimelineTaskItem,
 } from "@/lib/projects/timeline";
@@ -43,6 +43,9 @@ export function useProjectTimeline(projectId: string) {
   const [milestoneTasksMap, setMilestoneTasksMap] = useState<
     Record<string, TimelineTaskItem[]>
   >({});
+  const [stageOrphanTasksMap, setStageOrphanTasksMap] = useState<
+    Record<string, TimelineTaskItem[]>
+  >({});
   const [hierarchyLoading, setHierarchyLoading] = useState(false);
 
   const stages = useMemo(() => stageTasks.map((s) => mapStageToView(s)), [stageTasks]);
@@ -55,12 +58,14 @@ export function useProjectTimeline(projectId: string) {
     if (stageTasks.length === 0) {
       setMilestoneStageMap({});
       setMilestoneTasksMap({});
+      setStageOrphanTasksMap({});
       return;
     }
     setHierarchyLoading(true);
     try {
       const parentMap: Record<string, { stageId: string; stageName: string }> = {};
       const tasksByMilestone: Record<string, TimelineTaskItem[]> = {};
+      const orphansByStage: Record<string, TimelineTaskItem[]> = {};
 
       await Promise.all(
         stageTasks.map(async (stage) => {
@@ -78,20 +83,14 @@ export function useProjectTimeline(projectId: string) {
                   );
                   tasksByMilestone[child.id] = (milestoneDetail.children ?? [])
                     .filter((t) => t.taskableType === "TASK")
-                    .map((t): TimelineTaskItem => {
-                      const endIso = t.end_date ?? t.start_date;
-                      return {
-                        id: t.id,
-                        title: t.title,
-                        startDate: t.start_date,
-                        endDate: endIso,
-                        apiStatus: t.status,
-                        status: deriveTimelineStatus(t.start_date, endIso, t.status),
-                      };
-                    });
+                    .map((t) => mapTaskToTimelineItem(t));
                 } catch {
                   // milestone may have no tasks yet
                 }
+              } else if (child.taskableType === "TASK") {
+                // Task attached directly to the stage (no milestone)
+                if (!orphansByStage[stage.id]) orphansByStage[stage.id] = [];
+                orphansByStage[stage.id].push(mapTaskToTimelineItem(child));
               }
             }
           } catch {
@@ -101,6 +100,7 @@ export function useProjectTimeline(projectId: string) {
       );
       setMilestoneStageMap(parentMap);
       setMilestoneTasksMap(tasksByMilestone);
+      setStageOrphanTasksMap(orphansByStage);
     } finally {
       setHierarchyLoading(false);
     }
@@ -111,8 +111,16 @@ export function useProjectTimeline(projectId: string) {
   }, [loadHierarchy]);
 
   const groups: TimelineStageGroup[] = useMemo(
-    () => buildTimelineGroups(stages, milestones, milestoneStageMap, milestoneTasks, milestoneTasksMap),
-    [stages, milestones, milestoneStageMap, milestoneTasks, milestoneTasksMap]
+    () =>
+      buildTimelineGroups(
+        stages,
+        milestones,
+        milestoneStageMap,
+        milestoneTasks,
+        milestoneTasksMap,
+        stageOrphanTasksMap
+      ),
+    [stages, milestones, milestoneStageMap, milestoneTasks, milestoneTasksMap, stageOrphanTasksMap]
   );
 
   const chartBounds = useMemo(

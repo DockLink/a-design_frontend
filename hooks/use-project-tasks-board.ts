@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useProjectMembers } from "@/hooks/use-project-members";
@@ -53,6 +53,15 @@ function assigneesFromRecords(records: TaskAssigneeRecord[]): TaskAssigneeView[]
     });
 }
 
+const TASK_BOARD_FETCH_OPTIONS = { depth: 1, limit: 200 } as const;
+
+function taskIdsKey(tasks: Task[]): string {
+  return tasks
+    .map((t) => t.id)
+    .sort()
+    .join(",");
+}
+
 export function useProjectTasksBoard(projectId: string) {
   const { user } = useAuth();
   const { members, effectiveRole } = useProjectMembers();
@@ -77,14 +86,36 @@ export function useProjectTasksBoard(projectId: string) {
     error: tasksError,
     refetch: refetchTasks,
     createTaskable: createTask,
-  } = useProjectTaskables(projectId, "TASK", { depth: 1, limit: 200 });
+    patchTaskInCache,
+    reopenTaskable,
+  } = useProjectTaskables(projectId, "TASK", TASK_BOARD_FETCH_OPTIONS);
 
   const [assigneeMap, setAssigneeMap] = useState<Record<string, TaskAssigneeView[]>>({});
   const [taskMilestoneMap, setTaskMilestoneMap] = useState<Record<string, string>>({});
   const [taskStageMap, setTaskStageMap] = useState<Record<string, string>>({});
   const [milestoneParents, setMilestoneParents] = useState<Record<string, { stageId: string; stageName: string }>>({});
   const [assigneesLoading, setAssigneesLoading] = useState(false);
+  const [assigneesReady, setAssigneesReady] = useState(false);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, Task["status"]>>({});
+  const hierarchyKeyRef = useRef<string | null>(null);
+  const assigneesKeyRef = useRef<string | null>(null);
+
+  // Reset derived state when switching projects so a prior project's refs/maps
+  // never block loading for the next project.
+  useEffect(() => {
+    hierarchyKeyRef.current = null;
+    assigneesKeyRef.current = null;
+    setAssigneeMap({});
+    setTaskMilestoneMap({});
+    setTaskStageMap({});
+    setMilestoneParents({});
+    setAssigneesLoading(false);
+    setAssigneesReady(false);
+    setStatusOverrides({});
+  }, [projectId]);
+
+  const stageIdsKey = useMemo(() => taskIdsKey(stageTasks), [stageTasks]);
+  const rawTaskIdsKey = useMemo(() => taskIdsKey(rawTasks), [rawTasks]);
 
   const stages = useMemo(() => stageTasks.map((s) => mapStageToView(s)), [stageTasks]);
   const milestones = useMemo(() => milestoneTasks.map((m) => mapMilestoneToView(m)), [milestoneTasks]);
@@ -122,81 +153,135 @@ export function useProjectTasksBoard(projectId: string) {
   const canManage = canManageProject(effectiveRole);
   const isAdmin = effectiveRole === "admin";
 
-  const loadHierarchy = useCallback(async () => {
-    const parentMap: Record<string, { stageId: string; stageName: string }> = {};
-    const milestoneToTasks: Record<string, string> = {};
-    const taskToStage: Record<string, string> = {};
+  useEffect(() => {
+    if (hierarchyKeyRef.current === stageIdsKey) return;
+    hierarchyKeyRef.current = stageIdsKey;
 
-    await mapWithConcurrency(stageTasks, 4, async (stage) => {
-      try {
-        const detail = await authApiClient<Task & { children?: Task[] }>(
-          `/tasks/${stage.id}?include_children=true`
-        );
-        const children = detail.children ?? [];
-        // Tasks attached directly to the stage (no milestone).
-        for (const child of children) {
-          if (child.taskableType === "TASK") {
-            taskToStage[child.id] = stage.title;
-          }
-        }
-        const milestoneChildren = children.filter(
-          (child) => child.taskableType === "MILESTONE"
-        );
-        await mapWithConcurrency(milestoneChildren, 4, async (child) => {
-          parentMap[child.id] = { stageId: stage.id, stageName: stage.title };
-          try {
-            const milestoneDetail = await authApiClient<Task & { children?: Task[] }>(
-              `/tasks/${child.id}?include_children=true`
-            );
-            for (const taskChild of milestoneDetail.children ?? []) {
-              if (taskChild.taskableType === "TASK") {
-                milestoneToTasks[taskChild.id] = child.id;
-                taskToStage[taskChild.id] = stage.title;
-              }
-            }
-          } catch {
-            // ignore
-          }
-        });
-      } catch {
-        // ignore per-stage failures
-      }
-    });
-
-    setMilestoneParents(parentMap);
-    setTaskMilestoneMap(milestoneToTasks);
-    setTaskStageMap(taskToStage);
-  }, [stageTasks]);
-
-  const loadAssignees = useCallback(async (tasks: Task[]) => {
-    if (!tasks.length) {
-      setAssigneeMap({});
+    if (!stageIdsKey) {
+      setMilestoneParents({});
+      setTaskMilestoneMap({});
+      setTaskStageMap({});
       return;
     }
 
-    setAssigneesLoading(true);
-    try {
-      const entries = await mapWithConcurrency(tasks, 5, async (task) => {
+    let cancelled = false;
+
+    void (async () => {
+      const parentMap: Record<string, { stageId: string; stageName: string }> = {};
+      const milestoneToTasks: Record<string, string> = {};
+      const taskToStage: Record<string, string> = {};
+
+      await mapWithConcurrency(stageTasks, 4, async (stage) => {
         try {
-          const res = await authApiClient<TaskWithAssignees>(`/tasks/${task.id}/assignees`);
-          return [task.id, assigneesFromRecords(res.assignees ?? [])] as const;
+          const detail = await authApiClient<Task & { children?: Task[] }>(
+            `/tasks/${stage.id}?include_children=true`
+          );
+          const children = detail.children ?? [];
+          for (const child of children) {
+            if (child.taskableType === "TASK") {
+              taskToStage[child.id] = stage.title;
+            }
+          }
+          const milestoneChildren = children.filter((child) => child.taskableType === "MILESTONE");
+          await mapWithConcurrency(milestoneChildren, 4, async (child) => {
+            parentMap[child.id] = { stageId: stage.id, stageName: stage.title };
+            try {
+              const milestoneDetail = await authApiClient<Task & { children?: Task[] }>(
+                `/tasks/${child.id}?include_children=true`
+              );
+              for (const taskChild of milestoneDetail.children ?? []) {
+                if (taskChild.taskableType === "TASK") {
+                  milestoneToTasks[taskChild.id] = child.id;
+                  taskToStage[taskChild.id] = stage.title;
+                }
+              }
+            } catch {
+              // ignore
+            }
+          });
         } catch {
-          return [task.id, []] as const;
+          // ignore per-stage failures
         }
       });
-      setAssigneeMap(Object.fromEntries(entries));
-    } finally {
+
+      if (cancelled) return;
+
+      setMilestoneParents(parentMap);
+      setTaskMilestoneMap(milestoneToTasks);
+      setTaskStageMap(taskToStage);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stageIdsKey, stageTasks]);
+
+  useEffect(() => {
+    if (assigneesKeyRef.current === rawTaskIdsKey) return;
+    assigneesKeyRef.current = rawTaskIdsKey;
+
+    if (!rawTaskIdsKey) {
+      setAssigneeMap({});
       setAssigneesLoading(false);
+      setAssigneesReady(true);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    void loadHierarchy();
-  }, [loadHierarchy]);
+    let cancelled = false;
 
-  useEffect(() => {
-    void loadAssignees(rawTasks);
-  }, [rawTasks, loadAssignees]);
+    void (async () => {
+      setAssigneesLoading(true);
+      setAssigneesReady(false);
+      try {
+        let batchResult: Record<string, TaskAssigneeRecord[]> | null = null;
+        try {
+          batchResult = await authApiClient<Record<string, TaskAssigneeRecord[]>>(
+            "/tasks/batch-assignees",
+            {
+              method: "POST",
+              body: JSON.stringify({ task_ids: rawTasks.map((t) => t.id) }),
+            }
+          );
+        } catch {
+          batchResult = null;
+        }
+
+        if (cancelled) return;
+
+        if (batchResult) {
+          const entries: [string, TaskAssigneeView[]][] = rawTasks.map((task) => [
+            task.id,
+            assigneesFromRecords(batchResult![task.id] ?? []),
+          ]);
+          setAssigneeMap(Object.fromEntries(entries));
+          return;
+        }
+
+        const entries = await mapWithConcurrency(rawTasks, 5, async (task) => {
+          try {
+            const res = await authApiClient<TaskWithAssignees>(`/tasks/${task.id}/assignees`);
+            return [task.id, assigneesFromRecords(res.assignees ?? [])] as const;
+          } catch {
+            return [task.id, []] as const;
+          }
+        });
+
+        if (cancelled) return;
+        setAssigneeMap(Object.fromEntries(entries));
+      } finally {
+        // Always clear the loading flag — even when this run was superseded by a
+        // newer effect, otherwise navigation can leave the board stuck loading.
+        setAssigneesLoading(false);
+        if (!cancelled) {
+          setAssigneesReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawTaskIdsKey, rawTasks]);
 
   const tasks: ProjectTaskView[] = useMemo(() => {
     return rawTasks.map((task) => {
@@ -238,8 +323,24 @@ export function useProjectTasksBoard(projectId: string) {
       assigneeUserIds: string[];
       subtasks?: { title: string; assigneeUserIds: string[] }[];
     }) => {
-      const startDate = new Date();
       const due = new Date(input.dueDate + "T23:59:59");
+
+      // Keep the task start within its parent milestone/stage window so the
+      // whole task sits inside the parent's period.
+      const parentMilestone = input.milestoneId
+        ? milestones.find((m) => m.id === input.milestoneId)
+        : undefined;
+      const parentStage = input.stageId ? stages.find((s) => s.id === input.stageId) : undefined;
+      const rangeStartIso = parentMilestone?.startDate ?? parentStage?.startDate;
+
+      let startDate = new Date();
+      if (rangeStartIso && startDate.getTime() < new Date(rangeStartIso).getTime()) {
+        startDate = new Date(rangeStartIso);
+      }
+      // Never let the start run past the due date.
+      if (startDate.getTime() > due.getTime()) {
+        startDate = new Date(due.getTime() - 1000);
+      }
 
       // Attach to milestone if chosen, otherwise to the stage so the task
       // still rolls up into the stage for auto-completion + timeline.
@@ -297,7 +398,7 @@ export function useProjectTasksBoard(projectId: string) {
       await refetchTasks();
       return created;
     },
-    [projectId, rawTasks.length, createTask, refetchTasks]
+    [projectId, rawTasks.length, createTask, refetchTasks, milestones, stages]
   );
 
   const updateTaskAssignees = useCallback(async (taskId: string, userIds: string[]) => {
@@ -319,32 +420,36 @@ export function useProjectTasksBoard(projectId: string) {
       const task = rawTasks.find((t) => t.id === taskId);
       if (!task) return;
 
+      const previousStatus = task.status;
       const newStatus = apiStatusFromBoard(boardStatus);
-      if (boardStatusFromApi(task.status) === boardStatus) return;
+      if (boardStatusFromApi(previousStatus) === boardStatus) return;
 
+      // Instant UI: patch cache + local override before the network round-trip.
+      patchTaskInCache(taskId, { status: newStatus });
       setStatusOverrides((prev) => ({ ...prev, [taskId]: newStatus }));
+
       try {
         await authApiClient<Task>(`/tasks/${taskId}`, {
           method: "PATCH",
           body: JSON.stringify({ status: newStatus } satisfies TaskUpdateRequest),
         });
-        await refetchTasks();
+        setStatusOverrides((prev) => {
+          const next = { ...prev };
+          delete next[taskId];
+          return next;
+        });
+        void refetchTasks();
       } catch (error) {
+        patchTaskInCache(taskId, { status: previousStatus });
         setStatusOverrides((prev) => {
           const next = { ...prev };
           delete next[taskId];
           return next;
         });
         throw error;
-      } finally {
-        setStatusOverrides((prev) => {
-          const next = { ...prev };
-          delete next[taskId];
-          return next;
-        });
       }
     },
-    [rawTasks, refetchTasks]
+    [rawTasks, refetchTasks, patchTaskInCache]
   );
 
   const markMyCompletion = useCallback(
@@ -353,9 +458,23 @@ export function useProjectTasksBoard(projectId: string) {
         method: "PATCH",
         body: JSON.stringify({ completed }),
       });
-      await Promise.all([refetchTasks(), loadAssignees(rawTasks)]);
+      await refetchTasks();
     },
-    [refetchTasks, loadAssignees, rawTasks]
+    [refetchTasks]
+  );
+
+  const reopenTask = useCallback(
+    async (taskId: string) => {
+      patchTaskInCache(taskId, { status: "REOPENED" });
+      try {
+        await reopenTaskable(taskId);
+      } finally {
+        // Reopen resets assignee completion + ancestor statuses; refresh to sync.
+        assigneesKeyRef.current = null;
+        await refetchTasks();
+      }
+    },
+    [reopenTaskable, refetchTasks, patchTaskInCache]
   );
 
   const currentUserView = useMemo(() => {
@@ -382,7 +501,8 @@ export function useProjectTasksBoard(projectId: string) {
     isAdmin,
     effectiveRole,
     currentUser: currentUserView,
-    isLoading: stagesLoading || milestonesLoading || tasksLoading || assigneesLoading,
+    isLoading: stagesLoading || milestonesLoading || tasksLoading,
+    isAssigneesLoading: assigneesLoading && !assigneesReady,
     error: tasksError,
     refreshAll,
     createProjectTask,
@@ -391,6 +511,7 @@ export function useProjectTasksBoard(projectId: string) {
     updateTaskAssignees,
     updateTaskStatus,
     markMyCompletion,
+    reopenTask,
     refetchTasks,
   };
 }

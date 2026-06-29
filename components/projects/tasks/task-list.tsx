@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import {
   BOARD_COLUMNS,
@@ -12,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { TaskUserAvatar } from "./task-user-avatar";
 
-export function TaskListRow({ task, onClick }: { task: ProjectTaskView; onClick: () => void }) {
+export const TaskListRow = memo(function TaskListRow({ task, onClick }: { task: ProjectTaskView; onClick: () => void }) {
   const column = BOARD_COLUMNS.find((c) => c.id === task.status)!;
   const done = task.status === "done";
 
@@ -39,7 +41,7 @@ export function TaskListRow({ task, onClick }: { task: ProjectTaskView; onClick:
       </span>
     </button>
   );
-}
+});
 
 export function TaskListHeader() {
   return (

@@ -13,6 +13,7 @@ import { TaskListHeader, TaskListRow } from "@/components/projects/tasks/task-li
 import { TaskMilestoneView } from "@/components/projects/tasks/task-milestone-view";
 import { TaskTeamView } from "@/components/projects/tasks/task-team-view";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useProjectTasksBoard } from "@/hooks/use-project-tasks-board";
 import type { TaskablePriority } from "@/types/tasks";
 import {
@@ -38,11 +39,13 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
     canManage,
     isAdmin,
     isLoading,
+    isAssigneesLoading,
     error,
     createProjectTask,
     updateTaskAssignees,
     updateTaskStatus,
     markMyCompletion,
+    reopenTask,
     currentUser,
   } = useProjectTasksBoard(projectId);
 
@@ -52,9 +55,10 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
   const [showStageManagement, setShowStageManagement] = useState(false);
   const [showMilestoneManagement, setShowMilestoneManagement] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const draggedIdRef = useRef<string | null>(null);
   const [overColumn, setOverColumn] = useState<BoardColumnId | null>(null);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const dragCounter = useRef<Record<string, number>>({});
+  // Per-column enter counters to prevent dragLeave flicker when moving over children.
+  const dragEnterCount = useRef<Record<string, number>>({});
 
   // Filters
   const [filterStage, setFilterStage] = useState<string>(ALL);
@@ -116,31 +120,49 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
   const selectClass =
     "h-8 rounded-md border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6] px-2 text-xs text-[#6B5744] outline-none";
 
-  async function handleDrop(toStatus: BoardColumnId) {
-    const taskId = draggedId;
+  // Date window of the selected task's parent STAGE, used to bound hold
+  // requests. Holds may fall outside the milestone window but must stay within
+  // the stage range, so we resolve the stage (milestone → stage) here.
+  const selectedTaskStageRange = useMemo(() => {
+    if (!selectedTask) return null;
+    const stageId = selectedTask.milestoneId
+      ? milestoneParents[selectedTask.milestoneId]?.stageId
+      : undefined;
+    const stage = stageId ? stages.find((s) => s.id === stageId) : undefined;
+    if (!stage) return null;
+    return { start: stage.startDate, end: stage.endDate };
+  }, [selectedTask, milestoneParents, stages]);
+
+  async function handleSheetStatusChange(taskId: string, toStatus: BoardColumnId) {
+    await updateTaskStatus(taskId, toStatus);
+    setSelectedTask((prev) =>
+      prev?.id === taskId
+        ? { ...prev, status: toStatus, apiStatus: apiStatusFromBoard(toStatus) }
+        : prev
+    );
+  }
+
+  function handleDrop(toStatus: BoardColumnId) {
+    const taskId = draggedIdRef.current;
+    draggedIdRef.current = null;
     setDraggedId(null);
     setOverColumn(null);
-    dragCounter.current = {};
+    dragEnterCount.current = {};
 
-    if (!taskId || isUpdatingStatus) return;
+    if (!taskId) return;
 
-    const task = filteredVisible.find((t) => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task || task.status === toStatus) return;
 
-    setIsUpdatingStatus(true);
-    try {
-      await updateTaskStatus(taskId, toStatus);
-      setSelectedTask((prev) =>
-        prev?.id === taskId
-          ? { ...prev, status: toStatus, apiStatus: apiStatusFromBoard(toStatus) }
-          : prev
-      );
-      toast.success("Task status updated");
-    } catch (err) {
+    setSelectedTask((prev) =>
+      prev?.id === taskId
+        ? { ...prev, status: toStatus, apiStatus: apiStatusFromBoard(toStatus) }
+        : prev
+    );
+
+    void updateTaskStatus(taskId, toStatus).catch((err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update task status");
-    } finally {
-      setIsUpdatingStatus(false);
-    }
+    });
   }
 
   return (
@@ -240,8 +262,15 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
       </div>
 
       <div className="px-7 py-5">
-        {isLoading && <p className="text-sm text-[#8E8E93]">Loading tasks…</p>}
+        {isLoading && <LoadingSpinner label="Loading tasks…" />}
         {error && <p className="text-sm text-red-700">{error}</p>}
+
+        {!isLoading && isAssigneesLoading && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-[#9C8573]">
+            <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-[#D4A96A] border-t-transparent" />
+            Loading assignees…
+          </div>
+        )}
 
         {!isLoading && viewMode === "kanban" && (
           <div className="flex gap-3 overflow-x-auto pb-2">
@@ -253,18 +282,34 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
                 draggedId={draggedId}
                 isOver={overColumn === col.id}
                 showAssigneeNames={isAdmin || canManage}
-                onDragOver={(e) => {
+                onDragEnter={(e) => {
                   e.preventDefault();
+                  dragEnterCount.current[col.id] = (dragEnterCount.current[col.id] ?? 0) + 1;
                   setOverColumn(col.id);
                 }}
-                onDragLeave={() => setOverColumn(null)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (overColumn !== col.id) setOverColumn(col.id);
+                }}
+                onDragLeave={() => {
+                  dragEnterCount.current[col.id] = (dragEnterCount.current[col.id] ?? 1) - 1;
+                  if ((dragEnterCount.current[col.id] ?? 0) <= 0) {
+                    dragEnterCount.current[col.id] = 0;
+                    setOverColumn(null);
+                  }
+                }}
                 onDrop={() => handleDrop(col.id)}
                 onAddTask={canManage ? setCreateStatus : () => undefined}
                 onCardClick={setSelectedTask}
-                onCardDragStart={setDraggedId}
+                onCardDragStart={(id) => {
+                  draggedIdRef.current = id;
+                  setDraggedId(id);
+                }}
                 onCardDragEnd={() => {
+                  draggedIdRef.current = null;
                   setDraggedId(null);
                   setOverColumn(null);
+                  dragEnterCount.current = {};
                 }}
                 canAdd={canManage}
               />
@@ -308,8 +353,18 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
         canManage={canManage}
         currentUserId={currentUser?.userId}
         members={memberUsers}
+        stageRange={selectedTaskStageRange}
         onUpdateAssignees={updateTaskAssignees}
         onMarkMyCompletion={markMyCompletion}
+        onUpdateStatus={handleSheetStatusChange}
+        onReopen={async (taskId) => {
+          await reopenTask(taskId);
+          setSelectedTask((prev) =>
+            prev?.id === taskId
+              ? { ...prev, status: "in-progress", apiStatus: "REOPENED" }
+              : prev
+          );
+        }}
       />
 
       {createStatus && (

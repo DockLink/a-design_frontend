@@ -36,6 +36,8 @@ export interface TimelineStageGroup {
   endDate: string;
   isActive: boolean;
   milestones: TimelineMilestoneItem[];
+  /** Tasks attached directly to the stage (no milestone). */
+  orphanTasks?: TimelineTaskItem[];
 }
 
 export const STAGE_CHART_COLORS = [
@@ -173,12 +175,25 @@ export function buildMonthMarkers(chartStart: string, chartEnd: string) {
   return markers;
 }
 
+export function mapTaskToTimelineItem(t: Task): TimelineTaskItem {
+  const endIso = t.end_date ?? t.start_date;
+  return {
+    id: t.id,
+    title: t.title,
+    startDate: t.start_date,
+    endDate: endIso,
+    apiStatus: t.status,
+    status: deriveTimelineStatus(t.start_date, endIso, t.status),
+  };
+}
+
 export function buildTimelineGroups(
   stages: ProjectStageView[],
   milestones: ProjectMilestoneView[],
   milestoneStageMap: Record<string, { stageId: string; stageName: string }>,
   rawMilestones: Task[],
-  milestoneTasksMap: Record<string, TimelineTaskItem[]> = {}
+  milestoneTasksMap: Record<string, TimelineTaskItem[]> = {},
+  stageOrphanTasksMap: Record<string, TimelineTaskItem[]> = {}
 ): TimelineStageGroup[] {
   const statusById = Object.fromEntries(rawMilestones.map((m) => [m.id, m.status]));
   const sortedStages = [...stages].sort((a, b) => a.order - b.order);
@@ -192,6 +207,7 @@ export function buildTimelineGroups(
     endDate: stage.endDate,
     isActive: stage.isActive,
     milestones: [],
+    orphanTasks: stageOrphanTasksMap[stage.id] ?? [],
   }));
 
   const groupById = Object.fromEntries(groups.map((g) => [g.id, g]));
@@ -233,12 +249,31 @@ export function buildTimelineGroups(
     g.milestones.sort(
       (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     );
-    // Span the stage bar across its milestones (which already span their tasks).
-    if (g.milestones.length > 0) {
-      const starts = [new Date(g.startDate).getTime(), ...g.milestones.map((m) => new Date(m.startDate).getTime())];
-      const ends = [new Date(g.endDate).getTime(), ...g.milestones.map((m) => new Date(m.endDate).getTime())];
-      g.startDate = toDateOnlyIso(new Date(Math.min(...starts)));
-      g.endDate = toDateOnlyIso(new Date(Math.max(...ends)));
+
+    // Tasks attached directly to the stage (no milestone) are rendered as their
+    // own rows under the stage — no synthetic "Tasks (no milestone)" parent.
+    const orphans = (g.orphanTasks ?? [])
+      .slice()
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    g.orphanTasks = orphans;
+
+    // Roll the stage bar up across every child (milestones + their tasks + orphan
+    // tasks) so it always reflects the true span, even after a hold extends a task.
+    const childStarts = [
+      ...g.milestones.map((m) => new Date(m.startDate).getTime()),
+      ...orphans.map((t) => new Date(t.startDate).getTime()),
+    ];
+    const childEnds = [
+      ...g.milestones.map((m) => new Date(m.endDate).getTime()),
+      ...orphans.map((t) => new Date(t.endDate).getTime()),
+    ];
+    if (childStarts.length > 0) {
+      g.startDate = toDateOnlyIso(
+        new Date(Math.min(new Date(g.startDate).getTime(), ...childStarts))
+      );
+      g.endDate = toDateOnlyIso(
+        new Date(Math.max(new Date(g.endDate).getTime(), ...childEnds))
+      );
     }
   }
 

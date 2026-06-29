@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { mapProjectToCard } from "@/lib/projects/map-projects";
+import { queryKeys } from "@/lib/query/keys";
 import { toProjectsQueryString } from "@/lib/projects/query-string";
 import type {
   Project,
@@ -12,72 +14,74 @@ import type {
   ProjectsQueryParams,
 } from "@/types/projects";
 
+async function fetchProjects(params: ProjectsQueryParams): Promise<ProjectsListResponse> {
+  const query = toProjectsQueryString(params);
+  return authApiClient<ProjectsListResponse>(`/projects${query}`);
+}
+
 export function useProjects(params: ProjectsQueryParams = { page: 1, limit: 100 }) {
-  const [projects, setProjects] = useState<ProjectCardView[]>([]);
-  const [rawProjects, setRawProjects] = useState<Project[]>([]);
-  const [meta, setMeta] = useState<ProjectsListResponse["meta"] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const qKey = queryKeys.projects.list(params);
 
-  const fetchProjects = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: qKey,
+    queryFn: () => fetchProjects(params),
+    staleTime: 30_000,
+  });
 
-    try {
-      const query = toProjectsQueryString(params);
-      const response = await authApiClient<ProjectsListResponse>(
-        `/projects${query}`
-      );
+  const rawProjects: Project[] = data?.data ?? [];
+  const meta = data?.meta ?? null;
 
-      setRawProjects(response.data);
-      setProjects(response.data.map(mapProjectToCard));
-      setMeta(response.meta);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load projects");
-      setRawProjects([]);
-      setProjects([]);
-      setMeta(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [params.page, params.limit, params.status, params.search, params.clients]);
+  const projects: ProjectCardView[] = useMemo(
+    () => rawProjects.map(mapProjectToCard),
+    [rawProjects]
+  );
 
-  const deleteProject = useCallback(async (projectId: string) => {
-    setIsDeleting(true);
-    try {
-      await authApiClient<{ id: string; deleted: true }>(`/projects/${projectId}`, {
+  const activeProjects: ProjectCardView[] = useMemo(
+    () => projects.filter((p) => p.status === "Active"),
+    [projects]
+  );
+
+  const deleteMutation = useMutation({
+    mutationFn: (projectId: string) =>
+      authApiClient<{ id: string; deleted: true }>(`/projects/${projectId}`, {
         method: "DELETE",
+      }),
+    onSuccess: (_result, projectId) => {
+      // Optimistic removal from cached list.
+      qc.setQueryData<ProjectsListResponse>(qKey, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.filter((p) => p.id !== projectId),
+          meta: prev.meta
+            ? {
+                ...prev.meta,
+                total: Math.max(0, prev.meta.total - 1),
+                totalPages: Math.ceil(
+                  Math.max(0, prev.meta.total - 1) / (params.limit ?? 100)
+                ),
+              }
+            : prev.meta,
+        };
       });
-      setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      setRawProjects((prev) => prev.filter((p) => p.id !== projectId));
-      setMeta((prev) =>
-        prev
-          ? {
-              ...prev,
-              total: Math.max(0, prev.total - 1),
-              totalPages: Math.ceil(Math.max(0, prev.total - 1) / (params.limit ?? 100)),
-            }
-          : prev
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [params.limit]);
+    },
+  });
 
-  useEffect(() => {
-    void fetchProjects();
-  }, [fetchProjects]);
+  const deleteProject = useCallback(
+    (projectId: string) => deleteMutation.mutateAsync(projectId),
+    [deleteMutation]
+  );
 
   return {
     projects,
     rawProjects,
     meta,
     isLoading,
-    isDeleting,
-    error,
-    refetch: fetchProjects,
+    isDeleting: deleteMutation.isPending,
+    error: error ? (error instanceof Error ? error.message : "Failed to load projects") : null,
+    refetch: () => refetch().then(() => undefined),
     deleteProject,
-    activeProjects: projects.filter((p) => p.status === "Active"),
+    activeProjects,
   };
 }
