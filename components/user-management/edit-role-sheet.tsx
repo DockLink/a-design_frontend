@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { User, UserRole } from "@/types/users";
 
-const ASSIGNABLE_ROLES: { value: UserRole; label: string }[] = [
+const DEFAULT_ASSIGNABLE_ROLES: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
   { value: "MEMBER", label: "Member" },
 ];
@@ -18,12 +18,14 @@ export function EditRoleSheet({
   onClose,
   onSave,
   isSaving,
+  roleOptions = DEFAULT_ASSIGNABLE_ROLES,
 }: {
   user: User | null;
   open: boolean;
   onClose: () => void;
   onSave: (userId: string, role: UserRole) => Promise<void>;
   isSaving?: boolean;
+  roleOptions?: { value: UserRole; label: string }[];
 }) {
   const [role, setRole] = useState<UserRole>("MEMBER");
   const [error, setError] = useState<string | null>(null);
@@ -31,13 +33,13 @@ export function EditRoleSheet({
   useEffect(() => {
     if (user) {
       const current = user.roles[0] ?? "MEMBER";
-      const assignable = ASSIGNABLE_ROLES.some((r) => r.value === current)
+      const assignable = roleOptions.some((r) => r.value === current)
         ? current
-        : "MEMBER";
+        : roleOptions[0]?.value ?? "MEMBER";
       setRole(assignable);
       setError(null);
     }
-  }, [user]);
+  }, [user, roleOptions]);
 
   if (!open || !user) return null;
 
@@ -45,6 +47,7 @@ export function EditRoleSheet({
     [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
 
   const userId = user.id;
+  const isSuperAdminTarget = user.roles.includes("SUPER_ADMIN");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -127,43 +130,51 @@ export function EditRoleSheet({
             Update role for <strong style={{ color: "#1A1410" }}>{displayName}</strong>
           </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-role">Organisation role</Label>
-            <select
-              id="edit-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-              style={{
-                width: "100%",
-                height: "36px",
-                borderRadius: "8px",
-                border: "1px solid rgba(90,60,30,0.15)",
-                background: "#F5EFE6",
-                padding: "0 10px",
-                fontSize: "13px",
-                color: "#1A1410",
-              }}
-            >
-              {ASSIGNABLE_ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isSuperAdminTarget ? (
+            <p style={{ fontSize: "13px", color: "#9C8573", margin: 0 }}>
+              Super admin roles cannot be changed from this panel.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="edit-role">Organisation role</Label>
+              <select
+                id="edit-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                style={{
+                  width: "100%",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(90,60,30,0.15)",
+                  background: "#F5EFE6",
+                  padding: "0 10px",
+                  fontSize: "13px",
+                  color: "#1A1410",
+                }}
+              >
+                {roleOptions.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {error && (
             <p style={{ fontSize: "13px", color: "#9B1C1C", margin: 0 }}>{error}</p>
           )}
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="h-9 w-full rounded-lg bg-[#D4A96A] hover:bg-[#C4956A]"
-            >
-              {isSaving ? "Saving…" : "Save role"}
-            </Button>
+            {!isSuperAdminTarget && (
+              <Button
+                type="submit"
+                disabled={isSaving}
+                className="h-9 w-full rounded-lg bg-[#D4A96A] hover:bg-[#C4956A]"
+              >
+                {isSaving ? "Saving…" : "Save role"}
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={onClose} className="h-9 w-full">
               Cancel
             </Button>

@@ -1,5 +1,5 @@
-import { addIsoDuration } from "@/lib/projects/duration";
 import { getUserInitials, getUserListPrimaryLabel } from "@/lib/user/display";
+import { resolveTaskEndDateIso, resolveTaskDurationIso } from "@/lib/tasks/task-dates";
 import type { Task, TaskablePriority, TaskableStatus } from "@/types/tasks";
 
 export type BoardColumnId = "todo" | "in-progress" | "done";
@@ -21,6 +21,7 @@ export interface TaskAssigneeView {
   userId: string;
   name: string;
   initials: string;
+  completedAt?: string | null;
 }
 
 export interface TaskSubtaskView {
@@ -62,7 +63,7 @@ export function apiStatusFromBoard(status: BoardColumnId): TaskableStatus {
 }
 
 export function taskDueDate(task: Task): Date {
-  return addIsoDuration(task.start_date, task.duration);
+  return new Date(resolveTaskEndDateIso(task));
 }
 
 export function taskDueDateIso(task: Task): string {
@@ -123,7 +124,7 @@ export function mapTaskToView(
     priority: task.taskablePriority,
     dueDate: taskDueDateIso(task),
     startDate: task.start_date,
-    duration: task.duration,
+    duration: resolveTaskDurationIso(task),
     milestoneId: options.milestoneId,
     milestoneName: options.milestoneName,
     stageName: options.stageName,

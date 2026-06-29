@@ -5,11 +5,13 @@ import { Bell, Search } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
 
 const PAGE_TITLES: Record<string, string> = {
+  [NAV_ROUTES.superAdminDashboard]: "System Control",
   [NAV_ROUTES.adminDashboard]: "Dashboard",
   [NAV_ROUTES.leadDashboard]: "Dashboard",
   [NAV_ROUTES.memberDashboard]: "Dashboard",
@@ -29,11 +31,13 @@ function getPageTitle(pathname: string): string {
   return "Dashboard";
 }
 
-export function AppHeader({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
+export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
+  const hasUnreadNotifications = unreadCount > 0;
 
   const title = getPageTitle(pathname);
 
@@ -80,14 +84,24 @@ export function AppHeader({ hasUnreadNotifications = false }: { hasUnreadNotific
             <span
               style={{
                 position: "absolute",
-                top: "7px",
-                right: "7px",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "var(--ds-accent)",
+                top: "3px",
+                right: "3px",
+                minWidth: "16px",
+                height: "16px",
+                padding: "0 4px",
+                borderRadius: "9999px",
+                background: "#FF3B30",
+                color: "white",
+                fontSize: "10px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
               }}
-            />
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
           )}
         </HeaderBtn>
 

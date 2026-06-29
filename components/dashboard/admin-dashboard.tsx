@@ -169,7 +169,6 @@ export function AdminDashboard() {
                         <div style={{ ...dsHeadline, marginBottom: "4px" }}>{project.name}</div>
                         <div style={dsFootnote}>{project.client}</div>
                       </div>
-                      <span style={{ ...dsCaption2, ...dsMono, color: "#9C8573" }}>{project.number}</span>
                     </div>
                   </div>
                   {(showProgress || showLead) && (
@@ -218,9 +217,6 @@ export function AdminDashboard() {
               <div style={{ width: "100%", height: "160px", background: `url(${project.thumbnail}) center/cover`, position: "relative" }}>
                 <div style={{ position: "absolute", top: "10px", right: "10px", background: statusCfg.bg, color: statusCfg.color, fontSize: "var(--ds-text-caption-2)", fontWeight: 500, borderRadius: "8px", padding: "4px 10px", backdropFilter: "blur(8px)" }}>
                   {project.status}
-                </div>
-                <div style={{ position: "absolute", bottom: "10px", left: "10px", background: "rgba(0,0,0,0.6)", color: "white", fontSize: "var(--ds-text-caption-2)", ...dsMono, borderRadius: "6px", padding: "4px 8px", backdropFilter: "blur(8px)" }}>
-                  {project.number}
                 </div>
               </div>
               <div style={{ padding: "16px" }}>

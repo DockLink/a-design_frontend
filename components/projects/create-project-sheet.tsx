@@ -15,6 +15,7 @@ import {
   defaultStageOptions,
   type ProjectStageOption,
 } from "@/lib/projects/default-stages";
+import { DURATION_UNIT_LABELS, durationToEndDate, type DurationUnit } from "@/lib/projects/duration-input";
 import { MemberSearchSelect } from "@/components/projects/member-search-select";
 
 export function CreateProjectSheet({
@@ -38,6 +39,8 @@ export function CreateProjectSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [durationValue, setDurationValue] = useState("12");
+  const [durationUnit, setDurationUnit] = useState<DurationUnit>("months");
   const [location, setLocation] = useState("");
   const [clientName, setClientName] = useState("");
   const [projectLeadId, setProjectLeadId] = useState("");
@@ -55,6 +58,8 @@ export function CreateProjectSheet({
     setName("");
     setDescription("");
     setStartDate("");
+    setDurationValue("12");
+    setDurationUnit("months");
     setLocation("");
     setClientName("");
     setProjectLeadId("");
@@ -119,6 +124,11 @@ export function CreateProjectSheet({
       toast.error("Project name, client name, and start date are required");
       return;
     }
+    const durationAmount = Number(durationValue);
+    if (!Number.isFinite(durationAmount) || durationAmount < 1) {
+      toast.error("Enter a valid expected duration");
+      return;
+    }
     if (selectedCount === 0) {
       toast.error("Select at least one project stage");
       return;
@@ -141,7 +151,7 @@ export function CreateProjectSheet({
           name: name.trim(),
           description: description.trim() || undefined,
           start_date: new Date(startDate).toISOString(),
-          duration: "P1Y",
+          end_date: durationToEndDate(startDate, durationAmount, durationUnit),
           location: location.trim() || undefined,
           images: imageIds,
           client: { name: clientName.trim() },
@@ -223,7 +233,47 @@ export function CreateProjectSheet({
 
           <div className="space-y-2">
             <Label htmlFor="proj-start">Start date</Label>
-            <Input id="proj-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-[#F5EFE6] h-10" required />
+            <Input
+              id="proj-start"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-[#F5EFE6] h-10"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Expected duration</Label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <Input
+                id="proj-duration"
+                type="number"
+                min={1}
+                value={durationValue}
+                onChange={(e) => setDurationValue(e.target.value)}
+                className="bg-[#F5EFE6] h-10"
+                required
+              />
+              <select
+                value={durationUnit}
+                onChange={(e) => setDurationUnit(e.target.value as DurationUnit)}
+                style={{
+                  height: "40px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(90,60,30,0.15)",
+                  background: "#F5EFE6",
+                  padding: "0 12px",
+                  fontSize: "var(--ds-text-footnote)",
+                }}
+              >
+                {(Object.keys(DURATION_UNIT_LABELS) as DurationUnit[]).map((unit) => (
+                  <option key={unit} value={unit}>
+                    {DURATION_UNIT_LABELS[unit]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">

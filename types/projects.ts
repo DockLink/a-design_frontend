@@ -26,6 +26,7 @@ export interface Project {
   updated_at: string;
   client: ProjectClient | null;
   images: ProjectImage[];
+  current_stage?: string | null;
 }
 
 export interface ProjectsListMeta {
@@ -58,6 +59,7 @@ export interface ProjectCardView {
   thumbnail: string;
   status: "Active" | "Inactive";
   number: string;
+  currentStage?: string | null;
   currentPhase?: number;
   lead?: string;
   teamSize?: number;
@@ -89,7 +91,7 @@ export interface CreateProjectRequest {
   name: string;
   description?: string;
   start_date: string;
-  duration: string;
+  end_date: string;
   location?: string;
   images?: string[];
   client: {
@@ -104,7 +106,7 @@ export interface UpdateProjectRequest {
   name?: string;
   description?: string;
   start_date?: string;
-  duration?: string;
+  end_date?: string;
   location?: string;
   status?: ProjectStatus;
   images?: { id: string }[];

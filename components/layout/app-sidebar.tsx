@@ -10,12 +10,14 @@ import {
   Home,
   LogOut,
   Settings,
+  Shield,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
 import {
   HOME_ROUTE,
@@ -27,11 +29,13 @@ import { NAV_ROUTES } from "@/types/navigation";
 
 const PROJECT_ROUTES = [NAV_ROUTES.projects];
 
-export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifications?: boolean }) {
+export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user, primaryRole, logout } = useAuth();
+  const { unreadCount } = useNotifications();
+  const hasUnreadNotifications = unreadCount > 0;
 
   if (!user || !primaryRole) return null;
 
@@ -71,11 +75,11 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
       >
         <TabBtn icon={<Home size={22} />} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
         <TabBtn icon={<Folder size={22} />} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
-        {sidebarRole !== "admin" && (
+        {sidebarRole !== "admin" && sidebarRole !== "superadmin" && (
           <TabBtn icon={<CheckSquare size={22} />} label="Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
         )}
         <TabBtn icon={<Bell size={22} />} label="Inbox" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
-        {sidebarRole === "admin" && (
+        {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
           <TabBtn icon={<Users size={22} />} label="Team" active={isActive([NAV_ROUTES.userManagement, NAV_ROUTES.accessRequests])} onClick={() => go(NAV_ROUTES.userManagement)} />
         )}
         {sidebarRole === "lead" && (
@@ -136,7 +140,7 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
         <div style={{ marginBottom: "6px" }}>
           <SidebarItem icon={Home} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
           <SidebarItem icon={Folder} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
-          {sidebarRole !== "admin" && (
+          {sidebarRole !== "admin" && sidebarRole !== "superadmin" && (
             <SidebarItem icon={CheckSquare} label="My Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
           )}
           <SidebarItem icon={Bell} label="Notifications" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
@@ -145,7 +149,15 @@ export function AppSidebar({ hasUnreadNotifications = false }: { hasUnreadNotifi
         {sidebarRole !== "member" && (
           <>
             <div style={{ height: "0.5px", background: "rgba(60,60,67,0.10)", margin: "8px 6px" }} />
-            {sidebarRole === "admin" && (
+            {sidebarRole === "superadmin" && (
+              <SidebarItem
+                icon={Shield}
+                label="System Control"
+                active={isActive(NAV_ROUTES.superAdminDashboard)}
+                onClick={() => go(NAV_ROUTES.superAdminDashboard)}
+              />
+            )}
+            {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
               <SidebarItem icon={Users} label="Team" active={isActive([NAV_ROUTES.userManagement, NAV_ROUTES.accessRequests])} onClick={() => go(NAV_ROUTES.userManagement)} />
             )}
             {sidebarRole === "lead" && (

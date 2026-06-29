@@ -15,5 +15,6 @@ export function mapProjectToCard(project: Project): ProjectCardView {
     thumbnail: projectThumbnailUrl(project.images),
     status: project.status === "ACTIVE" ? "Active" : "Inactive",
     number: project.code,
+    currentStage: project.current_stage ?? null,
   };
 }

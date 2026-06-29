@@ -1,0 +1,185 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogCloseButton,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { formatBoardDate } from "@/lib/tasks/task-board";
+import type { ProjectTaskView } from "@/lib/tasks/task-board";
+
+function clampDate(dateIso: string, min: string, max: string): string {
+  if (dateIso < min) return min;
+  if (dateIso > max) return max;
+  return dateIso;
+}
+
+function addDays(dateIso: string, days: number): string {
+  const d = new Date(dateIso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function TaskHoldRequestDialog({
+  open,
+  onOpenChange,
+  task,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  task: ProjectTaskView;
+  onSubmit: (input: {
+    taskId: string;
+    reason: string;
+    startDate: string;
+    endDate: string;
+    note?: string;
+  }) => Promise<unknown>;
+}) {
+  const taskStart = task.startDate.slice(0, 10);
+  const taskEnd = task.dueDate;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const defaultStart = useMemo(
+    () => clampDate(today < taskStart ? taskStart : today, taskStart, taskEnd),
+    [today, taskStart, taskEnd]
+  );
+  const defaultEnd = useMemo(() => {
+    const suggested = addDays(defaultStart, 3);
+    return clampDate(suggested < defaultStart ? addDays(defaultStart, 1) : suggested, taskStart, taskEnd);
+  }, [defaultStart, taskStart, taskEnd]);
+
+  const [reason, setReason] = useState("");
+  const [startDate, setStartDate] = useState(defaultStart);
+  const [endDate, setEndDate] = useState(defaultEnd);
+  const [note, setNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setReason("");
+    setNote("");
+    setStartDate(defaultStart);
+    setEndDate(defaultEnd);
+  }, [open, defaultStart, defaultEnd]);
+
+  const canSubmit = Boolean(reason.trim() && startDate && endDate);
+
+  async function handleSubmit() {
+    if (!canSubmit) return;
+    if (endDate < startDate) {
+      toast.error("End date must be on or after the start date");
+      return;
+    }
+    if (startDate < taskStart || startDate > taskEnd) {
+      toast.error(`Hold must start within the task period (${formatBoardDate(taskStart)} – ${formatBoardDate(taskEnd)})`);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSubmit({
+        taskId: task.id,
+        reason: reason.trim(),
+        startDate,
+        endDate,
+        note: note.trim() || undefined,
+      });
+      toast.success("Hold request submitted");
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit hold request");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+        <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
+          <DialogTitle>Request task hold</DialogTitle>
+          <DialogCloseButton onClick={() => onOpenChange(false)} />
+        </DialogHeader>
+
+        <DialogBody className="space-y-3.5">
+          <p className="text-sm text-[#9C8573]">
+            Request a pause on <span className="font-medium text-[#1A1410]">{task.title}</span>. The hold
+            period must fall within the task window ({formatBoardDate(taskStart)} – {formatBoardDate(taskEnd)}).
+          </p>
+
+          <div>
+            <Label className="mb-1.5 text-xs text-[#6B5744]">Reason</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Why does this task need to be on hold?"
+              className="min-h-[72px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="mb-1.5 text-xs text-[#6B5744]">Hold starts</Label>
+              <Input
+                type="date"
+                min={taskStart}
+                max={taskEnd}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5 text-xs text-[#6B5744]">Hold ends</Label>
+              <Input
+                type="date"
+                min={startDate || taskStart}
+                max={taskEnd}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-1.5 text-xs text-[#6B5744]">Additional note (optional)</Label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Any extra context for the reviewer…"
+              className="min-h-[56px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+            />
+          </div>
+        </DialogBody>
+
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={!canSubmit || isSaving}
+            onClick={() => void handleSubmit()}
+            className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+          >
+            {isSaving ? "Submitting…" : "Submit request"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

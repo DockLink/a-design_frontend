@@ -1,21 +1,29 @@
-import { ADMIN_ONLY_ROUTES, LEAD_ADMIN_ROUTES, NAV_ROUTES } from "@/types/navigation";
+import {
+  ADMIN_ONLY_ROUTES,
+  LEAD_ADMIN_ROUTES,
+  NAV_ROUTES,
+  SUPER_ADMIN_ONLY_ROUTES,
+} from "@/types/navigation";
 import type { UserRole } from "@/types/users";
 
-export type SidebarRole = "admin" | "lead" | "member";
+export type SidebarRole = "superadmin" | "admin" | "lead" | "member";
 
 export const ROLE_LABEL: Record<SidebarRole, string> = {
+  superadmin: "Super Administrator",
   admin: "Administrator",
   lead: "Project Lead",
   member: "Team Member",
 };
 
 export function toSidebarRole(role: UserRole | null): SidebarRole {
-  if (role === "ADMIN" || role === "SUPER_ADMIN") return "admin";
+  if (role === "SUPER_ADMIN") return "superadmin";
+  if (role === "ADMIN") return "admin";
   if (role === "TEAM_LEAD") return "lead";
   return "member";
 }
 
 export const HOME_ROUTE: Record<SidebarRole, string> = {
+  superadmin: NAV_ROUTES.superAdminDashboard,
   admin: NAV_ROUTES.adminDashboard,
   lead: NAV_ROUTES.leadDashboard,
   member: NAV_ROUTES.memberDashboard,
@@ -23,6 +31,11 @@ export const HOME_ROUTE: Record<SidebarRole, string> = {
 
 export function canAccessRoute(role: UserRole | null, pathname: string): boolean {
   if (!role) return false;
+
+  if (SUPER_ADMIN_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
+    return role === "SUPER_ADMIN";
+  }
+
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   const isLead = role === "TEAM_LEAD";
 
@@ -32,6 +45,10 @@ export function canAccessRoute(role: UserRole | null, pathname: string): boolean
 }
 
 export function canOpenProjectDetail(sidebarRole: SidebarRole, isAssigned = false): boolean {
-  if (sidebarRole === "admin") return true;
+  if (sidebarRole === "superadmin" || sidebarRole === "admin") return true;
   return isAssigned;
+}
+
+export function isSuperAdminRole(role: UserRole | null): boolean {
+  return role === "SUPER_ADMIN";
 }

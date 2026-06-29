@@ -18,8 +18,11 @@ export function ProjectHeaderBanner({
         position: "relative",
         height: "200px",
         margin: "0 -28px",
-        background: `center/cover no-repeat url(${src})`,
         backgroundColor: "#E8DFD3",
+        backgroundImage: src ? `url(${src})` : undefined,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
       }}
     >
       <div

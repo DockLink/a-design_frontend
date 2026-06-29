@@ -1,4 +1,4 @@
-import { addIsoDuration } from "@/lib/projects/duration";
+import { resolveTaskDurationIso, resolveTaskEndDateIso } from "@/lib/tasks/task-dates";
 import type { Task, TaskableStatus } from "@/types/tasks";
 
 export interface ProjectStageView {
@@ -21,7 +21,8 @@ export interface ProjectMilestoneView {
 }
 
 export function mapStageToView(stage: Task, now = new Date()): ProjectStageView {
-  const end = addIsoDuration(stage.start_date, stage.duration);
+  const endIso = resolveTaskEndDateIso(stage);
+  const end = new Date(endIso);
   const start = new Date(stage.start_date);
   const isActive = start <= now && end >= now;
 
@@ -30,19 +31,18 @@ export function mapStageToView(stage: Task, now = new Date()): ProjectStageView 
     name: stage.title,
     order: stage.order,
     startDate: stage.start_date,
-    duration: stage.duration,
-    endDate: end.toISOString(),
+    duration: resolveTaskDurationIso(stage),
+    endDate: endIso,
     isActive,
   };
 }
 
 export function mapMilestoneToView(milestone: Task): ProjectMilestoneView {
-  const end = addIsoDuration(milestone.start_date, milestone.duration);
   return {
     id: milestone.id,
     name: milestone.title,
     startDate: milestone.start_date,
-    endDate: end.toISOString(),
+    endDate: resolveTaskEndDateIso(milestone),
     description: milestone.description ?? undefined,
   };
 }
@@ -91,7 +91,7 @@ export function isTaskCompleted(status: TaskableStatus | string): boolean {
 
 export function isTaskOverdue(task: Task, now = new Date()): boolean {
   if (isTaskCompleted(task.status)) return false;
-  const due = addIsoDuration(task.start_date, task.duration);
+  const due = new Date(resolveTaskEndDateIso(task));
   return due < now;
 }
 
@@ -102,7 +102,7 @@ export function computeProjectStats(tasks: Task[], memberCount: number, fileCoun
 
   let nextDue: { date: string; label: string } | null = null;
   const upcoming = openTasks
-    .map((t) => ({ task: t, due: addIsoDuration(t.start_date, t.duration) }))
+    .map((t) => ({ task: t, due: new Date(resolveTaskEndDateIso(t)) }))
     .filter((x) => x.due >= new Date())
     .sort((a, b) => a.due.getTime() - b.due.getTime());
 

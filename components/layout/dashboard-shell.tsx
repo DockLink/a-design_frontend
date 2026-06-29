@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { NotificationsProvider } from "@/hooks/use-notifications";
 import { canAccessRoute, HOME_ROUTE, toSidebarRole } from "@/lib/navigation/sidebar-role";
 import { NAV_ROUTES } from "@/types/navigation";
 
@@ -38,28 +39,30 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
-      <Toaster position="top-right" richColors />
-      <AppSidebar />
-      <AppHeader />
-      <main
-        style={{
-          minHeight: "100vh",
-          paddingTop: "var(--ds-header-height)",
-          paddingBottom: isMobile ? "72px" : "40px",
-          marginLeft: isMobile ? 0 : "var(--ds-sidebar-width)",
-        }}
-      >
-        <div
+    <NotificationsProvider>
+      <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
+        <Toaster position="top-right" richColors />
+        <AppSidebar />
+        <AppHeader />
+        <main
           style={{
-            padding: "var(--ds-content-padding-y) var(--ds-content-padding-x)",
-            maxWidth: "var(--ds-content-max-width)",
-            margin: "0 auto",
+            minHeight: "100vh",
+            paddingTop: "var(--ds-header-height)",
+            paddingBottom: isMobile ? "72px" : "40px",
+            marginLeft: isMobile ? 0 : "var(--ds-sidebar-width)",
           }}
         >
-          {children}
-        </div>
-      </main>
-    </div>
+          <div
+            style={{
+              padding: "var(--ds-content-padding-y) var(--ds-content-padding-x)",
+              maxWidth: "var(--ds-content-max-width)",
+              margin: "0 auto",
+            }}
+          >
+            {children}
+          </div>
+        </main>
+      </div>
+    </NotificationsProvider>
   );
 }

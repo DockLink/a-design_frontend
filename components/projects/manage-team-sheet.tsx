@@ -36,7 +36,7 @@ export function ManageTeamSheet({
       : members.filter((m) => m.status === "ACTIVE" && m.role === PROJECT_LEAD_ROLE).map((m) => m.user_id)
   );
 
-  const { users: orgUsers, isLoading } = useUsers({ page: 1, limit: 200, status: "ACTIVE" });
+  const { users: orgUsers, isLoading } = useUsers({ page: 1, limit: 100, status: "ACTIVE" });
 
   const memberUsers = useMemo(() => {
     return draftIds

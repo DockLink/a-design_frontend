@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import type { CreateUserRequest } from "@/types/users-api";
 import type { UserRole } from "@/types/users";
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+const DEFAULT_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
   { value: "MEMBER", label: "Member" },
 ];
@@ -19,17 +19,25 @@ export function CreateUserSheet({
   onClose,
   onSubmit,
   isSubmitting,
+  roleOptions = DEFAULT_ROLE_OPTIONS,
+  defaultRole = "MEMBER",
+  title = "Create user",
+  subtitle = "Project lead is assigned per project, not here.",
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateUserRequest) => Promise<void>;
   isSubmitting?: boolean;
+  roleOptions?: { value: UserRole; label: string }[];
+  defaultRole?: UserRole;
+  title?: string;
+  subtitle?: string;
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("MEMBER");
+  const [role, setRole] = useState<UserRole>(defaultRole);
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = useMemo(
@@ -55,7 +63,7 @@ export function CreateUserSheet({
       setLastName("");
       setEmail("");
       setPassword("");
-      setRole("MEMBER");
+      setRole(defaultRole);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create user");
@@ -101,7 +109,7 @@ export function CreateUserSheet({
           }}
         >
           <span style={{ fontSize: "17px", fontWeight: 500, color: "#1A1410" }}>
-            Create user
+            {title}
           </span>
           <button
             onClick={onClose}
@@ -186,14 +194,14 @@ export function CreateUserSheet({
                 color: "#1A1410",
               }}
             >
-              {ROLE_OPTIONS.map((item) => (
+              {roleOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
               ))}
             </select>
             <p style={{ fontSize: "12px", color: "#9C8573", margin: 0 }}>
-              Project lead is assigned per project, not here.
+              {subtitle}
             </p>
           </div>
 

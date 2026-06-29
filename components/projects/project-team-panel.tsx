@@ -22,7 +22,7 @@ export function ProjectTeamPanel({
   canManage: boolean;
   onManage: () => void;
 }) {
-  const { users: orgUsers } = useUsers({ page: 1, limit: 200, status: "ACTIVE" });
+  const { users: orgUsers } = useUsers({ page: 1, limit: 100, status: "ACTIVE" });
   const active = members.filter((m) => m.status === "ACTIVE");
 
   return (

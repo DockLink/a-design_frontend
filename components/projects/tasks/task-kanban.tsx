@@ -16,18 +16,22 @@ import { TaskUserAvatar } from "./task-user-avatar";
 export function TaskKanbanCard({
   task,
   isDragging,
+  showAssigneeNames = false,
   onDragStart,
   onDragEnd,
   onClick,
 }: {
   task: ProjectTaskView;
   isDragging: boolean;
+  showAssigneeNames?: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   onClick: () => void;
 }) {
   const isOverdue = task.dueDate < new Date().toISOString().slice(0, 10) && task.status !== "done";
   const isDone = task.status === "done";
+  const visibleAssignees = task.assignees.slice(0, showAssigneeNames ? 3 : 4);
+  const overflow = task.assignees.length - visibleAssignees.length;
 
   return (
     <div
@@ -39,7 +43,7 @@ export function TaskKanbanCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[#FDFAF6] p-3 shadow-sm active:cursor-grabbing",
+        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[#FDFAF6] p-3 shadow-sm active:cursor-grabbing select-none",
         isDragging && "opacity-0"
       )}
     >
@@ -49,13 +53,41 @@ export function TaskKanbanCard({
           {task.title}
         </span>
       </div>
+
+      {/* Assignees row */}
       <div className="flex items-center justify-between pl-3.5">
-        <div className="flex items-center gap-1">
-          {task.assignees.slice(0, 2).map((a) => (
-            <TaskUserAvatar key={a.userId} initials={a.initials} size={18} />
-          ))}
-        </div>
-        <span className="text-[11px]" style={{ color: dueDateColor(task.dueDate, task.status), fontWeight: isOverdue ? 500 : 400 }}>
+        {showAssigneeNames ? (
+          <div className="flex flex-col gap-1 min-w-0">
+            {visibleAssignees.map((a) => (
+              <div key={a.userId} className="flex items-center gap-1.5 min-w-0">
+                <TaskUserAvatar initials={a.initials} size={16} />
+                <span className="truncate text-[11px] text-[#6B5744] font-medium leading-none">
+                  {a.name}
+                </span>
+              </div>
+            ))}
+            {overflow > 0 && (
+              <span className="text-[10px] text-[#9C8573] pl-5">+{overflow} more</span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            {visibleAssignees.map((a) => (
+              <div key={a.userId} title={a.name}>
+                <TaskUserAvatar initials={a.initials} size={18} />
+              </div>
+            ))}
+            {overflow > 0 && (
+              <span className="flex size-[18px] items-center justify-center rounded-full bg-[#F5E6D0] text-[9px] font-semibold text-[#D4A96A]">
+                +{overflow}
+              </span>
+            )}
+          </div>
+        )}
+        <span
+          className="ml-2 shrink-0 text-[11px]"
+          style={{ color: dueDateColor(task.dueDate, task.status), fontWeight: isOverdue ? 500 : 400 }}
+        >
           {formatBoardDate(task.dueDate)}
         </span>
       </div>
@@ -68,6 +100,7 @@ export function TaskKanbanColumn({
   tasks,
   draggedId,
   isOver,
+  showAssigneeNames,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -81,6 +114,7 @@ export function TaskKanbanColumn({
   tasks: ProjectTaskView[];
   draggedId: string | null;
   isOver: boolean;
+  showAssigneeNames?: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: () => void;
@@ -124,13 +158,16 @@ export function TaskKanbanColumn({
               key={task.id}
               task={task}
               isDragging={task.id === draggedId}
+              showAssigneeNames={showAssigneeNames}
               onDragStart={() => onCardDragStart(task.id)}
               onDragEnd={onCardDragEnd}
               onClick={() => onCardClick(task)}
             />
           ) : null
         )}
-        {tasks.length === 0 && <div className="flex h-20 items-center justify-center text-xs text-[#C4B5A5]">No tasks</div>}
+        {tasks.length === 0 && (
+          <div className="flex h-20 items-center justify-center text-xs text-[#C4B5A5]">No tasks</div>
+        )}
       </div>
     </div>
   );

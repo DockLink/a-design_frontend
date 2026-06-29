@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
-import { mapMilestoneToView, mapStageToView } from "@/lib/projects/map-stages";
+import { mapStageToView } from "@/lib/projects/map-stages";
 import type { CreateTaskRequest } from "@/types/tasks";
 
 export function StageManagementModal({
@@ -19,15 +19,13 @@ export function StageManagementModal({
     projectId,
     "STAGE"
   );
-  const { tasks: milestones } = useProjectTaskables(projectId, "MILESTONE");
 
   const [newStageName, setNewStageName] = useState("");
   const [newStageStart, setNewStageStart] = useState("");
   const [newStageDuration, setNewStageDuration] = useState("P30D");
   const [isSaving, setIsSaving] = useState(false);
 
-  const stageViews = stages.map((s) => mapStageToView(s));
-  const milestoneViews = milestones.map((m) => mapMilestoneToView(m));
+  const stageViews = useMemo(() => stages.map((s) => mapStageToView(s)), [stages]);
 
   async function handleCreateStage(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +56,7 @@ export function StageManagementModal({
     <>
       <div
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200 }}
       />
       <div
         style={{
@@ -67,11 +65,11 @@ export function StageManagementModal({
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: "min(560px, 92vw)",
-          maxHeight: "80vh",
+          maxHeight: "85vh",
           background: "#FFFFFF",
           borderRadius: "14px",
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-          zIndex: 51,
+          zIndex: 201,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -94,7 +92,8 @@ export function StageManagementModal({
 
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
           <div style={{ fontSize: "12px", color: "#8E8E93", marginBottom: "12px" }}>
-            V2 supports creating stages and milestones. Update/delete is not available yet.
+            Stages are the top-level phases of the project. Add milestones under each stage from
+            the &ldquo;Manage milestones&rdquo; window.
           </div>
 
           <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Stages ({stageViews.length})</div>
@@ -105,19 +104,6 @@ export function StageManagementModal({
               {stageViews.map((s) => (
                 <div key={s.id} style={{ fontSize: "13px", padding: "8px 0", borderBottom: "0.5px solid rgba(60,60,67,0.08)" }}>
                   {s.name} · {new Date(s.startDate).toLocaleDateString()}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Milestones ({milestoneViews.length})</div>
-          {milestoneViews.length === 0 ? (
-            <div style={{ fontSize: "13px", color: "#8E8E93", marginBottom: "16px" }}>No milestones yet.</div>
-          ) : (
-            <div style={{ marginBottom: "16px" }}>
-              {milestoneViews.map((m) => (
-                <div key={m.id} style={{ fontSize: "13px", padding: "8px 0", borderBottom: "0.5px solid rgba(60,60,67,0.08)" }}>
-                  {m.name}
                 </div>
               ))}
             </div>

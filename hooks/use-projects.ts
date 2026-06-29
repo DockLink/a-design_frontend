@@ -17,6 +17,7 @@ export function useProjects(params: ProjectsQueryParams = { page: 1, limit: 100 
   const [rawProjects, setRawProjects] = useState<Project[]>([]);
   const [meta, setMeta] = useState<ProjectsListResponse["meta"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
@@ -42,6 +43,28 @@ export function useProjects(params: ProjectsQueryParams = { page: 1, limit: 100 
     }
   }, [params.page, params.limit, params.status, params.search, params.clients]);
 
+  const deleteProject = useCallback(async (projectId: string) => {
+    setIsDeleting(true);
+    try {
+      await authApiClient<{ id: string; deleted: true }>(`/projects/${projectId}`, {
+        method: "DELETE",
+      });
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      setRawProjects((prev) => prev.filter((p) => p.id !== projectId));
+      setMeta((prev) =>
+        prev
+          ? {
+              ...prev,
+              total: Math.max(0, prev.total - 1),
+              totalPages: Math.ceil(Math.max(0, prev.total - 1) / (params.limit ?? 100)),
+            }
+          : prev
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [params.limit]);
+
   useEffect(() => {
     void fetchProjects();
   }, [fetchProjects]);
@@ -51,8 +74,10 @@ export function useProjects(params: ProjectsQueryParams = { page: 1, limit: 100 
     rawProjects,
     meta,
     isLoading,
+    isDeleting,
     error,
     refetch: fetchProjects,
+    deleteProject,
     activeProjects: projects.filter((p) => p.status === "Active"),
   };
 }

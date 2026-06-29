@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { authApiClient } from "@/lib/api/authenticated-client";
 import type { ProjectMember, ProjectWithMembers } from "@/types/projects";
 import type { CreateTaskRequest, Task, TaskableType, TasksListResponse, TasksQueryParams } from "@/types/tasks";
+import { withTaskEndDate } from "@/lib/tasks/create-task-payload";
 import { toTasksQueryString } from "@/lib/tasks/query-string";
 
 export function useProjectTaskables(
@@ -43,9 +44,10 @@ export function useProjectTaskables(
   }, [projectId, taskableType, limit, depth]);
 
   const createTaskable = useCallback(async (payload: CreateTaskRequest) => {
+    const normalized = withTaskEndDate(payload);
     const created = await authApiClient<Task>("/tasks", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalized),
     });
     setTasks((prev) => [...prev, created].sort((a, b) => a.order - b.order));
     return created;

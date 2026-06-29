@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
+import { withTaskEndDate } from "@/lib/tasks/create-task-payload";
 import type {
   CreateProjectRequest,
   CreateProjectStageInput,
@@ -40,7 +41,7 @@ export function useCreateProject() {
           };
           await authApiClient("/tasks", {
             method: "POST",
-            body: JSON.stringify(taskPayload),
+            body: JSON.stringify(withTaskEndDate(taskPayload)),
           });
         }
       }

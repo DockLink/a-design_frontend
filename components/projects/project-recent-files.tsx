@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { File, FileText, Image as ImageIcon } from "lucide-react";
+import Link from "next/link";
 
 import { projectTabRoute } from "@/types/navigation";
 import type { ProjectImage } from "@/types/projects";

@@ -20,6 +20,7 @@ import { ProjectRecentTasks } from "@/components/projects/project-recent-tasks";
 import { ProjectStatCard } from "@/components/projects/project-stat-card";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { StageManagementModal } from "@/components/projects/stage-management-modal";
+import { MilestoneManagementModal } from "@/components/projects/milestone-management-modal";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
 import { formatProjectStatus } from "@/lib/projects/duration";
@@ -44,6 +45,7 @@ export function ProjectOverview() {
 
   const [showManageTeam, setShowManageTeam] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showEditBrief, setShowEditBrief] = useState(false);
 
   const projectId = project!.id;
@@ -77,8 +79,8 @@ export function ProjectOverview() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
         <div>
-          <div style={{ fontSize: "12px", color: "#8E8E93", fontFamily: "ui-monospace, monospace", marginBottom: "4px" }}>
-            {project!.code}
+          <div style={{ fontSize: "11px", color: "#9C8573", fontFamily: "ui-monospace, monospace", marginBottom: "4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            Ref · {project!.code?.toUpperCase()}
           </div>
           <div style={{ fontSize: "26px", fontWeight: 600, color: "#1C1C1E" }}>{project!.name}</div>
         </div>
@@ -103,6 +105,22 @@ export function ProjectOverview() {
                 }}
               >
                 Manage Stages
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMilestoneModal(true)}
+                style={{
+                  height: "30px",
+                  padding: "0 12px",
+                  background: "rgba(212,169,106,0.12)",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  color: "#C9894A",
+                }}
+              >
+                Manage Milestones
               </button>
               <button
                 type="button"
@@ -252,6 +270,10 @@ export function ProjectOverview() {
 
       {showStageModal && (
         <StageManagementModal projectId={projectId} onClose={() => setShowStageModal(false)} />
+      )}
+
+      {showMilestoneModal && (
+        <MilestoneManagementModal projectId={projectId} onClose={() => setShowMilestoneModal(false)} />
       )}
 
       <EditProjectBriefSheet

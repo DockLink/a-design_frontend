@@ -16,7 +16,7 @@ export function getEffectiveProjectRole(
   members: ProjectMember[],
   orgSidebarRole: SidebarRole
 ): SidebarRole {
-  if (orgSidebarRole === "admin") return "admin";
+  if (orgSidebarRole === "superadmin" || orgSidebarRole === "admin") return "admin";
   if (!userId) return "member";
 
   const membership = members.find((m) => m.user_id === userId && m.status === "ACTIVE");

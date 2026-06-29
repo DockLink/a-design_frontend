@@ -11,7 +11,9 @@ import { UserPagination } from "@/components/user-management/user-pagination";
 import { UserPill } from "@/components/user-management/user-pill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
 import { useUsers } from "@/hooks/use-users";
+import { isSuperAdminRole } from "@/lib/navigation/sidebar-role";
 import type { User, UserRole, UserStatus } from "@/types/users";
 
 type FilterType = "ALL" | "ADMINS" | "MEMBERS" | "INACTIVE";
@@ -49,7 +51,15 @@ function formatLastActive(user: User): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+const SUPER_ADMIN_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "ADMIN", label: "Admin" },
+  { value: "TEAM_LEAD", label: "Team Lead" },
+  { value: "MEMBER", label: "Member" },
+];
+
 export function UserManagementPage() {
+  const { primaryRole } = useAuth();
+  const isSuperAdmin = isSuperAdminRole(primaryRole);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
@@ -382,6 +392,12 @@ export function UserManagementPage() {
         onClose={() => setShowCreateSheet(false)}
         onSubmit={handleCreateUser}
         isSubmitting={isMutating}
+        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : undefined}
+        subtitle={
+          isSuperAdmin
+            ? "Super admins can create administrators and team leads."
+            : "Project lead is assigned per project, not here."
+        }
       />
 
       <EditRoleSheet
@@ -390,6 +406,7 @@ export function UserManagementPage() {
         onClose={() => setEditRoleUser(null)}
         onSave={handleRoleSave}
         isSaving={isMutating}
+        roleOptions={isSuperAdmin ? SUPER_ADMIN_ROLE_OPTIONS : undefined}
       />
     </div>
   );

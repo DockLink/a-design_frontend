@@ -16,7 +16,9 @@ export interface Task {
   title: string;
   description?: string | null;
   start_date: string;
-  duration: string;
+  duration?: string;
+  end_date?: string | null;
+  durationHours?: string | number | null;
   status: TaskableStatus;
   taskableType: TaskableType;
   taskablePriority: TaskablePriority;
@@ -35,6 +37,7 @@ export interface TaskAssigneeRecord {
   assigned_by: string;
   assigned_at: string;
   status: string;
+  completed_at?: string | null;
   assignee?: {
     id: string;
     email?: string;
@@ -76,12 +79,24 @@ export interface CreateTaskRequest {
   project_id: string;
   title: string;
   start_date: string;
-  duration: string;
+  end_date?: string;
+  duration?: string;
   code?: string;
   parent_taskable_id?: string;
   taskable_type?: TaskableType;
   taskable_priority?: TaskablePriority;
   order?: number;
+  description?: string;
+  status?: TaskableStatus;
+}
+
+export interface TaskUpdateRequest {
+  code?: string;
+  parent_taskable_id?: string;
+  taskable_type?: TaskableType;
+  taskable_priority?: TaskablePriority;
+  order?: number;
+  title?: string;
   description?: string;
   status?: TaskableStatus;
 }

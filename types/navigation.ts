@@ -1,6 +1,7 @@
 export const NAV_ROUTES = {
   login: "/login",
   adminDashboard: "/dashboard/admin",
+  superAdminDashboard: "/dashboard/super-admin",
   leadDashboard: "/dashboard/lead",
   memberDashboard: "/dashboard/member",
   projects: "/projects",
@@ -37,6 +38,11 @@ export const PROJECT_TABS: { key: ProjectTab; label: string; adminOnly?: boolean
 ];
 
 export type NavRoute = (typeof NAV_ROUTES)[keyof typeof NAV_ROUTES];
+
+/** Super Admin only */
+export const SUPER_ADMIN_ONLY_ROUTES = [
+  NAV_ROUTES.superAdminDashboard,
+] as const;
 
 /** Admin + Super Admin only */
 export const ADMIN_ONLY_ROUTES = [
