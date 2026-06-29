@@ -1,6 +1,6 @@
 import { holdRequestStatusLabel } from "@/lib/hold-requests/display";
 import type { TaskableHoldRequest } from "@/types/hold-requests";
-import type { AppNotification } from "@/types/notifications";
+import type { HoldAppNotification } from "@/types/notifications";
 
 function requesterName(req: TaskableHoldRequest): string {
   const u = req.requestedBy;
@@ -12,7 +12,7 @@ function requesterName(req: TaskableHoldRequest): string {
 export function holdRequestToNotification(
   req: TaskableHoldRequest,
   canProcess: boolean
-): AppNotification {
+): HoldAppNotification {
   const name = requesterName(req);
   const taskTitle = req.task?.title?.trim() || "a task";
   const actionable = canProcess && req.status === "PENDING";

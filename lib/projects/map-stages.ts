@@ -9,6 +9,8 @@ export interface ProjectStageView {
   duration: string;
   endDate: string;
   isActive: boolean;
+  status: TaskableStatus;
+  isCompleted: boolean;
 }
 
 export interface ProjectMilestoneView {
@@ -18,13 +20,16 @@ export interface ProjectMilestoneView {
   startDate: string;
   endDate: string;
   description?: string;
+  status: TaskableStatus;
+  isCompleted: boolean;
 }
 
 export function mapStageToView(stage: Task, now = new Date()): ProjectStageView {
   const endIso = resolveTaskEndDateIso(stage);
   const end = new Date(endIso);
   const start = new Date(stage.start_date);
-  const isActive = start <= now && end >= now;
+  const isCompleted = stage.status === "COMPLETED";
+  const isActive = !isCompleted && start <= now && end >= now;
 
   return {
     id: stage.id,
@@ -34,6 +39,8 @@ export function mapStageToView(stage: Task, now = new Date()): ProjectStageView 
     duration: resolveTaskDurationIso(stage),
     endDate: endIso,
     isActive,
+    status: stage.status,
+    isCompleted,
   };
 }
 
@@ -44,6 +51,8 @@ export function mapMilestoneToView(milestone: Task): ProjectMilestoneView {
     startDate: milestone.start_date,
     endDate: resolveTaskEndDateIso(milestone),
     description: milestone.description ?? undefined,
+    status: milestone.status,
+    isCompleted: milestone.status === "COMPLETED",
   };
 }
 

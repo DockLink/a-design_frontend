@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import {
   BOARD_COLUMNS,
@@ -13,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 import { TaskUserAvatar } from "./task-user-avatar";
 
-export function TaskKanbanCard({
+export const TaskKanbanCard = memo(function TaskKanbanCard({
   task,
   isDragging,
   showAssigneeNames = false,
@@ -38,13 +40,15 @@ export function TaskKanbanCard({
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
-        onDragStart();
+        // Delay so the browser captures the drag ghost at full opacity before React
+        // re-renders the card as a faded placeholder.
+        requestAnimationFrame(() => onDragStart());
       }}
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[#FDFAF6] p-3 shadow-sm active:cursor-grabbing select-none",
-        isDragging && "opacity-0"
+        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[#FDFAF6] p-3 shadow-sm active:cursor-grabbing select-none transition-opacity",
+        isDragging && "opacity-20 pointer-events-none border-dashed"
       )}
     >
       <div className="mb-2.5 flex items-start gap-2">
@@ -93,14 +97,15 @@ export function TaskKanbanCard({
       </div>
     </div>
   );
-}
+});
 
-export function TaskKanbanColumn({
+export const TaskKanbanColumn = memo(function TaskKanbanColumn({
   columnId,
   tasks,
   draggedId,
   isOver,
   showAssigneeNames,
+  onDragEnter,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -115,6 +120,7 @@ export function TaskKanbanColumn({
   draggedId: string | null;
   isOver: boolean;
   showAssigneeNames?: boolean;
+  onDragEnter?: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: () => void;
@@ -141,6 +147,7 @@ export function TaskKanbanColumn({
         )}
       </div>
       <div
+        onDragEnter={onDragEnter}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={(e) => {
@@ -152,23 +159,21 @@ export function TaskKanbanColumn({
           isOver ? "border border-dashed border-[#D4A96A]/60 bg-[#D4A96A]/5" : "bg-[#F5EFE6]/45"
         )}
       >
-        {tasks.map((task) =>
-          task.id !== draggedId ? (
-            <TaskKanbanCard
-              key={task.id}
-              task={task}
-              isDragging={task.id === draggedId}
-              showAssigneeNames={showAssigneeNames}
-              onDragStart={() => onCardDragStart(task.id)}
-              onDragEnd={onCardDragEnd}
-              onClick={() => onCardClick(task)}
-            />
-          ) : null
-        )}
+        {tasks.map((task) => (
+          <TaskKanbanCard
+            key={task.id}
+            task={task}
+            isDragging={task.id === draggedId}
+            showAssigneeNames={showAssigneeNames}
+            onDragStart={() => onCardDragStart(task.id)}
+            onDragEnd={onCardDragEnd}
+            onClick={() => onCardClick(task)}
+          />
+        ))}
         {tasks.length === 0 && (
           <div className="flex h-20 items-center justify-center text-xs text-[#C4B5A5]">No tasks</div>
         )}
       </div>
     </div>
   );
-}
+});

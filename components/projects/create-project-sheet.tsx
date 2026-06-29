@@ -15,7 +15,6 @@ import {
   defaultStageOptions,
   type ProjectStageOption,
 } from "@/lib/projects/default-stages";
-import { DURATION_UNIT_LABELS, durationToEndDate, type DurationUnit } from "@/lib/projects/duration-input";
 import { MemberSearchSelect } from "@/components/projects/member-search-select";
 
 export function CreateProjectSheet({
@@ -39,8 +38,6 @@ export function CreateProjectSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [durationValue, setDurationValue] = useState("12");
-  const [durationUnit, setDurationUnit] = useState<DurationUnit>("months");
   const [location, setLocation] = useState("");
   const [clientName, setClientName] = useState("");
   const [projectLeadId, setProjectLeadId] = useState("");
@@ -58,8 +55,6 @@ export function CreateProjectSheet({
     setName("");
     setDescription("");
     setStartDate("");
-    setDurationValue("12");
-    setDurationUnit("months");
     setLocation("");
     setClientName("");
     setProjectLeadId("");
@@ -78,6 +73,15 @@ export function CreateProjectSheet({
   }, [thumbnailPreview]);
 
   const selectedCount = selectedStageIds.size;
+  const projectStartDay = startDate;
+  // The project end is driven by the stages — it's the latest stage end date.
+  const projectEndDay = (() => {
+    const ends = stageOptions
+      .filter((s) => selectedStageIds.has(s.id) && s.endDate)
+      .map((s) => s.endDate as string);
+    if (ends.length === 0) return undefined;
+    return ends.reduce((max, d) => (d > max ? d : max));
+  })();
 
   if (!open) return null;
 
@@ -112,6 +116,12 @@ export function CreateProjectSheet({
     });
   }
 
+  function updateStageDate(id: string, field: "startDate" | "endDate", value: string) {
+    setStageOptions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+    );
+  }
+
   function handleThumbnailChange(file: File | null) {
     if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     setThumbnailFile(file);
@@ -124,17 +134,35 @@ export function CreateProjectSheet({
       toast.error("Project name, client name, and start date are required");
       return;
     }
-    const durationAmount = Number(durationValue);
-    if (!Number.isFinite(durationAmount) || durationAmount < 1) {
-      toast.error("Enter a valid expected duration");
-      return;
-    }
     if (selectedCount === 0) {
       toast.error("Select at least one project stage");
       return;
     }
 
-    const stages = buildStagesFromOptions(startDate, stageOptions, selectedStageIds);
+    const selectedStages = stageOptions.filter((s) => selectedStageIds.has(s.id));
+    let latestEndDay = "";
+    for (const stage of selectedStages) {
+      if (!stage.startDate || !stage.endDate) {
+        toast.error(`Set a start and end date for the "${stage.name}" stage`);
+        return;
+      }
+      if (stage.startDate < startDate) {
+        toast.error(
+          `"${stage.name}" stage can't start before the project start (${new Date(startDate).toLocaleDateString()})`
+        );
+        return;
+      }
+      if (stage.endDate < stage.startDate) {
+        toast.error(`"${stage.name}" stage end date must be on or after its start date`);
+        return;
+      }
+      if (stage.endDate > latestEndDay) latestEndDay = stage.endDate;
+    }
+
+    // The project end is the latest stage end date.
+    const projectEndIso = new Date(`${latestEndDay}T23:59:59`).toISOString();
+
+    const stages = buildStagesFromOptions(startDate, stageOptions, selectedStageIds, projectEndIso);
 
     setIsSubmitting(true);
     try {
@@ -151,7 +179,7 @@ export function CreateProjectSheet({
           name: name.trim(),
           description: description.trim() || undefined,
           start_date: new Date(startDate).toISOString(),
-          end_date: durationToEndDate(startDate, durationAmount, durationUnit),
+          end_date: projectEndIso,
           location: location.trim() || undefined,
           images: imageIds,
           client: { name: clientName.trim() },
@@ -241,39 +269,9 @@ export function CreateProjectSheet({
               className="bg-[#F5EFE6] h-10"
               required
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Expected duration</Label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              <Input
-                id="proj-duration"
-                type="number"
-                min={1}
-                value={durationValue}
-                onChange={(e) => setDurationValue(e.target.value)}
-                className="bg-[#F5EFE6] h-10"
-                required
-              />
-              <select
-                value={durationUnit}
-                onChange={(e) => setDurationUnit(e.target.value as DurationUnit)}
-                style={{
-                  height: "40px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(90,60,30,0.15)",
-                  background: "#F5EFE6",
-                  padding: "0 12px",
-                  fontSize: "var(--ds-text-footnote)",
-                }}
-              >
-                {(Object.keys(DURATION_UNIT_LABELS) as DurationUnit[]).map((unit) => (
-                  <option key={unit} value={unit}>
-                    {DURATION_UNIT_LABELS[unit]}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <p style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93", lineHeight: 1.4 }}>
+              The project end date is set automatically from the last stage&apos;s end date.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -421,6 +419,59 @@ export function CreateProjectSheet({
               })}
             </div>
           </div>
+
+          {selectedCount > 0 && (
+            <div>
+              <Label>Stage timeline</Label>
+              <p style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93", lineHeight: 1.4, margin: "4px 0 10px" }}>
+                Set a start and end date for each stage.{projectStartDay
+                  ? ` Stages can't start before the project start (${new Date(projectStartDay).toLocaleDateString()}).`
+                  : " Set the project start date first."}
+                {projectEndDay && ` Project end: ${new Date(projectEndDay).toLocaleDateString()}.`}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {stageOptions
+                  .filter((s) => selectedStageIds.has(s.id))
+                  .map((stage) => (
+                    <div
+                      key={stage.id}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "10px",
+                        border: "1px solid rgba(90,60,30,0.12)",
+                        background: "#FFFFFF",
+                      }}
+                    >
+                      <div style={{ fontSize: "var(--ds-text-footnote)", fontWeight: 500, color: "#5A3C1E", marginBottom: "8px" }}>
+                        {stage.name}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <div>
+                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>Start</span>
+                          <Input
+                            type="date"
+                            value={stage.startDate ?? ""}
+                            min={projectStartDay}
+                            onChange={(e) => updateStageDate(stage.id, "startDate", e.target.value)}
+                            className="bg-[#F5EFE6] h-9 mt-1"
+                          />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>End</span>
+                          <Input
+                            type="date"
+                            value={stage.endDate ?? ""}
+                            min={stage.startDate ?? projectStartDay}
+                            onChange={(e) => updateStageDate(stage.id, "endDate", e.target.value)}
+                            className="bg-[#F5EFE6] h-9 mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Project thumbnail (optional)</Label>

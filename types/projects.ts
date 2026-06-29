@@ -131,7 +131,9 @@ export interface ProjectMemberAssignItem {
 export interface CreateProjectStageInput {
   name: string;
   start_date: string;
-  duration: string;
+  /** Either an explicit end date or a duration must be provided. */
+  end_date?: string;
+  duration?: string;
   order: number;
 }
 

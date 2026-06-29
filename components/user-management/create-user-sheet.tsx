@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import type { CreateUserRequest } from "@/types/users-api";
 import type { UserRole } from "@/types/users";
 
+// Only super admins can mint admins; the safe default offers members only.
 const DEFAULT_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "ADMIN", label: "Admin" },
   { value: "MEMBER", label: "Member" },
 ];
 
@@ -41,8 +41,8 @@ export function CreateUserSheet({
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = useMemo(
-    () => firstName.trim() && lastName.trim() && email.trim() && password.trim(),
-    [email, firstName, lastName, password]
+    () => firstName.trim() && email.trim() && password.trim(),
+    [email, firstName, password]
   );
 
   if (!open) return null;
@@ -54,7 +54,7 @@ export function CreateUserSheet({
     try {
       await onSubmit({
         first_name: firstName.trim(),
-        last_name: lastName.trim(),
+        last_name: lastName.trim() || undefined,
         email: email.trim(),
         password,
         role,
@@ -142,7 +142,7 @@ export function CreateUserSheet({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-last-name">Last name</Label>
+              <Label htmlFor="create-last-name">Last name (optional)</Label>
               <Input
                 id="create-last-name"
                 value={lastName}

@@ -93,6 +93,27 @@ export function useUsers(params: UsersQueryParams = { page: 1, limit: 20 }) {
     [updateUser]
   );
 
+  const deleteUser = useCallback(async (userId: string) => {
+    setIsMutating(true);
+    try {
+      await authApiClient<{ id: string; deleted: true }>(`/users/${userId}`, {
+        method: "DELETE",
+      });
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setMeta((prev) =>
+        prev
+          ? {
+              ...prev,
+              total: Math.max(0, prev.total - 1),
+              totalPages: Math.ceil(Math.max(0, prev.total - 1) / limit),
+            }
+          : prev
+      );
+    } finally {
+      setIsMutating(false);
+    }
+  }, [limit]);
+
   const createUser = useCallback(async (payload: CreateUserRequest) => {
     setIsMutating(true);
     try {
@@ -127,5 +148,6 @@ export function useUsers(params: UsersQueryParams = { page: 1, limit: 20 }) {
     updateUser,
     setUserRole,
     setUserStatus,
+    deleteUser,
   };
 }

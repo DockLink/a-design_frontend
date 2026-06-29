@@ -58,12 +58,22 @@ export function TimelineAddMilestoneDialog({
     setCompleted(false);
   }, [open, stages]);
 
+  const selectedStage = stages.find((s) => s.id === stageId);
+  const stageStart = selectedStage ? selectedStage.startDate.slice(0, 10) : undefined;
+  const stageEnd = selectedStage ? selectedStage.endDate.slice(0, 10) : undefined;
+
   const canSubmit = Boolean(title.trim() && stageId && startDate && endDate);
 
   async function handleSave() {
     if (!canSubmit) return;
     if (new Date(endDate) < new Date(startDate)) {
       toast.error("End date must be on or after the start date");
+      return;
+    }
+    if (stageStart && stageEnd && (startDate < stageStart || endDate > stageEnd)) {
+      toast.error(
+        `Milestone must fall within the stage period (${new Date(stageStart).toLocaleDateString()} – ${new Date(stageEnd).toLocaleDateString()})`
+      );
       return;
     }
     setIsSaving(true);
@@ -151,6 +161,8 @@ export function TimelineAddMilestoneDialog({
                   <Input
                     type="date"
                     value={startDate}
+                    min={stageStart}
+                    max={stageEnd}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
                   />
@@ -160,11 +172,18 @@ export function TimelineAddMilestoneDialog({
                   <Input
                     type="date"
                     value={endDate}
+                    min={startDate || stageStart}
+                    max={stageEnd}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
                   />
                 </div>
               </div>
+              {stageStart && stageEnd && (
+                <p className="text-[11px] text-[#9C8573]">
+                  Must fall within the stage period: {new Date(stageStart).toLocaleDateString()} – {new Date(stageEnd).toLocaleDateString()}
+                </p>
+              )}
 
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-[#6B5744]">Mark as completed</span>

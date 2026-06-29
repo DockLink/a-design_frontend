@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Dancing_Script, Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 
 import { AuthHydration } from "@/components/auth/auth-hydration";
+import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,8 +38,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${dancingScript.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AuthHydration />
-        {children}
+        <QueryProvider>
+          <AuthHydration />
+          {children}
+          <Toaster position="top-right" richColors />
+        </QueryProvider>
       </body>
     </html>
   );

@@ -41,6 +41,8 @@ export interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  /** Exchanges the refresh token for a fresh access token. Returns the new token, or null if the session is unrecoverable. */
+  refreshSession: () => Promise<string | null>;
   hasRole: (...roles: UserRole[]) => boolean;
   primaryRole: UserRole | null;
 }

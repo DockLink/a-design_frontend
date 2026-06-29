@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,16 +9,31 @@ import { useProjectTimeline } from "@/hooks/use-project-timeline";
 import { TimelineAddMilestoneDialog } from "./timeline-add-milestone-dialog";
 import { TimelineGantt } from "./timeline-gantt";
 import { TimelineList } from "./timeline-list";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type ViewMode = "gantt" | "list";
 
 export function ProjectTimelineBoard({ projectId }: { projectId: string }) {
-  const { stages, groups, chartBounds, canManage, isLoading, error, createMilestone } =
+  const { stages, groups, chartBounds, canManage, isLoading, error, createMilestone, refetch } =
     useProjectTimeline(projectId);
 
   const [viewMode, setViewMode] = useState<ViewMode>("gantt");
   const [collapsedStages, setCollapsedStages] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
+
+  // Refresh timeline when the tab regains focus (e.g. after editing tasks elsewhere).
+  useEffect(() => {
+    function onFocus() {
+      void refetch();
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") void refetch();
+    });
+    return () => {
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [refetch]);
 
   function toggleStage(stageId: string) {
     setCollapsedStages((prev) => {
@@ -64,10 +79,8 @@ export function ProjectTimelineBoard({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <div className="min-h-[calc(100vh-140px)] bg-[#EDE3D4] px-7 py-5">
-        {isLoading && (
-          <div className="py-16 text-center text-sm text-[#9C8573]">Loading timeline…</div>
-        )}
+      <div className="flex min-h-[calc(100vh-140px)] flex-col bg-[#EDE3D4] px-7 py-5">
+        {isLoading && <LoadingSpinner label="Loading timeline…" />}
         {error && !isLoading && (
           <div className="py-8 text-center text-sm text-red-700">{error}</div>
         )}

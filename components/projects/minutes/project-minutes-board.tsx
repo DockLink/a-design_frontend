@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Mic, Plus, Trash2, Upload, X as XIcon } from "lucide-react";
+import { Check, ChevronDown, Mic, Plus, Trash2, Upload, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectMeetingMinutes } from "@/hooks/use-project-meeting-minutes";
+import { useProjectMembers } from "@/hooks/use-project-members";
 import { getUserDisplayName } from "@/lib/user/display";
 import { useAuthStore } from "@/stores/auth-store";
 import type { MeetingActionItem, MeetingMinute } from "@/types/meeting-minutes";
@@ -65,13 +66,28 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
   const currentUser = useAuthStore((s) => s.session?.user ?? null);
   const currentUserName = currentUser ? getUserDisplayName(currentUser) : "";
 
+  const { members } = useProjectMembers();
+  const memberNames = useMemo(() => {
+    const names = members
+      .filter((m) => m.status === "ACTIVE")
+      .map((m) => {
+        const a = m.assignee;
+        if (!a) return "";
+        const first = a.firstName ?? a.first_name ?? "";
+        const last = a.lastName ?? a.last_name ?? "";
+        return [first, last].filter(Boolean).join(" ").trim() || a.email || "";
+      })
+      .filter(Boolean);
+    return Array.from(new Set(names));
+  }, [members]);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("detail");
 
   // Editor state
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
-  const [editAttendees, setEditAttendees] = useState("");
+  const [editAttendees, setEditAttendees] = useState<string[]>([]);
   const [editBody, setEditBody] = useState("");
   const [editActions, setEditActions] = useState<EditAction[]>([]);
   const [editAudio, setEditAudio] = useState<EditAudio | null>(null);
@@ -97,7 +113,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
   function openCreate() {
     setEditTitle("");
     setEditDate(new Date().toISOString().slice(0, 10));
-    setEditAttendees(currentUserName);
+    setEditAttendees(currentUserName ? [currentUserName] : []);
     setEditBody("");
     setEditActions([]);
     setEditAudio(null);
@@ -107,7 +123,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
   function openEdit(m: MeetingMinute) {
     setEditTitle(m.title);
     setEditDate(toDateInput(m.meetingDate));
-    setEditAttendees(m.attendees.join(", "));
+    setEditAttendees(m.attendees.filter(Boolean));
     setEditBody(m.body ?? "");
     setEditActions(
       (m.actionItems ?? []).map((a, i) => ({
@@ -128,10 +144,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
 
   async function publish() {
     if (isSaving) return;
-    const attendeeList = editAttendees
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const attendeeList = editAttendees.map((s) => s.trim()).filter(Boolean);
 
     if (!editTitle.trim()) {
       toast.error("Please enter a meeting title");
@@ -361,6 +374,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
               title={editTitle}
               date={editDate}
               attendees={editAttendees}
+              memberOptions={memberNames}
               body={editBody}
               actions={editActions}
               audio={editAudio}
@@ -612,7 +626,153 @@ function MetaPill({ label, value }: { label: string; value: string }) {
 }
 
 function Divider() {
-  return <div style={{ height: "1px", background: "rgba(90,60,30,0.12)", marginBottom: "20px" }} />;
+  return <div style={{ height: "1px", background: "rgba(90,60,30,0.12)", marginBottom: "14px" }} />;
+}
+
+/* ── Attendees multi-select (project members) ────────────── */
+
+function AttendeesSelect({
+  value,
+  options,
+  onChange,
+  inputStyle,
+}: {
+  value: string[];
+  options: string[];
+  onChange: (next: string[]) => void;
+  inputStyle: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+
+  function toggle(name: string) {
+    if (value.includes(name)) onChange(value.filter((n) => n !== name));
+    else onChange([...value, name]);
+  }
+
+  // Already-selected names that aren't in the member list (e.g. legacy / external).
+  const extraSelected = value.filter((n) => !options.includes(n));
+  const allOptions = [...options, ...extraSelected];
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          ...inputStyle,
+          display: "flex",
+          alignItems: "center",
+          gap: "5px",
+          flexWrap: "wrap",
+          minHeight: "36px",
+          height: "auto",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        {value.length === 0 ? (
+          <span style={{ color: "#9C8573" }}>Select attendees…</span>
+        ) : (
+          value.map((name) => (
+            <span
+              key={name}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                background: "#F5E6D0",
+                color: "#6B5744",
+                borderRadius: "6px",
+                padding: "2px 6px",
+                fontSize: "12px",
+              }}
+            >
+              {name}
+              <XIcon
+                size={11}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange(value.filter((n) => n !== name));
+                }}
+              />
+            </span>
+          ))
+        )}
+        <ChevronDown size={14} color="#9C8573" style={{ marginLeft: "auto", flexShrink: 0 }} />
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              right: 0,
+              zIndex: 41,
+              background: "#FDFAF6",
+              border: "1px solid rgba(90,60,30,0.18)",
+              borderRadius: "8px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              maxHeight: "220px",
+              overflowY: "auto",
+              padding: "4px",
+            }}
+          >
+            {allOptions.length === 0 ? (
+              <div style={{ padding: "10px 12px", fontSize: "12px", color: "#9C8573" }}>
+                No team members assigned to this project.
+              </div>
+            ) : (
+              allOptions.map((name) => {
+                const checked = value.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggle(name)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      background: checked ? "#F5EFE6" : "transparent",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "8px 10px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontSize: "13px",
+                      color: "#1A1410",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        borderRadius: "4px",
+                        border: `2px solid ${checked ? "#D4A96A" : "rgba(90,60,30,0.25)"}`,
+                        background: checked ? "#D4A96A" : "transparent",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {checked && <Check size={10} color="white" strokeWidth={3} />}
+                    </span>
+                    {name}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 /* ── Editor view ─────────────────────────────────────────── */
@@ -621,6 +781,7 @@ function EditorView({
   title,
   date,
   attendees,
+  memberOptions,
   body,
   actions,
   audio,
@@ -641,7 +802,8 @@ function EditorView({
 }: {
   title: string;
   date: string;
-  attendees: string;
+  attendees: string[];
+  memberOptions: string[];
   body: string;
   actions: EditAction[];
   audio: EditAudio | null;
@@ -650,7 +812,7 @@ function EditorView({
   isCreate: boolean;
   onTitleChange: (v: string) => void;
   onDateChange: (v: string) => void;
-  onAttendeesChange: (v: string) => void;
+  onAttendeesChange: (v: string[]) => void;
   onBodyChange: (v: string) => void;
   onAddAction: () => void;
   onUpdateAction: (id: string, field: "text" | "assignee", value: string) => void;
@@ -675,33 +837,33 @@ function EditorView({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px", maxWidth: "720px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", maxWidth: "720px" }}>
         <input
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Meeting title"
-          style={{ ...inputBase, fontSize: "22px", padding: "10px 14px", marginBottom: "16px" }}
+          style={{ ...inputBase, fontSize: "18px", padding: "9px 12px", marginBottom: "12px" }}
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "12px", marginBottom: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "12px", marginBottom: "14px" }}>
           <div>
             <label style={labelStyle}>Date</label>
             <input type="date" value={date} onChange={(e) => onDateChange(e.target.value)} style={inputBase} />
           </div>
           <div>
             <label style={labelStyle}>Attendees</label>
-            <input
+            <AttendeesSelect
               value={attendees}
-              onChange={(e) => onAttendeesChange(e.target.value)}
-              placeholder="Comma-separated names"
-              style={inputBase}
+              options={memberOptions}
+              onChange={onAttendeesChange}
+              inputStyle={inputBase}
             />
           </div>
         </div>
 
         <Divider />
 
-        <div style={{ marginBottom: "20px" }}>
+        <div style={{ marginBottom: "14px" }}>
           <label style={{ ...labelStyle, marginBottom: "6px" }}>Audio Recording (Optional)</label>
 
           {!audio ? (
@@ -726,7 +888,7 @@ function EditorView({
                   justifyContent: "center",
                   gap: "8px",
                   width: "100%",
-                  height: "80px",
+                  height: "60px",
                   background: "#FDFAF6",
                   border: "2px dashed rgba(90,60,30,0.25)",
                   borderRadius: "12px",
@@ -805,8 +967,8 @@ function EditorView({
           value={body}
           onChange={(e) => onBodyChange(e.target.value)}
           placeholder="Write meeting notes here or leave blank if using audio only…"
-          rows={10}
-          style={{ ...inputBase, resize: "vertical", lineHeight: 1.7, marginBottom: "20px" }}
+          rows={5}
+          style={{ ...inputBase, resize: "vertical", lineHeight: 1.6, marginBottom: "14px" }}
         />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { User, UserRole } from "@/types/users";
 
+// Only super admins can assign admin roles; the safe default is members only.
 const DEFAULT_ASSIGNABLE_ROLES: { value: UserRole; label: string }[] = [
-  { value: "ADMIN", label: "Admin" },
   { value: "MEMBER", label: "Member" },
 ];
 

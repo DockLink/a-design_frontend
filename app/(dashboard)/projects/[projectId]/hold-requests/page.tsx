@@ -30,6 +30,9 @@ function HoldRequestCard({
   onProcess: (payload: ProcessHoldRequestPayload) => Promise<void>;
 }) {
   const [remark, setRemark] = useState("");
+  const [adjustDates, setAdjustDates] = useState(false);
+  const [adjStart, setAdjStart] = useState(req.requestedStartDate.slice(0, 10));
+  const [adjEnd, setAdjEnd] = useState(req.requestedEndDate.slice(0, 10));
   const style = holdRequestStatusStyle(req.status);
 
   const isPending = req.status === "PENDING";
@@ -39,11 +42,22 @@ function HoldRequestCard({
 
   async function handle(action: ProcessHoldRequestPayload["action"]) {
     try {
-      await onProcess({
+      const payload: ProcessHoldRequestPayload = {
         taskableHoldRequestId: req.id,
         action,
         reviewRemark: remark.trim() || undefined,
-      });
+      };
+      // When approving with adjusted dates, send the revised window. The backend
+      // extends the task and grows the parent milestone/stage if it spills past.
+      if (action === "approve" && adjustDates) {
+        if (new Date(adjEnd) < new Date(adjStart)) {
+          toast.error("Adjusted end date must be on or after the start date");
+          return;
+        }
+        payload.approvedStartDate = new Date(`${adjStart}T00:00:00`).toISOString();
+        payload.approvedEndDate = new Date(`${adjEnd}T23:59:59`).toISOString();
+      }
+      await onProcess(payload);
       toast.success(
         action === "approve"
           ? "Hold request approved — task timeline extended"
@@ -52,6 +66,7 @@ function HoldRequestCard({
           : "Task resumed — unused hold time released"
       );
       setRemark("");
+      setAdjustDates(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to process request");
     }
@@ -111,6 +126,43 @@ function HoldRequestCard({
             onChange={(e) => setRemark(e.target.value)}
             className="mb-2 w-full rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-3 py-1.5 text-xs placeholder-[#C4B5A5] outline-none"
           />
+
+          {canApproveReject && (
+            <div className="mb-2">
+              <label className="flex items-center gap-2 text-xs text-[#6B5744]">
+                <input
+                  type="checkbox"
+                  checked={adjustDates}
+                  onChange={(e) => setAdjustDates(e.target.checked)}
+                />
+                Adjust the approved timeline
+              </label>
+              {adjustDates && (
+                <div className="mt-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={adjStart}
+                      onChange={(e) => setAdjStart(e.target.value)}
+                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-2 py-1.5 text-xs outline-none"
+                    />
+                    <input
+                      type="date"
+                      value={adjEnd}
+                      min={adjStart}
+                      onChange={(e) => setAdjEnd(e.target.value)}
+                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-2 py-1.5 text-xs outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#9C8573]">
+                    The task end date extends by this hold. If it runs past the milestone or
+                    stage, those are extended automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2">
             {canApproveReject && (
               <>

@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Toaster } from "sonner";
-
+import { ActivityTracker } from "@/components/auth/activity-tracker";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,8 +39,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <NotificationsProvider>
+      <ActivityTracker />
       <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
-        <Toaster position="top-right" richColors />
         <AppSidebar />
         <AppHeader />
         <main

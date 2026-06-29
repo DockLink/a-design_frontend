@@ -61,6 +61,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     getDownloadUrl,
     getVersionHistory,
     deleteFile,
+    renameFile,
     createShareLink,
     revokeShareLink,
   } = useProjectFiles(projectId);
@@ -94,12 +95,27 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   async function handleUploadNewVersion(file: ProjectFile, picked: File) {
     setUploadingVersionId(file.id);
     try {
-      await uploadFile(file.folderPath, picked);
-      toast.success(`New version of "${file.fileName}" uploaded`);
+      // Keep the uploaded file's own name; target the specific file being
+      // replaced via its id so the backend supersedes the right record.
+      await uploadFile(file.folderPath, picked, file.id);
+      toast.success(`New version uploaded (replaced "${file.fileName}")`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploadingVersionId(null);
+    }
+  }
+
+  async function handleRename(file: ProjectFile) {
+    const next = window.prompt("Rename file", file.fileName);
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === file.fileName) return;
+    try {
+      await renameFile(file.id, trimmed);
+      toast.success("File renamed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Rename failed");
     }
   }
 
@@ -261,9 +277,11 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               folderPath={currentFolderPath}
               isVersioned={isVersioned}
               canDelete={isAdmin || canManage}
+              canRename={isAdmin || canManage}
               onDownload={handleDownload}
               onShare={(f) => setShareTarget(f)}
               onDelete={handleDelete}
+              onRename={handleRename}
               onVersionHistory={(f) => setVersionTarget(f)}
               onUploadNewVersion={handleUploadNewVersion}
             />

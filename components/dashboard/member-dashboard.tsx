@@ -65,10 +65,12 @@ export function MemberDashboard({
   const { memberProjects, projectIds, isLoading: projectsLoading, error: projectsError } =
     useMemberProjects({ page: 1, limit: projectsLimit, status: "ACTIVE" });
 
+  // NOTE: do NOT filter by status here. Tasks use workflow statuses
+  // (TODO / IN_PROGRESS / COMPLETED / …), never the literal "ACTIVE", so a
+  // status filter would silently hide every task.
   const { tasks: apiTasks, isLoading: tasksLoading, error: tasksError } = useTasks({
     page: 1,
     limit: tasksLimit,
-    status: "ACTIVE",
     taskable_type: "TASK",
     depth: 1,
     projects: projectIds.length ? projectIds : undefined,

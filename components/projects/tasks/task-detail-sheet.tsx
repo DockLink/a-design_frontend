@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, PauseCircle, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, PauseCircle, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
   PRIORITY_DOT,
   dueDateColor,
   formatBoardDate,
+  type BoardColumnId,
   type ProjectTaskView,
 } from "@/lib/tasks/task-board";
 import type { User } from "@/types/users";
@@ -33,8 +34,11 @@ export function TaskDetailSheet({
   canManage,
   currentUserId,
   members,
+  stageRange,
   onUpdateAssignees,
   onMarkMyCompletion,
+  onUpdateStatus,
+  onReopen,
 }: {
   task: ProjectTaskView | null;
   open: boolean;
@@ -42,11 +46,17 @@ export function TaskDetailSheet({
   canManage: boolean;
   currentUserId?: string;
   members: User[];
+  stageRange?: { start: string; end: string } | null;
   onUpdateAssignees: (taskId: string, userIds: string[]) => Promise<unknown>;
   onMarkMyCompletion?: (taskId: string, completed: boolean) => Promise<void>;
+  onUpdateStatus?: (taskId: string, status: BoardColumnId) => Promise<void>;
+  onReopen?: (taskId: string) => Promise<void>;
 }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showHoldDialog, setShowHoldDialog] = useState(false);
+  const [localStatus, setLocalStatus] = useState<BoardColumnId | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [newSubtaskAssignees, setNewSubtaskAssignees] = useState<string[]>([]);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
@@ -66,9 +76,45 @@ export function TaskDetailSheet({
     markSubtaskMyCompletion,
   } = useTaskSubtasks(task, open);
 
+  // Reset the optimistic status whenever a different task is opened.
+  useEffect(() => {
+    setLocalStatus(null);
+  }, [task?.id]);
+
   if (!task) return null;
 
+  const effectiveStatus: BoardColumnId = localStatus ?? task.status;
+
   const subtaskDoneCount = subtasks.filter((s) => s.apiStatus === "COMPLETED").length;
+
+  async function handleStatusChange(next: BoardColumnId) {
+    if (!onUpdateStatus || next === effectiveStatus) return;
+    setIsUpdatingStatus(true);
+    setLocalStatus(next);
+    try {
+      await onUpdateStatus(task!.id, next);
+      toast.success("Status updated");
+    } catch (err) {
+      setLocalStatus(null);
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  }
+
+  async function handleReopen() {
+    if (!onReopen) return;
+    setIsReopening(true);
+    try {
+      await onReopen(task!.id);
+      setLocalStatus("in-progress");
+      toast.success("Task reopened — assignees can resume work");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reopen task");
+    } finally {
+      setIsReopening(false);
+    }
+  }
 
   async function handleAddSubtask() {
     if (!newSubtaskTitle.trim()) return;
@@ -108,7 +154,8 @@ export function TaskDetailSheet({
   const myRecord = task.assignees.find((a) => a.userId === currentUserId);
   const iHaveCompleted = !!myRecord?.completedAt;
 
-  const canRequestHold = isAssigned && !pendingHold && task.status !== "done";
+  const canRequestHold = isAssigned && !pendingHold && effectiveStatus !== "done";
+  const canChangeStatus = !!onUpdateStatus && (canManage || isAssigned);
 
   const completedCount = task.assignees.filter((a) => a.completedAt).length;
   const totalCount = task.assignees.length;
@@ -148,7 +195,7 @@ export function TaskDetailSheet({
     }
   }
 
-  const column = BOARD_COLUMNS.find((c) => c.id === task.status)!;
+  const column = BOARD_COLUMNS.find((c) => c.id === effectiveStatus)!;
 
   return (
     <>
@@ -173,10 +220,61 @@ export function TaskDetailSheet({
               <Badge variant="secondary" style={{ color: column.accent }}>
                 {column.label}
               </Badge>
-              <span className="text-sm" style={{ color: dueDateColor(task.dueDate, task.status) }}>
+              <span className="text-sm" style={{ color: dueDateColor(task.dueDate, effectiveStatus) }}>
                 Due {formatBoardDate(task.dueDate)}
               </span>
             </div>
+
+            {canManage && effectiveStatus === "done" && onReopen && (
+              <div className="rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-[#1A1410]">This task is completed</p>
+                    <p className="text-xs text-[#9C8573]">
+                      Reopen it to let assignees redo their work. Parent milestone/stage will reopen too.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isReopening}
+                    onClick={() => void handleReopen()}
+                    className="h-8 shrink-0 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[#6B5744]"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    {isReopening ? "Reopening…" : "Reopen task"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {canChangeStatus && (
+              <div>
+                <span className="mb-2 block text-xs font-medium tracking-wide text-[#9C8573] uppercase">
+                  Status
+                </span>
+                <div className="inline-flex rounded-lg bg-[#F5EFE6] p-0.5">
+                  {BOARD_COLUMNS.map((c) => {
+                    const active = effectiveStatus === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={isUpdatingStatus}
+                        onClick={() => void handleStatusChange(c.id)}
+                        className={`h-8 rounded-md px-3 text-[13px] transition-all disabled:opacity-60 ${
+                          active ? "bg-[#FDFAF6] font-medium" : "text-[#9C8573]"
+                        }`}
+                        style={active ? { color: c.accent, border: "1px solid rgba(90,60,30,0.14)" } : undefined}
+                      >
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Individual progress section */}
             <div>
@@ -184,7 +282,7 @@ export function TaskDetailSheet({
                 <span className="text-xs font-medium tracking-wide text-[#9C8573] uppercase">
                   Assignees · {completedCount}/{totalCount} done
                 </span>
-                {isAssigned && task.status !== "done" && onMarkMyCompletion && (
+                {isAssigned && effectiveStatus !== "done" && onMarkMyCompletion && (
                   <Button
                     type="button"
                     size="sm"
@@ -454,6 +552,7 @@ export function TaskDetailSheet({
           open={showHoldDialog}
           onOpenChange={setShowHoldDialog}
           task={task}
+          stageRange={stageRange}
           onSubmit={createHoldRequest}
         />
       )}

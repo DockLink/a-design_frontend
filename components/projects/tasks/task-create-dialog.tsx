@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,7 +22,8 @@ import {
   apiStatusFromBoard,
   type BoardColumnId,
 } from "@/lib/tasks/task-board";
-import type { ProjectStageView } from "@/lib/projects/map-stages";
+import type { ProjectMilestoneView, ProjectStageView } from "@/lib/projects/map-stages";
+import { formatBoardDate } from "@/lib/tasks/task-board";
 import type { TaskablePriority } from "@/types/tasks";
 import type { User } from "@/types/users";
 
@@ -113,7 +114,7 @@ export function TaskCreateDialog({
   onOpenChange: (open: boolean) => void;
   defaultStatus: BoardColumnId;
   stages: ProjectStageView[];
-  milestones: { id: string; name: string }[];
+  milestones: ProjectMilestoneView[];
   milestoneParents: Record<string, { stageId: string; stageName: string }>;
   members: User[];
   onCreate: (input: {
@@ -144,6 +145,33 @@ export function TaskCreateDialog({
     [milestones, milestoneParents, stageId]
   );
 
+  // A task must fall within its parent milestone's window (or the stage's
+  // window when no milestone is selected).
+  const selectedMilestone = useMemo(
+    () => milestones.find((m) => m.id === milestoneId),
+    [milestones, milestoneId]
+  );
+  const selectedStage = useMemo(() => stages.find((s) => s.id === stageId), [stages, stageId]);
+
+  const rangeStart = selectedMilestone
+    ? selectedMilestone.startDate.slice(0, 10)
+    : selectedStage
+      ? selectedStage.startDate.slice(0, 10)
+      : undefined;
+  const rangeEnd = selectedMilestone
+    ? selectedMilestone.endDate.slice(0, 10)
+    : selectedStage
+      ? selectedStage.endDate.slice(0, 10)
+      : undefined;
+  const rangeLabel = selectedMilestone ? "milestone" : "stage";
+
+  // Keep the due date inside the active range as the parent selection changes.
+  useEffect(() => {
+    if (rangeStart && dueDate < rangeStart) setDueDate(rangeStart);
+    else if (rangeEnd && dueDate > rangeEnd) setDueDate(rangeEnd);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStart, rangeEnd]);
+
   function addSubtaskRow() {
     setSubtasks((prev) => [...prev, { title: "", assigneeIds: [] }]);
   }
@@ -165,6 +193,12 @@ export function TaskCreateDialog({
 
   async function submit() {
     if (!title.trim()) return;
+    if (rangeStart && rangeEnd && (dueDate < rangeStart || dueDate > rangeEnd)) {
+      toast.error(
+        `Task due date must fall within the ${rangeLabel} period (${formatBoardDate(rangeStart)} – ${formatBoardDate(rangeEnd)})`
+      );
+      return;
+    }
     setIsSaving(true);
     try {
       await onCreate({
@@ -249,7 +283,19 @@ export function TaskCreateDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Due date</Label>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-[#F5EFE6]" />
+              <Input
+                type="date"
+                value={dueDate}
+                min={rangeStart}
+                max={rangeEnd}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="bg-[#F5EFE6]"
+              />
+              {rangeStart && rangeEnd && (
+                <p className="text-[11px] text-[#9C8573]">
+                  Within {rangeLabel}: {formatBoardDate(rangeStart)} – {formatBoardDate(rangeEnd)}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Column</Label>

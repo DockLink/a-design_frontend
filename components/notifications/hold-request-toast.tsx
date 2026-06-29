@@ -5,7 +5,7 @@ import { Check, Clock, Pencil, X } from "lucide-react";
 
 import type { ProcessHoldRequestPayload } from "@/hooks/use-project-hold-requests";
 import { formatHoldDate, toHoldRequestDateIso } from "@/lib/hold-requests/display";
-import type { AppNotification } from "@/types/notifications";
+import type { HoldAppNotification } from "@/types/notifications";
 
 function isoToDateInput(iso: string): string {
   const d = new Date(iso);
@@ -19,7 +19,7 @@ export function HoldRequestToast({
   onView,
   onClose,
 }: {
-  notification: AppNotification;
+  notification: HoldAppNotification;
   onProcess: (payload: ProcessHoldRequestPayload) => Promise<void>;
   onView: () => void;
   onClose: () => void;
