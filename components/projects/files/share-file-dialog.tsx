@@ -53,6 +53,13 @@ export function ShareFileDialog({
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
 
+  // The share path is served by THIS frontend app, so always present the link
+  // against the current origin — never the backend host the API returned.
+  const shareUrl =
+    result && file && typeof window !== "undefined"
+      ? `${window.location.origin}/share/${result.token}/file/${file.id}/content`
+      : result?.shareUrl ?? "";
+
   function resetForm() {
     setSelectedHours(24);
     setAllowDownload(true);
@@ -79,8 +86,8 @@ export function ShareFileDialog({
   }
 
   async function handleCopy() {
-    if (!result?.shareUrl) return;
-    await navigator.clipboard.writeText(result.shareUrl);
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success("Link copied to clipboard");
@@ -201,7 +208,7 @@ export function ShareFileDialog({
                 </p>
                 <div className="flex items-center gap-2 rounded-lg border border-[rgba(90,60,30,0.12)] bg-[#F5EFE6] p-2.5">
                   <span className="flex-1 truncate text-[12px] text-[#1A1410]">
-                    {result.shareUrl}
+                    {shareUrl}
                   </span>
                   <button
                     type="button"

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { authApiClient } from "@/lib/api/authenticated-client";
+import { uploadFileMultipart } from "@/lib/files/multipart-upload";
 import type {
   CreateShareLinkPayload,
   DownloadUrlResponse,
@@ -88,32 +89,29 @@ export function useProjectFiles(projectId: string) {
   }, []);
 
   const uploadFile = useCallback(
-    async (folderPath: string, file: File, replaceFileId?: string) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folderPath", folderPath);
-      if (replaceFileId) formData.append("replaceFileId", replaceFileId);
-
+    async (
+      folderPath: string,
+      file: File,
+      replaceFileId?: string,
+      onProgress?: (pct: number) => void,
+    ) => {
       const token = (await import("@/stores/auth-store")).useAuthStore
         .getState()
         .session?.accessToken;
 
       if (!token) throw new Error("Not authenticated");
 
-      const res = await fetch(`/api/projects/${projectId}/files/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      // Direct browser → S3 multipart upload: the file bytes never pass through
+      // Next.js or NestJS, so there is no app-level size limit.
+      const body = await uploadFileMultipart({
+        projectId,
+        folderPath,
+        file,
+        replaceFileId,
+        token,
+        onProgress,
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { message?: string }).message ?? "Upload failed"
-        );
-      }
-
-      const body = await res.json();
       if (currentFolderPath === folderPath) {
         await loadFiles(folderPath);
       }
