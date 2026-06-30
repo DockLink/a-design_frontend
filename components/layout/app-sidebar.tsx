@@ -157,7 +157,7 @@ export function AppSidebar() {
       </div>
 
       <div style={{ flexShrink: 0, padding: "10px", borderTop: "0.5px solid rgba(60,60,67,0.10)" }}>
-        <SidebarItem icon={Settings} label="Settings" active={false} onClick={() => {}} />
+        <SidebarItem icon={Settings} label="Settings" active={isActive(NAV_ROUTES.settings)} onClick={() => go(NAV_ROUTES.settings)} />
 
         <button
           onClick={handleLogout}

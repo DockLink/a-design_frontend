@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/auth/password-input";
 import type { CreateUserRequest } from "@/types/users-api";
 import type { UserRole } from "@/types/users";
 
@@ -167,9 +168,8 @@ export function CreateUserSheet({
 
           <div className="space-y-2">
             <Label htmlFor="create-password">Password</Label>
-            <Input
+            <PasswordInput
               id="create-password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 chars with symbols"
