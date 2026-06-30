@@ -19,13 +19,18 @@ import type { ProcessHoldRequestPayload } from "@/hooks/use-project-hold-request
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { accessRequestToNotification } from "@/lib/notifications/access-request-map";
 import { fileVersionToNotification } from "@/lib/notifications/file-version-map";
+import { shareLinkToNotification } from "@/lib/notifications/share-link-map";
 import { holdRequestToNotification } from "@/lib/notifications/map";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
 import { toProjectsQueryString } from "@/lib/projects/query-string";
 import { NAV_ROUTES, projectTabRoute } from "@/types/navigation";
 import type { AccessRequestsListResponse } from "@/types/access-requests";
 import type { HoldRequestsListResponse } from "@/types/hold-requests";
-import type { AppNotification, FileVersionsListResponse } from "@/types/notifications";
+import type {
+  AppNotification,
+  FileVersionsListResponse,
+  ShareLinksListResponse,
+} from "@/types/notifications";
 import type { ProjectsListResponse } from "@/types/projects";
 import { PROJECT_LEAD_ROLE } from "@/types/projects";
 import type { ReviewAccessRequestPayload } from "@/types/access-requests";
@@ -242,6 +247,19 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         mapped.push(...(fileRes.data ?? []).map(fileVersionToNotification));
       } catch {
         /* non-critical */
+      }
+
+      // Share-link activity — admins/super-admins are notified whenever anyone
+      // generates a shareable link. Backend enforces the role gate too.
+      if (isOrgAdmin) {
+        try {
+          const shareRes = await authApiClient<ShareLinksListResponse>(
+            `/share-link-notifications`
+          );
+          mapped.push(...(shareRes.data ?? []).map(shareLinkToNotification));
+        } catch {
+          /* non-critical */
+        }
       }
 
       mapped.sort(

@@ -19,6 +19,8 @@ interface QueuedFile {
   file: File;
   sizeLabel: string;
   uploading: boolean;
+  /** Real upload progress 0-100 from XHR progress events. */
+  progress: number;
   done: boolean;
   error?: string;
 }
@@ -36,7 +38,11 @@ export function FileUploadDialog({
   folderPath: string;
   folderLabel: string;
   isVersioned: boolean;
-  onUpload: (folderPath: string, file: File) => Promise<unknown>;
+  onUpload: (
+    folderPath: string,
+    file: File,
+    onProgress?: (pct: number) => void
+  ) => Promise<unknown>;
 }) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -55,6 +61,7 @@ export function FileUploadDialog({
         file: f,
         sizeLabel: formatFileSize(f.size),
         uploading: false,
+        progress: 0,
         done: false,
       })),
     ]);
@@ -71,13 +78,21 @@ export function FileUploadDialog({
     const results = await Promise.allSettled(
       queue.map(async (qf, index) => {
         setQueue((q) =>
-          q.map((x, i) => (i === index ? { ...x, uploading: true } : x))
+          q.map((x, i) =>
+            i === index ? { ...x, uploading: true, progress: 0 } : x
+          )
         );
         try {
-          await onUpload(folderPath, qf.file);
+          await onUpload(folderPath, qf.file, (pct) => {
+            setQueue((q) =>
+              q.map((x, i) =>
+                i === index ? { ...x, progress: pct } : x
+              )
+            );
+          });
           setQueue((q) =>
             q.map((x, i) =>
-              i === index ? { ...x, uploading: false, done: true } : x
+              i === index ? { ...x, uploading: false, progress: 100, done: true } : x
             )
           );
         } catch (err) {
@@ -189,14 +204,25 @@ export function FileUploadDialog({
                       )}
                     </div>
                   </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-[#EDE3D4]">
-                    <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{
-                        width: qf.done ? "100%" : qf.uploading ? "60%" : "0%",
-                        background: qf.error ? "#DC2626" : "#D4A96A",
-                      }}
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 overflow-hidden rounded-full bg-[#EDE3D4]" style={{ height: 4 }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: qf.done
+                            ? "100%"
+                            : qf.uploading
+                            ? `${Math.max(qf.progress, 2)}%`
+                            : "0%",
+                          background: qf.error ? "#DC2626" : "#D4A96A",
+                        }}
+                      />
+                    </div>
+                    {qf.uploading && (
+                      <span className="shrink-0 text-[10px] text-[#9C8573]">
+                        {qf.progress}%
+                      </span>
+                    )}
                   </div>
                   {qf.error && (
                     <p className="mt-1 text-[11px] text-red-600">{qf.error}</p>

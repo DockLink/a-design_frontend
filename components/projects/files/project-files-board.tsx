@@ -297,7 +297,9 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           folderPath={currentFolderPath}
           folderLabel={selectedNode?.name ?? currentFolderPath}
           isVersioned={isVersioned}
-          onUpload={uploadFile}
+          onUpload={(folderPath, file, onProgress) =>
+            uploadFile(folderPath, file, undefined, onProgress)
+          }
         />
       )}
 

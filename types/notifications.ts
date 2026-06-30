@@ -1,7 +1,11 @@
 import type { AccessRequest, AccessRequestStatus } from "@/types/access-requests";
 import type { TaskableHoldRequest, TaskableHoldRequestStatus } from "@/types/hold-requests";
 
-export type NotificationType = "hold_request" | "access_request" | "file_version";
+export type NotificationType =
+  | "hold_request"
+  | "access_request"
+  | "file_version"
+  | "share_link";
 
 export interface FileVersionEvent {
   id: string;
@@ -18,6 +22,22 @@ export interface FileVersionEvent {
 
 export interface FileVersionsListResponse {
   data: FileVersionEvent[];
+}
+
+export interface ShareLinkEvent {
+  id: string;
+  projectId: string;
+  projectName: string;
+  fileId: string | null;
+  fileName: string | null;
+  createdByName: string;
+  allowDownload: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface ShareLinksListResponse {
+  data: ShareLinkEvent[];
 }
 
 interface BaseNotification {
@@ -57,7 +77,19 @@ export interface FileVersionAppNotification extends BaseNotification {
   raw: FileVersionEvent;
 }
 
+export interface ShareLinkAppNotification extends BaseNotification {
+  type: "share_link";
+  projectName: string;
+  projectId: string;
+  fileId: string | null;
+  fileName: string | null;
+  allowDownload: boolean;
+  expiresAt: string | null;
+  raw: ShareLinkEvent;
+}
+
 export type AppNotification =
   | HoldAppNotification
   | AccessAppNotification
-  | FileVersionAppNotification;
+  | FileVersionAppNotification
+  | ShareLinkAppNotification;

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, Clock, FileStack, Pencil, UserPlus, X } from "lucide-react";
+import { Bell, Check, Clock, FileStack, Link2, Pencil, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useNotifications } from "@/hooks/use-notifications";
@@ -297,6 +297,36 @@ function FileVersionNotificationRow({
   );
 }
 
+function ShareLinkNotificationRow({
+  n,
+  isUnread,
+  onOpen,
+}: {
+  n: Extract<AppNotification, { type: "share_link" }>;
+  isUnread: boolean;
+  onOpen: () => void;
+}) {
+  return (
+    <NotificationShell
+      isUnread={isUnread}
+      icon={<Link2 size={17} color="#D4A96A" />}
+      iconBg="rgba(212,169,106,0.15)"
+      title={n.title}
+      statusLabel="Share link"
+      statusStyle={{ bg: "rgba(212,169,106,0.15)", color: "#B07D3C" }}
+      createdAt={n.createdAt}
+      body={n.body}
+      actions={
+        <div style={{ marginTop: 12 }}>
+          <button type="button" onClick={onOpen} style={btnLink}>
+            View in documents
+          </button>
+        </div>
+      }
+    />
+  );
+}
+
 function NotificationShell({
   isUnread,
   icon,
@@ -476,6 +506,19 @@ export default function NotificationsPage() {
           if (n.type === "file_version") {
             return (
               <FileVersionNotificationRow
+                key={n.key}
+                n={n}
+                isUnread={isUnread(n.key)}
+                onOpen={() => {
+                  markRead(n.key);
+                  router.push(projectTabRoute(n.projectId, "files"));
+                }}
+              />
+            );
+          }
+          if (n.type === "share_link") {
+            return (
+              <ShareLinkNotificationRow
                 key={n.key}
                 n={n}
                 isUnread={isUnread(n.key)}
