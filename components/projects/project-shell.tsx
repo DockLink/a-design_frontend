@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useProjectContext } from "@/components/projects/project-context";
 import { ProjectHeaderBanner } from "@/components/projects/project-header-banner";
 import { useProjectMembers } from "@/hooks/use-project-members";
-import { canViewHoldRequests } from "@/lib/projects/permissions";
+import { canManageProject, canViewHoldRequests } from "@/lib/projects/permissions";
 import { NAV_ROUTES, PROJECT_TABS, projectTabRoute, type ProjectTab } from "@/types/navigation";
 
 function tabFromPathname(pathname: string, projectId: string): ProjectTab {
@@ -27,7 +27,7 @@ export function ProjectShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { project } = useProjectContext();
+  const { project, refetch } = useProjectContext();
   const { effectiveRole } = useProjectMembers();
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -96,7 +96,13 @@ export function ProjectShell({
       </div>
 
       {project && (
-        <ProjectHeaderBanner projectName={project.name} images={project.images} />
+        <ProjectHeaderBanner
+          projectId={project.id}
+          projectName={project.name}
+          images={project.images}
+          canEdit={canManageProject(effectiveRole)}
+          onUpdated={refetch}
+        />
       )}
 
       <div style={{ padding: "24px 28px" }}>{children}</div>
