@@ -9,6 +9,7 @@ export const NAV_ROUTES = {
   notifications: "/notifications",
   userManagement: "/user-management",
   accessRequests: "/access-requests",
+  settings: "/settings",
 } as const;
 
 export function projectRoute(projectId: string) {
