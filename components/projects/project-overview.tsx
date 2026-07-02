@@ -13,8 +13,12 @@ import {
 
 import { useProjectContext } from "@/components/projects/project-context";
 import { EditProjectBriefSheet } from "@/components/projects/edit-project-brief-sheet";
+import { ProjectBriefAttachmentsList } from "@/components/projects/project-brief-attachments";
 import { ManageTeamSheet } from "@/components/projects/manage-team-sheet";
 import { ProjectPhaseBar } from "@/components/projects/project-phase-bar";
+import { ProjectImageGallery } from "@/components/projects/project-image-gallery";
+import { ProjectLocationSection } from "@/components/projects/project-location-section";
+import { ProjectVimeoSection } from "@/components/projects/project-vimeo-section";
 import { ProjectRecentFiles } from "@/components/projects/project-recent-files";
 import { ProjectRecentTasks } from "@/components/projects/project-recent-tasks";
 import { ProjectStatCard } from "@/components/projects/project-stat-card";
@@ -77,9 +81,10 @@ export function ProjectOverview() {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+      <div className="project-overview">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", gap: "16px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "11px", color: "#9C8573", fontFamily: "ui-monospace, monospace", marginBottom: "4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          <div style={{ fontSize: "11px", color: "#9C8573", fontFamily: "var(--ds-font-sans)", marginBottom: "4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
             Ref · {project!.code?.toUpperCase()}
           </div>
           <div style={{ fontSize: "26px", fontWeight: 600, color: "#1C1C1E" }}>{project!.name}</div>
@@ -146,14 +151,7 @@ export function ProjectOverview() {
 
       <ProjectPhaseBar stages={stages} />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: showAdminInsights ? "repeat(5, 1fr)" : "repeat(4, 1fr)",
-          gap: "12px",
-          marginBottom: "24px",
-        }}
-      >
+      <div className="project-overview-stats" style={{ marginBottom: "24px" }}>
         <ProjectStatCard
           label="Open tasks"
           value={String(stats.openCount)}
@@ -219,7 +217,7 @@ export function ProjectOverview() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: showAdminInsights ? "1fr 360px" : "1fr 320px", gap: "20px" }}>
+      <div className="project-overview-main-grid">
         <div>
           <ProjectRecentFiles projectId={projectId} images={project!.images} />
           <ProjectRecentTasks projectId={projectId} tasks={projectTasks} />
@@ -253,8 +251,36 @@ export function ProjectOverview() {
             <div style={{ fontSize: "13px", color: "#6C6C70", lineHeight: 1.65 }}>
               {project!.description?.trim() || "No brief added yet."}
             </div>
+            {(project!.brief_attachments?.length ?? 0) > 0 ? (
+              <ProjectBriefAttachmentsList attachments={project!.brief_attachments ?? []} />
+            ) : null}
           </div>
         </div>
+      </div>
+
+      <ProjectImageGallery
+        projectId={projectId}
+        images={project!.images}
+        canEdit={canManage}
+        onUpdated={refetch}
+      />
+
+      <div className="project-overview-bottom-grid">
+        <ProjectLocationSection
+          projectId={projectId}
+          address={project!.location}
+          latitude={project!.latitude}
+          longitude={project!.longitude}
+          canEdit={canManage}
+          onUpdated={refetch}
+        />
+        <ProjectVimeoSection
+          projectId={projectId}
+          vimeoUrl={project!.vimeo_url}
+          canEdit={canManage}
+          onUpdated={refetch}
+        />
+      </div>
       </div>
 
       {showManageTeam && (
@@ -279,6 +305,7 @@ export function ProjectOverview() {
       <EditProjectBriefSheet
         projectId={projectId}
         brief={project!.description ?? ""}
+        attachments={project!.brief_attachments ?? []}
         open={showEditBrief}
         onClose={() => setShowEditBrief(false)}
         onSaved={() => void refetch()}

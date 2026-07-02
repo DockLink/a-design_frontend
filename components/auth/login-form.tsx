@@ -12,7 +12,7 @@ import { getPrimaryRole } from "@/lib/auth/rbac";
 import { useAuthStore } from "@/stores/auth-store";
 import { ApiError } from "@/types/api";
 import { NAV_ROUTES } from "@/types/navigation";
-import { ROLE_DEFAULT_ROUTE } from "@/types/rbac";
+import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
 export function LoginForm() {
   const router = useRouter();
@@ -32,7 +32,12 @@ export function LoginForm() {
       const role = useAuthStore.getState().session?.user.roles
         ? getPrimaryRole(useAuthStore.getState().session!.user.roles)
         : null;
-      router.replace(role ? ROLE_DEFAULT_ROUTE[role] : NAV_ROUTES.adminDashboard);
+      const user = useAuthStore.getState().session?.user;
+      router.replace(
+        role
+          ? resolveHomeRoute(role, user?.preferences)
+          : NAV_ROUTES.adminDashboard,
+      );
     } catch (err) {
       if (err instanceof ApiError) {
         setError(

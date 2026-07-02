@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 
 import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
+import { ProjectCard } from "@/components/projects/project-card";
 import { CreateUserSheet } from "@/components/user-management/create-user-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -216,92 +217,49 @@ export function SuperAdminDashboard() {
           <div style={dsCallout}>No projects in the system.</div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="project-card-grid">
           {projects.map((project) => {
             const isHovered = hoveredProject === project.id;
-            const statusCfg = STATUS_CONFIG[project.status] ?? { bg: "#F5EFE6", color: "#6B5744" };
-
             return (
               <div
                 key={project.id}
                 onMouseEnter={() => setHoveredProject(project.id)}
                 onMouseLeave={() => setHoveredProject(null)}
-                style={{
-                  ...dsCard,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "12px 16px",
-                  gap: "14px",
-                  border: `1px solid ${isHovered ? "#D4A96A" : "var(--ds-separator)"}`,
-                  transition: "all 0.15s",
-                }}
               >
-                <button
-                  type="button"
+                <ProjectCard
+                  project={project}
                   onClick={() => openProject(project)}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "14px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    padding: 0,
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      borderRadius: "10px",
-                      background: `url(${project.thumbnail}) center/cover`,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...dsHeadline, marginBottom: "2px" }}>{project.name}</div>
-                    <div style={dsFootnote}>{project.client}</div>
-                  </div>
-                  <span
-                    style={{
-                      background: statusCfg.bg,
-                      color: statusCfg.color,
-                      fontSize: "var(--ds-text-caption-2)",
-                      fontWeight: 500,
-                      borderRadius: "8px",
-                      padding: "4px 10px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {project.status}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(project)}
-                  disabled={isDeleting}
-                  title="Delete project permanently"
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255,59,48,0.25)",
-                    background: isHovered ? "rgba(255,59,48,0.08)" : "transparent",
-                    cursor: isDeleting ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    opacity: isDeleting ? 0.5 : 1,
-                    transition: "background 0.12s",
-                  }}
-                >
-                  <Trash2 size={16} color="#FF3B30" />
-                </button>
+                  renderOverlay={() =>
+                    isHovered ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(project);
+                        }}
+                        disabled={isDeleting}
+                        title="Delete project permanently"
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "rgba(255,59,48,0.85)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: isDeleting ? "not-allowed" : "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                        }}
+                      >
+                        <Trash2 size={15} color="white" />
+                      </button>
+                    ) : null
+                  }
+                />
               </div>
             );
           })}

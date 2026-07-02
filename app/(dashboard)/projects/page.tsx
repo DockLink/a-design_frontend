@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { RequestAccessDialog } from "@/components/access-requests/request-access-dialog";
 import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
+import { ProjectCard } from "@/components/projects/project-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useAccessRequests } from "@/hooks/use-access-requests";
 import { useProjects } from "@/hooks/use-projects";
@@ -18,9 +19,6 @@ import { toProjectsQueryString } from "@/lib/projects/query-string";
 import {
   dsActionBtn,
   dsCallout,
-  dsCard,
-  dsFootnote,
-  dsHeadline,
   dsLargeTitle,
   dsSubtitle,
 } from "@/lib/styles/dashboard-tokens";
@@ -50,85 +48,52 @@ function ProjectCardGrid({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+    <div className="project-card-grid">
       {cards.map((p) => {
         const isHovered = hoveredProject === p.id;
         return (
           <div
             key={p.id}
-            style={{ ...dsCard, position: "relative", overflow: "hidden" }}
             onMouseEnter={() => setHoveredProject(p.id)}
             onMouseLeave={() => setHoveredProject(null)}
           >
-            <div
-              role="button"
-              tabIndex={0}
-              style={{ cursor: renderExtra ? "default" : "pointer" }}
-              onClick={() => !renderExtra && onOpen(p.id)}
-              onKeyDown={(e) => !renderExtra && e.key === "Enter" && onOpen(p.id)}
-            >
-              <div
-                style={{
-                  height: "160px",
-                  backgroundImage: `url(${p.thumbnail})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div style={{ padding: "18px" }}>
-                <div style={dsHeadline}>{p.name}</div>
-                <div style={{ ...dsFootnote, marginTop: "6px" }}>{p.client}</div>
-                {p.currentStage && (
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      background: "rgba(212,169,106,0.14)",
-                      color: "#C9894A",
-                      borderRadius: "9999px",
-                      padding: "3px 10px",
-                      fontSize: "11px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "#D4A96A" }} />
-                    {p.currentStage}
-                  </div>
-                )}
-                {renderExtra?.(p)}
-              </div>
-            </div>
-
-            {isSuperAdmin && isHovered && (
-              <button
-                type="button"
-                title="Delete project permanently"
-                disabled={isDeleting}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(p);
-                }}
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "rgba(255,59,48,0.85)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                }}
-              >
-                <Trash2 size={15} color="white" />
-              </button>
-            )}
+            <ProjectCard
+              project={p}
+              onClick={renderExtra ? undefined : () => onOpen(p.id)}
+              renderExtra={renderExtra}
+              renderOverlay={
+                isSuperAdmin && isHovered
+                  ? () => (
+                      <button
+                        type="button"
+                        title="Delete project permanently"
+                        disabled={isDeleting}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(p);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "rgba(255,59,48,0.85)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: isDeleting ? "not-allowed" : "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                        }}
+                      >
+                        <Trash2 size={15} color="white" />
+                      </button>
+                    )
+                  : undefined
+              }
+            />
           </div>
         );
       })}

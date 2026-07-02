@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { NAV_ROUTES } from "@/types/navigation";
-import { ROLE_DEFAULT_ROUTE } from "@/types/rbac";
+import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,7 +23,11 @@ export default function HomePage() {
     const role = session?.user.roles
       ? getPrimaryRole(session.user.roles)
       : null;
-    router.replace(role ? ROLE_DEFAULT_ROUTE[role] : NAV_ROUTES.adminDashboard);
+    router.replace(
+      role
+        ? resolveHomeRoute(role, session?.user.preferences)
+        : NAV_ROUTES.adminDashboard,
+    );
   }, [isAuthenticated, isHydrated, router, session]);
 
   return (
