@@ -8,8 +8,9 @@ import { HandwritingText } from "@/components/auth/handwriting-text";
 import { LoginForm } from "@/components/auth/login-form";
 import { useAuth } from "@/hooks/use-auth";
 import { getPrimaryRole } from "@/lib/auth/rbac";
+import { APP_NAME } from "@/lib/constants";
 import { NAV_ROUTES } from "@/types/navigation";
-import { ROLE_DEFAULT_ROUTE } from "@/types/rbac";
+import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +22,11 @@ export default function LoginPage() {
     const role = session?.user.roles
       ? getPrimaryRole(session.user.roles)
       : null;
-    router.replace(role ? ROLE_DEFAULT_ROUTE[role] : NAV_ROUTES.adminDashboard);
+    router.replace(
+      role
+        ? resolveHomeRoute(role, session?.user.preferences)
+        : NAV_ROUTES.adminDashboard,
+    );
   }, [isAuthenticated, isHydrated, router, session]);
 
   if (!isHydrated || isAuthenticated) {
@@ -48,7 +53,7 @@ export default function LoginPage() {
               Sign in
             </h1>
             <p className="mt-1.5 text-[15px] text-muted-foreground">
-              Use your A-Design account
+              Use your {APP_NAME} account
             </p>
           </div>
 

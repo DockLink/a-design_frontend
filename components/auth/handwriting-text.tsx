@@ -1,12 +1,12 @@
 "use client";
 
-const line1 = "A-Design";
-const line2 = "Studio";
+const line1 = "ADS";
+const line2 = "+MAD";
 
 export function HandwritingText() {
   return (
     <div className="relative">
-      <div className="font-[family-name:var(--font-dancing)] text-[72px] leading-[1.1] font-semibold tracking-wide text-[#1C1C1E]">
+      <div className="font-sans text-[72px] leading-[1.1] font-semibold tracking-wide text-[#1C1C1E]">
         <div className="mb-2">
           {line1.split("").map((char, i) => (
             <span
@@ -35,7 +35,7 @@ export function HandwritingText() {
       </div>
 
       <p
-        className="mt-7 text-[17px] tracking-wide text-[#6C6C70] opacity-0 animate-[fadeIn_0.8s_ease-out_forwards]"
+        className="mt-7 font-sans text-[17px] tracking-wide text-[#6C6C70] opacity-0 animate-[fadeIn_0.8s_ease-out_forwards]"
         style={{
           animationDelay: `${(line1.length + line2.length) * 0.15 + 0.3}s`,
         }}

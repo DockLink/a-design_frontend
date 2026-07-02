@@ -35,8 +35,9 @@ export function ProjectShell({
   const tabs = PROJECT_TABS.filter((t) => !t.adminOnly || canViewHoldRequests(effectiveRole));
 
   return (
-    <div style={{ margin: "-28px" }}>
+    <div className="project-page">
       <div
+        className="project-shell-nav"
         style={{
           position: "sticky",
           top: 0,
@@ -48,7 +49,7 @@ export function ProjectShell({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 28px",
+          gap: "12px",
           zIndex: 99,
           boxShadow: "0 1px 0 0 rgba(60,60,67,0.05)",
         }}
@@ -96,16 +97,18 @@ export function ProjectShell({
       </div>
 
       {project && (
-        <ProjectHeaderBanner
-          projectId={project.id}
-          projectName={project.name}
-          images={project.images}
-          canEdit={canManageProject(effectiveRole)}
-          onUpdated={refetch}
-        />
+        <div className="project-banner-wrap">
+          <ProjectHeaderBanner
+            projectId={project.id}
+            projectName={project.name}
+            images={project.images}
+            canEdit={canManageProject(effectiveRole)}
+            onUpdated={refetch}
+          />
+        </div>
       )}
 
-      <div style={{ padding: "24px 28px" }}>{children}</div>
+      <div className="project-shell-content">{children}</div>
     </div>
   );
 }

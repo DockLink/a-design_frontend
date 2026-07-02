@@ -5,6 +5,13 @@ export interface ProjectImage {
   url: string;
 }
 
+export interface ProjectBriefAttachment {
+  id: string;
+  url: string;
+  file_name?: string | null;
+  mime_type?: string | null;
+}
+
 export interface ProjectClient {
   id: string;
   name: string;
@@ -21,11 +28,15 @@ export interface Project {
   start_date: string;
   duration: string;
   location: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  vimeo_url?: string | null;
   status: ProjectStatus;
   created_at: string;
   updated_at: string;
   client: ProjectClient | null;
   images: ProjectImage[];
+  brief_attachments?: ProjectBriefAttachment[];
   current_stage?: string | null;
 }
 
@@ -59,6 +70,7 @@ export interface ProjectCardView {
   thumbnail: string;
   status: "Active" | "Inactive";
   number: string;
+  location?: string | null;
   currentStage?: string | null;
   currentPhase?: number;
   lead?: string;
@@ -93,7 +105,11 @@ export interface CreateProjectRequest {
   start_date: string;
   end_date: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  vimeo_url?: string;
   images?: string[];
+  brief_attachments?: string[];
   client: {
     code?: string;
     name: string;
@@ -108,8 +124,12 @@ export interface UpdateProjectRequest {
   start_date?: string;
   end_date?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  vimeo_url?: string;
   status?: ProjectStatus;
   images?: { id: string }[];
+  brief_attachments?: { id: string }[];
   client?: { id: string; name?: string; contact_number?: string; contact_email?: string };
 }
 

@@ -16,6 +16,13 @@ import {
   type ProjectStageOption,
 } from "@/lib/projects/default-stages";
 import { MemberSearchSelect } from "@/components/projects/member-search-select";
+import {
+  ProjectBriefAttachmentsList,
+  ProjectBriefUploadButton,
+} from "@/components/projects/project-brief-attachments";
+import { LocationPickerModal, type LocationPickerValue } from "@/components/projects/location-picker-modal";
+import { isValidVimeoUrl } from "@/lib/vimeo/parse-vimeo-url";
+import type { ProjectBriefAttachment } from "@/types/projects";
 
 export function CreateProjectSheet({
   open,
@@ -34,6 +41,7 @@ export function CreateProjectSheet({
     status: "ACTIVE",
   });
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const briefInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -45,8 +53,14 @@ export function CreateProjectSheet({
   const [selectedStageIds, setSelectedStageIds] = useState<Set<string>>(new Set());
   const [customStageName, setCustomStageName] = useState("");
   const [showAddStage, setShowAddStage] = useState(false);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [latitude, setLatitude] = useState<number | undefined>();
+  const [longitude, setLongitude] = useState<number | undefined>();
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [vimeoUrl, setVimeoUrl] = useState("");
+  const [thumbnailFiles, setThumbnailFiles] = useState<File[]>([]);
+  const [thumbnailPreviews, setThumbnailPreviews] = useState<string[]>([]);
+  const [briefAttachments, setBriefAttachments] = useState<ProjectBriefAttachment[]>([]);
+  const [isUploadingBrief, setIsUploadingBrief] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -56,21 +70,26 @@ export function CreateProjectSheet({
     setDescription("");
     setStartDate("");
     setLocation("");
+    setLatitude(undefined);
+    setLongitude(undefined);
+    setVimeoUrl("");
     setClientName("");
     setProjectLeadId("");
     setStageOptions(defaults);
     setSelectedStageIds(new Set(defaults.map((s) => s.id)));
     setCustomStageName("");
     setShowAddStage(false);
-    setThumbnailFile(null);
-    setThumbnailPreview(null);
+    setThumbnailFiles([]);
+    setThumbnailPreviews([]);
+    setBriefAttachments([]);
+    setIsUploadingBrief(false);
   }, [open]);
 
   useEffect(() => {
     return () => {
-      if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
+      thumbnailPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [thumbnailPreview]);
+  }, [thumbnailPreviews]);
 
   const selectedCount = selectedStageIds.size;
   const projectStartDay = startDate;
@@ -122,10 +141,47 @@ export function CreateProjectSheet({
     );
   }
 
-  function handleThumbnailChange(file: File | null) {
-    if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
-    setThumbnailFile(file);
-    setThumbnailPreview(file ? URL.createObjectURL(file) : null);
+  function handleThumbnailChange(files: FileList | null) {
+    if (!files?.length) return;
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    thumbnailPreviews.forEach((url) => URL.revokeObjectURL(url));
+    setThumbnailFiles(imageFiles);
+    setThumbnailPreviews(imageFiles.map((f) => URL.createObjectURL(f)));
+  }
+
+  function handleLocationConfirm(value: LocationPickerValue) {
+    setLocation(value.address);
+    setLatitude(value.latitude);
+    setLongitude(value.longitude);
+  }
+
+  async function handleBriefFilesSelected(files: FileList | null) {
+    if (!files?.length) return;
+
+    setIsUploadingBrief(true);
+    try {
+      const uploaded: ProjectBriefAttachment[] = [];
+      for (const file of Array.from(files)) {
+        const { token } = await uploadFile(file);
+        uploaded.push({
+          id: token,
+          url: "",
+          file_name: file.name,
+          mime_type: file.type || null,
+        });
+      }
+      setBriefAttachments((prev) => [...prev, ...uploaded]);
+      toast.success(uploaded.length > 1 ? "Files added to brief" : "File added to brief");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload files");
+    } finally {
+      setIsUploadingBrief(false);
+      if (briefInputRef.current) briefInputRef.current.value = "";
+    }
+  }
+
+  function handleRemoveBriefAttachment(id: string) {
+    setBriefAttachments((prev) => prev.filter((item) => item.id !== id));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -136,6 +192,11 @@ export function CreateProjectSheet({
     }
     if (selectedCount === 0) {
       toast.error("Select at least one project stage");
+      return;
+    }
+
+    if (vimeoUrl.trim() && !isValidVimeoUrl(vimeoUrl)) {
+      toast.error("Enter a valid Vimeo URL");
       return;
     }
 
@@ -167,9 +228,13 @@ export function CreateProjectSheet({
     setIsSubmitting(true);
     try {
       let imageIds: string[] | undefined;
-      if (thumbnailFile) {
-        const { token } = await uploadFile(thumbnailFile);
-        imageIds = [token];
+      if (thumbnailFiles.length > 0) {
+        const tokens: string[] = [];
+        for (const file of thumbnailFiles) {
+          const { token } = await uploadFile(file);
+          tokens.push(token);
+        }
+        imageIds = tokens;
       }
 
       const memberUserIds = projectLeadId ? [projectLeadId] : undefined;
@@ -181,7 +246,11 @@ export function CreateProjectSheet({
           start_date: new Date(startDate).toISOString(),
           end_date: projectEndIso,
           location: location.trim() || undefined,
+          latitude,
+          longitude,
+          vimeo_url: vimeoUrl.trim() || undefined,
           images: imageIds,
+          brief_attachments: briefAttachments.length > 0 ? briefAttachments.map((item) => item.id) : undefined,
           client: { name: clientName.trim() },
         },
         {
@@ -257,6 +326,30 @@ export function CreateProjectSheet({
                 fontSize: "var(--ds-text-footnote)",
               }}
             />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>
+                Attach PDFs, audio, images, or any reference files
+              </span>
+              <input
+                ref={briefInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => void handleBriefFilesSelected(e.target.files)}
+              />
+              <ProjectBriefUploadButton
+                isUploading={isUploadingBrief}
+                disabled={isSubmitting}
+                onClick={() => briefInputRef.current?.click()}
+              />
+            </div>
+            {briefAttachments.length > 0 ? (
+              <ProjectBriefAttachmentsList
+                attachments={briefAttachments}
+                canEdit
+                onRemove={handleRemoveBriefAttachment}
+              />
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -276,16 +369,32 @@ export function CreateProjectSheet({
 
           <div className="space-y-2">
             <Label htmlFor="proj-location">Location</Label>
-            <div style={{ position: "relative" }}>
-              <MapPin size={16} color="#8E8E93" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
-              <Input
-                id="proj-location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Enter location…"
-                className="bg-[#F5EFE6] h-10 pl-9"
-              />
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+                <MapPin size={16} color="#8E8E93" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+                <Input
+                  id="proj-location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Search or enter address…"
+                  className="bg-[#F5EFE6] h-10 pl-9"
+                />
+              </div>
+              <Button type="button" variant="outline" className="h-10 shrink-0 whitespace-nowrap" onClick={() => setShowLocationPicker(true)}>
+                Pick on map
+              </Button>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="proj-vimeo">Vimeo link (optional)</Label>
+            <Input
+              id="proj-vimeo"
+              value={vimeoUrl}
+              onChange={(e) => setVimeoUrl(e.target.value)}
+              placeholder="https://vimeo.com/123456789"
+              className="bg-[#F5EFE6] h-10"
+            />
           </div>
 
           <div className="space-y-2">
@@ -474,20 +583,21 @@ export function CreateProjectSheet({
           )}
 
           <div className="space-y-2">
-            <Label>Project thumbnail (optional)</Label>
+            <Label>Project photos (optional)</Label>
             <input
               ref={thumbnailInputRef}
               type="file"
               accept="image/*"
+              multiple
               hidden
-              onChange={(e) => handleThumbnailChange(e.target.files?.[0] ?? null)}
+              onChange={(e) => handleThumbnailChange(e.target.files)}
             />
             <button
               type="button"
               onClick={() => thumbnailInputRef.current?.click()}
               style={{
                 width: "100%",
-                height: "120px",
+                minHeight: "120px",
                 borderRadius: "12px",
                 border: "1px dashed rgba(90,60,30,0.25)",
                 background: "#F5EFE6",
@@ -499,40 +609,31 @@ export function CreateProjectSheet({
                 gap: "6px",
                 overflow: "hidden",
                 position: "relative",
+                padding: thumbnailPreviews.length > 0 ? "10px" : "0",
               }}
             >
-              {thumbnailPreview ? (
-                <>
-                  <img
-                    src={thumbnailPreview}
-                    alt="Thumbnail preview"
-                    style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
-                  />
-                  <span
-                    style={{
-                      position: "relative",
-                      zIndex: 1,
-                      fontSize: "var(--ds-text-caption-1)",
-                      background: "rgba(0,0,0,0.5)",
-                      color: "white",
-                      padding: "4px 10px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Change image
-                  </span>
-                </>
+              {thumbnailPreviews.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "8px", width: "100%" }}>
+                  {thumbnailPreviews.map((preview, index) => (
+                    <img
+                      key={preview}
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "8px" }}
+                    />
+                  ))}
+                </div>
               ) : (
                 <>
                   <ImagePlus size={22} color="#C9894A" />
-                  <span style={{ fontSize: "var(--ds-text-footnote)", color: "#8E8E93" }}>Upload project thumbnail</span>
+                  <span style={{ fontSize: "var(--ds-text-footnote)", color: "#8E8E93" }}>Upload project photos</span>
                 </>
               )}
             </button>
           </div>
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingTop: "8px" }}>
-            <Button type="submit" disabled={isSubmitting} className="h-10 w-full bg-[#D4A96A] hover:bg-[#C4956A] text-[15px]">
+            <Button type="submit" disabled={isSubmitting || isUploadingBrief} className="h-10 w-full bg-[#D4A96A] hover:bg-[#C4956A] text-[15px]">
               {isSubmitting ? "Creating…" : "Create project"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} className="h-10 w-full">
@@ -541,6 +642,13 @@ export function CreateProjectSheet({
           </div>
         </form>
       </aside>
+
+      <LocationPickerModal
+        open={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        initialValue={location ? { address: location, latitude, longitude } : null}
+        onConfirm={handleLocationConfirm}
+      />
     </>
   );
 }

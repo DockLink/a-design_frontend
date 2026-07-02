@@ -1,29 +1,13 @@
 import type { Metadata } from "next";
-import { Dancing_Script, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 
 import { AuthHydration } from "@/components/auth/auth-hydration";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing",
-  subsets: ["latin"],
-  weight: ["600"],
-});
-
 export const metadata: Metadata = {
-  title: "A-Design Studio",
+  title: APP_NAME,
   description: "Project Management Platform",
 };
 
@@ -33,11 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${dancingScript.variable} h-full antialiased`}
-    >
-      <body className="min-h-full">
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full font-sans">
         <QueryProvider>
           <AuthHydration />
           {children}

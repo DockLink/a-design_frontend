@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
+import { APP_NAME } from "@/lib/constants";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
 
@@ -20,6 +21,7 @@ const PAGE_TITLES: Record<string, string> = {
   [NAV_ROUTES.notifications]: "Notifications",
   [NAV_ROUTES.userManagement]: "Team",
   [NAV_ROUTES.accessRequests]: "Access Requests",
+  [NAV_ROUTES.settings]: "Settings",
 };
 
 function getPageTitle(pathname: string): string {
@@ -45,9 +47,9 @@ export function AppHeader() {
     <header
       style={{
         height: "var(--ds-header-height)",
-        background: "rgba(252,248,244,0.82)",
+        background: "color-mix(in srgb, var(--ds-bg) 82%, transparent)",
         ...dsVibrancy,
-        borderBottom: "0.5px solid rgba(60,60,67,0.14)",
+        borderBottom: "0.5px solid var(--ds-separator)",
         position: "fixed",
         top: 0,
         left: isMobile ? 0 : "var(--ds-sidebar-width)",
@@ -67,7 +69,7 @@ export function AppHeader() {
           letterSpacing: "-0.02em",
         }}
       >
-        {isMobile ? "A-Design" : title}
+        {isMobile ? APP_NAME : title}
       </span>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

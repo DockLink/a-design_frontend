@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
+import { ProjectCard } from "@/components/projects/project-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useAccessRequests } from "@/hooks/use-access-requests";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -349,98 +350,36 @@ export function AdminDashboard() {
 
       {/* All projects */}
       <SectionHeader title="All projects" />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: "16px",
-        }}
-      >
-        {projects.map((project) => {
-          const isHovered = hoveredProject === `grid-${project.id}`;
-          const statusCfg = STATUS_CONFIG[project.status] ?? { bg: "#F5EFE6", color: "#6B5744" };
-          return (
-            <button
-              key={project.id}
-              onClick={() => openProject(project)}
-              onMouseEnter={() => setHoveredProject(`grid-${project.id}`)}
-              onMouseLeave={() => setHoveredProject(null)}
-              style={{
-                background: "#FFFFFF",
-                borderRadius: "16px",
-                border: `1px solid ${isHovered ? "#D4A96A" : "rgba(90,60,30,0.12)"}`,
-                boxShadow: isHovered ? "0 10px 26px rgba(60,40,20,0.12)" : "0 1px 3px rgba(60,40,20,0.06)",
-                cursor: "pointer",
-                transition: "all 0.15s",
-                textAlign: "left",
-                padding: 0,
-                overflow: "hidden",
-              }}
-            >
-              <div style={{ width: "100%", height: "150px", background: `url(${project.thumbnail}) center/cover`, position: "relative" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    background: statusCfg.bg,
-                    color: statusCfg.color,
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    borderRadius: "8px",
-                    padding: "4px 10px",
-                  }}
-                >
-                  {project.status}
-                </div>
-              </div>
-              <div style={{ padding: "15px 16px" }}>
-                <div style={{ fontSize: "14.5px", fontWeight: 600, color: "#1A1410", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "3px" }}>
-                  {project.name}
-                </div>
-                <div style={{ fontSize: "12.5px", color: "#9C8573", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "12px" }}>
-                  {project.client}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                  <span style={{ fontSize: "11.5px", color: "#9C8573", display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                    {(project.teamSize ?? 0) > 0 && (
-                      <>
-                        <Users size={12} color="#C4B5A5" />
-                        {project.teamSize}
-                      </>
-                    )}
-                  </span>
-                  {(project.completion ?? 0) > 0 && (
-                    <span style={{ fontSize: "11.5px", fontWeight: 500, color: "#6B5744", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                      <CheckCircle2 size={12} color="#2D8B5E" />
-                      {project.completion}%
-                    </span>
-                  )}
-                </div>
-                {(project.currentPhase ?? 0) > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "12px" }}>
-                    {Array.from({ length: 6 }).map((_, i) => {
-                      const phase = project.currentPhase ?? 0;
-                      const done = i < phase;
-                      const active = i === phase;
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            flex: 1,
-                            height: "3px",
-                            borderRadius: "9999px",
-                            background: done ? "#D4A96A" : active ? "#F5E6D0" : "#F2EDE8",
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </button>
-          );
-        })}
+      <div className="project-card-grid">
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            onClick={() => openProject(project)}
+            renderExtra={
+              (project.teamSize ?? 0) > 0 || (project.completion ?? 0) > 0
+                ? (p) => (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "10px" }}>
+                      <span style={{ fontSize: "11.5px", color: "#9C8573", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                        {(p.teamSize ?? 0) > 0 && (
+                          <>
+                            <Users size={12} color="#C4B5A5" />
+                            {p.teamSize}
+                          </>
+                        )}
+                      </span>
+                      {(p.completion ?? 0) > 0 && (
+                        <span style={{ fontSize: "11.5px", fontWeight: 500, color: "#6B5744", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <CheckCircle2 size={12} color="#2D8B5E" />
+                          {p.completion}%
+                        </span>
+                      )}
+                    </div>
+                  )
+                : undefined
+            }
+          />
+        ))}
       </div>
 
       <CreateProjectSheet

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ActivityTracker } from "@/components/auth/activity-tracker";
+import { UserPreferencesProvider } from "@/components/providers/user-preferences-provider";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,14 +32,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!isHydrated || !isAuthenticated) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FCF8F4" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid #D4A96A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ds-bg)" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--ds-accent)", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
 
   return (
     <NotificationsProvider>
+      <UserPreferencesProvider>
       <ActivityTracker />
       <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
         <AppSidebar />
@@ -47,7 +49,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           style={{
             minHeight: "100vh",
             paddingTop: "var(--ds-header-height)",
-            paddingBottom: isMobile ? "72px" : "40px",
+            paddingBottom: isMobile ? "72px" : "56px",
             marginLeft: isMobile ? 0 : "var(--ds-sidebar-width)",
           }}
         >
@@ -56,12 +58,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               padding: "var(--ds-content-padding-y) var(--ds-content-padding-x)",
               maxWidth: "var(--ds-content-max-width)",
               margin: "0 auto",
+              width: "100%",
+              minWidth: 0,
+              boxSizing: "border-box",
             }}
           >
             {children}
           </div>
         </main>
       </div>
+      </UserPreferencesProvider>
     </NotificationsProvider>
   );
 }

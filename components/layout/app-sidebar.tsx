@@ -15,16 +15,19 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useUserPreferences } from "@/components/providers/user-preferences-provider";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
+import { APP_NAME } from "@/lib/constants";
 import {
-  HOME_ROUTE,
   ROLE_LABEL,
   toSidebarRole,
 } from "@/lib/navigation/sidebar-role";
-import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
+import { resolveHomeRoute } from "@/lib/navigation/home-route";
+import { getUserDisplayName } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
+import { UserAvatar } from "@/components/user-management/user-avatar";
 
 const PROJECT_ROUTES = [NAV_ROUTES.projects];
 
@@ -33,13 +36,15 @@ export function AppSidebar() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user, primaryRole, logout } = useAuth();
+  const { preferences } = useUserPreferences();
   const { unreadCount } = useNotifications();
   const hasUnreadNotifications = unreadCount > 0;
+  const collapsed = preferences.sidebar_mode === "collapsed";
 
   if (!user || !primaryRole) return null;
 
   const sidebarRole = toSidebarRole(primaryRole);
-  const homePage = HOME_ROUTE[sidebarRole];
+  const homePage = resolveHomeRoute(primaryRole, preferences);
 
   const isActive = (routes: string | string[]) => {
     const list = Array.isArray(routes) ? routes : [routes];
@@ -93,9 +98,9 @@ export function AppSidebar() {
       style={{
         width: "var(--ds-sidebar-width)",
         height: "100vh",
-        background: "rgba(247,241,235,0.88)",
+        background: "var(--ds-surface)",
         ...dsVibrancy,
-        borderRight: "0.5px solid rgba(60,60,67,0.14)",
+        borderRight: "0.5px solid var(--ds-separator)",
         position: "fixed",
         left: 0,
         top: 0,
@@ -110,8 +115,9 @@ export function AppSidebar() {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          padding: "0 18px",
-          borderBottom: "0.5px solid rgba(60,60,67,0.08)",
+          padding: collapsed ? "0 10px" : "0 18px",
+          borderBottom: "0.5px solid var(--ds-separator)",
+          justifyContent: collapsed ? "center" : "flex-start",
           flexShrink: 0,
         }}
       >
@@ -120,6 +126,7 @@ export function AppSidebar() {
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FEBC2E" }} />
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28C840" }} />
         </div>
+        {!collapsed ? (
         <span
           style={{
             fontSize: "var(--ds-text-callout)",
@@ -131,43 +138,55 @@ export function AppSidebar() {
             whiteSpace: "nowrap",
           }}
         >
-          A-Design Studio
+          {APP_NAME}
         </span>
+        ) : null}
       </div>
 
-      <div style={{ flex: 1, padding: "10px", overflowY: "auto" }}>
+      <div style={{ flex: 1, padding: collapsed ? "10px 6px" : "10px", overflowY: "auto" }}>
         <div style={{ marginBottom: "6px" }}>
-          <SidebarItem icon={Home} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
-          <SidebarItem icon={Folder} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
+          <SidebarItem collapsed={collapsed} icon={Home} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
+          <SidebarItem collapsed={collapsed} icon={Folder} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
           {sidebarRole !== "admin" && sidebarRole !== "superadmin" && (
-            <SidebarItem icon={CheckSquare} label="My Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
+            <SidebarItem collapsed={collapsed} icon={CheckSquare} label="My Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
           )}
-          <SidebarItem icon={Bell} label="Notifications" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
+          <SidebarItem collapsed={collapsed} icon={Bell} label="Notifications" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
         </div>
 
         {sidebarRole !== "member" && (
           <>
-            <div style={{ height: "0.5px", background: "rgba(60,60,67,0.10)", margin: "8px 6px" }} />
+            <div style={{ height: "0.5px", background: "var(--ds-separator)", margin: "8px 6px" }} />
             {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
-              <SidebarItem icon={Users} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
+              <SidebarItem collapsed={collapsed} icon={Users} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
             )}
-            <SidebarItem icon={ClipboardList} label="Access Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
+            <SidebarItem collapsed={collapsed} icon={ClipboardList} label="Access Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
           </>
         )}
       </div>
 
-      <div style={{ flexShrink: 0, padding: "10px", borderTop: "0.5px solid rgba(60,60,67,0.10)" }}>
-        <SidebarItem icon={Settings} label="Settings" active={isActive(NAV_ROUTES.settings)} onClick={() => go(NAV_ROUTES.settings)} />
+      <div
+        style={{
+          flexShrink: 0,
+          paddingTop: 10,
+          paddingLeft: collapsed ? 6 : 10,
+          paddingRight: collapsed ? 6 : 10,
+          paddingBottom: "max(14px, env(safe-area-inset-bottom, 14px))",
+          borderTop: "0.5px solid var(--ds-separator)",
+        }}
+      >
+        <SidebarItem collapsed={collapsed} icon={Settings} label="Settings" active={isActive(NAV_ROUTES.settings)} onClick={() => go(NAV_ROUTES.settings)} />
 
         <button
           onClick={handleLogout}
+          title={collapsed ? "Log out" : undefined}
           style={{
             width: "100%",
-            height: "48px",
+            height: collapsed ? "40px" : "48px",
             display: "flex",
             alignItems: "center",
-            gap: "12px",
-            padding: "0 12px",
+            justifyContent: collapsed ? "center" : "flex-start",
+            gap: collapsed ? 0 : "12px",
+            padding: collapsed ? 0 : "0 12px",
             borderRadius: "var(--ds-radius-control)",
             background: "transparent",
             border: "none",
@@ -178,23 +197,8 @@ export function AppSidebar() {
           onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(60,60,67,0.06)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              background: "rgba(212,169,106,0.18)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "var(--ds-text-caption-2)",
-              fontWeight: 600,
-              color: "var(--ds-accent)",
-              flexShrink: 0,
-            }}
-          >
-            {getUserInitials(user)}
-          </div>
+          <UserAvatar user={user} size={32} avatarFileId={preferences.avatar_file_id} />
+          {!collapsed ? (
           <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
             <div
               style={{
@@ -212,35 +216,38 @@ export function AppSidebar() {
               {ROLE_LABEL[sidebarRole]}
             </div>
           </div>
-          <LogOut size={16} color="var(--ds-tertiary-label)" />
+          ) : null}
+          {!collapsed ? <LogOut size={16} color="var(--ds-tertiary-label)" /> : null}
         </button>
       </div>
     </nav>
   );
 }
 
-function SidebarItem({ icon: Icon, label, active, onClick, badge }: {
-  icon: LucideIcon; label: string; active: boolean; onClick: () => void; badge?: boolean;
+function SidebarItem({ icon: Icon, label, active, onClick, badge, collapsed }: {
+  icon: LucideIcon; label: string; active: boolean; onClick: () => void; badge?: boolean; collapsed?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <button
       onClick={onClick}
+      title={collapsed ? label : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%",
-        height: "38px",
+        height: collapsed ? "40px" : "38px",
         display: "flex",
         alignItems: "center",
-        gap: "10px",
-        padding: "0 12px",
+        justifyContent: collapsed ? "center" : "flex-start",
+        gap: collapsed ? 0 : "10px",
+        padding: collapsed ? 0 : "0 12px",
         borderRadius: "var(--ds-radius-control)",
-        background: active ? "rgba(212,169,106,0.14)" : hovered ? "rgba(60,60,67,0.06)" : "transparent",
+        background: active ? "color-mix(in srgb, var(--ds-accent) 14%, transparent)" : hovered ? "rgba(60,60,67,0.06)" : "transparent",
         border: "none",
         cursor: "pointer",
-        color: active ? "#C9894A" : "var(--ds-label)",
+        color: active ? "var(--ds-accent)" : "var(--ds-label)",
         fontSize: "var(--ds-text-body)",
         fontWeight: active ? 500 : 400,
         textAlign: "left",
@@ -251,9 +258,20 @@ function SidebarItem({ icon: Icon, label, active, onClick, badge }: {
       }}
     >
       <Icon size={18} strokeWidth={active ? 2.25 : 2} />
-      <span style={{ flex: 1 }}>{label}</span>
+      {!collapsed ? <span style={{ flex: 1 }}>{label}</span> : null}
       {badge && (
-        <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--ds-accent)", flexShrink: 0 }} />
+        <span
+          style={{
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            background: "var(--ds-accent)",
+            flexShrink: 0,
+            position: collapsed ? "absolute" : "static",
+            top: collapsed ? "8px" : undefined,
+            right: collapsed ? "10px" : undefined,
+          }}
+        />
       )}
     </button>
   );

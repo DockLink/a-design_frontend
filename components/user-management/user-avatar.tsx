@@ -1,12 +1,42 @@
+"use client";
+
 import type { User } from "@/types/users";
 
+import { useAvatarUrl } from "@/hooks/use-avatar-url";
+import { getUserInitials } from "@/lib/user/display";
+
 function initialsFromUser(user: User): string {
-  const first = user.first_name?.[0] ?? "";
-  const last = user.last_name?.[0] ?? "";
-  return `${first}${last}`.toUpperCase() || user.email[0]?.toUpperCase() || "?";
+  return getUserInitials(user);
 }
 
-export function UserAvatar({ user, size = 32 }: { user: User; size?: number }) {
+export function UserAvatar({
+  user,
+  size = 32,
+  avatarFileId,
+}: {
+  user: User;
+  size?: number;
+  avatarFileId?: string | null;
+}) {
+  const resolvedFileId = avatarFileId ?? user.preferences?.avatar_file_id ?? null;
+  const imageUrl = useAvatarUrl(resolvedFileId);
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          objectFit: "cover",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+
   return (
     <div
       style={{
