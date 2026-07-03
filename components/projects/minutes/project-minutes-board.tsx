@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Mic, Plus, Trash2, Upload, X as XIcon } from "lucide-react";
+import { Check, ChevronDown, FileText, Mic, Plus, Trash2, Upload, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectMeetingMinutes } from "@/hooks/use-project-meeting-minutes";
@@ -19,10 +19,11 @@ interface EditAction {
   done: boolean;
 }
 
-interface EditAudio {
+interface EditAttachment {
+  id: string;
   name: string;
-  url: string;
-  /** Set for audio already attached to the saved minute. */
+  url?: string;
+  /** Set for files already attached to the saved minute. */
   existingId?: string;
   /** Set for a freshly uploaded (floating) file. */
   token?: string;
@@ -40,13 +41,13 @@ function toDateInput(iso: string) {
   return d.toISOString().slice(0, 10);
 }
 
-function audioNameFromUrl(url: string): string {
+function attachmentNameFromUrl(url: string, fallback: string): string {
   try {
     const path = new URL(url, "http://x").pathname;
     const last = path.split("/").filter(Boolean).pop();
-    return last ? decodeURIComponent(last) : "Audio recording";
+    return last ? decodeURIComponent(last) : fallback;
   } catch {
-    return "Audio recording";
+    return fallback;
   }
 }
 
@@ -61,6 +62,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
     removeMinute,
     setActionItemStatus,
     uploadAudio,
+    uploadAttachment,
   } = useProjectMeetingMinutes(projectId);
 
   const currentUser = useAuthStore((s) => s.session?.user ?? null);
@@ -90,9 +92,11 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
   const [editAttendees, setEditAttendees] = useState<string[]>([]);
   const [editBody, setEditBody] = useState("");
   const [editActions, setEditActions] = useState<EditAction[]>([]);
-  const [editAudio, setEditAudio] = useState<EditAudio | null>(null);
+  const [editAudio, setEditAudio] = useState<EditAttachment | null>(null);
+  const [editPdfs, setEditPdfs] = useState<EditAttachment[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   useEffect(() => {
     if (mode !== "detail") return;
@@ -117,6 +121,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
     setEditBody("");
     setEditActions([]);
     setEditAudio(null);
+    setEditPdfs([]);
     setMode("create");
   }
 
@@ -134,7 +139,24 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
       }))
     );
     const audio = m.audio_files?.[0];
-    setEditAudio(audio ? { name: audioNameFromUrl(audio.url), url: audio.url, existingId: audio.id } : null);
+    setEditAudio(
+      audio
+        ? {
+            id: audio.id,
+            name: attachmentNameFromUrl(audio.url, "Audio recording"),
+            url: audio.url,
+            existingId: audio.id,
+          }
+        : null,
+    );
+    setEditPdfs(
+      (m.pdf_files ?? []).map((pdf) => ({
+        id: pdf.id,
+        name: attachmentNameFromUrl(pdf.url, "Document.pdf"),
+        url: pdf.url,
+        existingId: pdf.id,
+      })),
+    );
     setMode("edit");
   }
 
@@ -162,6 +184,9 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
       }));
 
     const audioId = editAudio?.existingId ?? editAudio?.token;
+    const pdfIds = editPdfs
+      .map((pdf) => pdf.existingId ?? pdf.token)
+      .filter((id): id is string => Boolean(id));
 
     setIsSaving(true);
     try {
@@ -173,6 +198,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
           body: editBody,
           action_items: actionItems,
           audio_files: audioId ? [audioId] : [],
+          pdf_files: pdfIds,
         });
         setSelectedId(created.id);
         toast.success("Meeting minute published");
@@ -184,6 +210,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
           body: editBody,
           action_items: actionItems,
           audio_files: audioId ? [{ id: audioId }] : [],
+          pdf_files: pdfIds.map((id) => ({ id })),
         });
         toast.success("Changes saved");
       }
@@ -224,11 +251,39 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
     setUploadingAudio(true);
     try {
       const token = await uploadAudio(file);
-      setEditAudio({ name: file.name, url: URL.createObjectURL(file), token });
+      setEditAudio({
+        id: `audio-${token}`,
+        name: file.name,
+        url: URL.createObjectURL(file),
+        token,
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Audio upload failed");
     } finally {
       setUploadingAudio(false);
+    }
+  }
+
+  async function handlePdfUpload(file: File) {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please choose a PDF file");
+      return;
+    }
+    setUploadingPdf(true);
+    try {
+      const token = await uploadAttachment(file);
+      setEditPdfs((prev) => [
+        ...prev,
+        {
+          id: `pdf-${token}`,
+          name: file.name,
+          token,
+        },
+      ]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PDF upload failed");
+    } finally {
+      setUploadingPdf(false);
     }
   }
 
@@ -378,7 +433,9 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
               body={editBody}
               actions={editActions}
               audio={editAudio}
+              pdfs={editPdfs}
               uploadingAudio={uploadingAudio}
+              uploadingPdf={uploadingPdf}
               isSaving={isSaving}
               isCreate={mode === "create"}
               onTitleChange={setEditTitle}
@@ -390,6 +447,8 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
               onRemoveAction={removeEditorAction}
               onAudioUpload={handleAudioUpload}
               onRemoveAudio={() => setEditAudio(null)}
+              onPdfUpload={handlePdfUpload}
+              onRemovePdf={(id) => setEditPdfs((prev) => prev.filter((pdf) => pdf.id !== id))}
               onCancel={cancelEditor}
               onPublish={publish}
             />
@@ -416,6 +475,7 @@ function DetailView({
   onToggleAction: (action: MeetingActionItem, index: number) => void;
 }) {
   const audio = minute.audio_files?.[0];
+  const pdfFiles = minute.pdf_files ?? [];
   const actionItems = minute.actionItems ?? [];
 
   return (
@@ -514,7 +574,7 @@ function DetailView({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {audioNameFromUrl(audio.url)}
+                  {attachmentNameFromUrl(audio.url, "Audio recording")}
                 </div>
                 <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
                   Audio recording
@@ -523,6 +583,66 @@ function DetailView({
             </div>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <audio controls style={{ width: "100%", height: "32px", outline: "none" }} src={audio.url} />
+          </div>
+        </div>
+      )}
+
+      {pdfFiles.length > 0 && (
+        <div style={{ marginBottom: "24px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 500, color: "#6B5744", marginBottom: "8px" }}>
+            PDF documents
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {pdfFiles.map((pdf) => (
+              <a
+                key={pdf.id}
+                href={pdf.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  background: "#FDFAF6",
+                  border: "1px solid rgba(90,60,30,0.12)",
+                  borderRadius: "12px",
+                  padding: "12px 16px",
+                  textDecoration: "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "8px",
+                    background: "rgba(212,169,106,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <FileText size={18} color="#D4A96A" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1A1410",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {attachmentNameFromUrl(pdf.url, "Document.pdf")}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                    Open PDF
+                  </div>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       )}
@@ -785,7 +905,9 @@ function EditorView({
   body,
   actions,
   audio,
+  pdfs,
   uploadingAudio,
+  uploadingPdf,
   isSaving,
   isCreate,
   onTitleChange,
@@ -797,6 +919,8 @@ function EditorView({
   onRemoveAction,
   onAudioUpload,
   onRemoveAudio,
+  onPdfUpload,
+  onRemovePdf,
   onCancel,
   onPublish,
 }: {
@@ -806,8 +930,10 @@ function EditorView({
   memberOptions: string[];
   body: string;
   actions: EditAction[];
-  audio: EditAudio | null;
+  audio: EditAttachment | null;
+  pdfs: EditAttachment[];
   uploadingAudio: boolean;
+  uploadingPdf: boolean;
   isSaving: boolean;
   isCreate: boolean;
   onTitleChange: (v: string) => void;
@@ -819,10 +945,13 @@ function EditorView({
   onRemoveAction: (id: string) => void;
   onAudioUpload: (file: File) => void;
   onRemoveAudio: () => void;
+  onPdfUpload: (file: File) => void;
+  onRemovePdf: (id: string) => void;
   onCancel: () => void;
   onPublish: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const inputBase: React.CSSProperties = {
     background: "#FDFAF6",
     border: "1px solid rgba(90,60,30,0.18)",
@@ -960,6 +1089,108 @@ function EditorView({
               </div>
             </div>
           )}
+        </div>
+
+        <div style={{ marginBottom: "14px" }}>
+          <label style={{ ...labelStyle, marginBottom: "6px" }}>PDF Documents (Optional)</label>
+
+          {pdfs.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "8px" }}>
+              {pdfs.map((pdf) => (
+                <div
+                  key={pdf.id}
+                  style={{
+                    background: "#FDFAF6",
+                    border: "1px solid rgba(90,60,30,0.12)",
+                    borderRadius: "12px",
+                    padding: "12px 16px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "8px",
+                        background: "rgba(212,169,106,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <FileText size={18} color="#D4A96A" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#1A1410",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {pdf.name}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                        PDF attached
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => onRemovePdf(pdf.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#C4B19A",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "4px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <XIcon size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onPdfUpload(file);
+              e.target.value = "";
+            }}
+            style={{ display: "none" }}
+          />
+          <button
+            onClick={() => pdfInputRef.current?.click()}
+            disabled={uploadingPdf}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              width: "100%",
+              height: "52px",
+              background: "#FDFAF6",
+              border: "2px dashed rgba(90,60,30,0.25)",
+              borderRadius: "12px",
+              cursor: uploadingPdf ? "default" : "pointer",
+              fontSize: "13px",
+              color: "#9C8573",
+            }}
+          >
+            <Upload size={18} />
+            {uploadingPdf ? "Uploading…" : "Click to upload PDF (add multiple if needed)"}
+          </button>
         </div>
 
         <label style={{ ...labelStyle, marginBottom: "6px" }}>Notes (Optional)</label>
