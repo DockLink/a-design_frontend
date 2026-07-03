@@ -67,12 +67,22 @@ export function ProjectImageGallery({
     }
   }
 
+  const gridClass =
+    images.length <= 1
+      ? "project-gallery-grid project-gallery-grid--single"
+      : images.length === 2
+        ? "project-gallery-grid project-gallery-grid--double"
+        : "project-gallery-grid";
+
   return (
-    <div className="project-gallery-section">
-      <div className="project-gallery-header">
-        <h3 className="project-gallery-title">Project gallery</h3>
+    <section className="project-gallery-card">
+      <div className="project-gallery-card__header">
+        <h3 className="project-gallery-card__title">
+          <ImagePlus size={16} color="#C9894A" aria-hidden />
+          Project gallery
+        </h3>
         {canEdit ? (
-          <div className="project-gallery-actions">
+          <>
             <input
               ref={fileInputRef}
               type="file"
@@ -90,95 +100,39 @@ export function ProjectImageGallery({
               {isUploading ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
               {isUploading ? "Uploading…" : "Add photos"}
             </button>
-          </div>
+          </>
         ) : null}
       </div>
 
-      {images.length === 0 ? (
-        <div
-          style={{
-            background: "#FFFFFF",
-            borderRadius: "12px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-            padding: "24px",
-            fontSize: "13px",
-            color: "#8E8E93",
-            textAlign: "center",
-          }}
-        >
-          No project photos yet.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: "12px",
-          }}
-        >
-          {images.map((image, index) => (
-            <div
-              key={image.id}
-              style={{
-                position: "relative",
-                aspectRatio: "4 / 3",
-                borderRadius: "12px",
-                overflow: "hidden",
-                background: "#E8DFD3",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
-              }}
-            >
-              <img
-                src={image.url}
-                alt={`Project photo ${index + 1}`}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-              {index === 0 ? (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "8px",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    color: "#fff",
-                    background: "rgba(28,28,30,0.55)",
-                    padding: "3px 8px",
-                    borderRadius: "9999px",
-                  }}
-                >
-                  Cover
-                </span>
-              ) : null}
-              {canEdit ? (
-                <button
-                  type="button"
-                  title="Remove photo"
-                  disabled={removingId === image.id}
-                  onClick={() => void handleRemove(image.id)}
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    right: "8px",
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background: "rgba(28,28,30,0.55)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {removingId === image.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                </button>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="project-gallery-card__body">
+        {images.length === 0 ? (
+          <div className="project-gallery-empty">No project photos yet.</div>
+        ) : (
+          <div className={gridClass}>
+            {images.map((image, index) => (
+              <div key={image.id} className="project-gallery-item">
+                <img src={image.url} alt={`Project photo ${index + 1}`} />
+                {index === 0 ? <span className="project-gallery-cover-badge">Cover</span> : null}
+                {canEdit ? (
+                  <button
+                    type="button"
+                    title="Remove photo"
+                    className="project-gallery-remove-btn"
+                    disabled={removingId === image.id}
+                    onClick={() => void handleRemove(image.id)}
+                  >
+                    {removingId === image.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

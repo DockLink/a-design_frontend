@@ -299,8 +299,8 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div style={{ margin: "-28px" }}>
-      <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden" }}>
+    <div className="project-minutes-board">
+      <div className="project-minutes-board__layout">
         {/* LEFT PANEL */}
         <div
           style={{
