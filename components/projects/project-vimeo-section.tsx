@@ -77,7 +77,7 @@ export function ProjectVimeoSection({
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="https://vimeo.com/123456789"
+            placeholder="https://vimeo.com/123456789 or https://vimeo.com/123456789/abc123"
             className="bg-[#F5EFE6] h-10"
           />
           {!draftValid ? (

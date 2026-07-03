@@ -12,6 +12,11 @@ export interface MeetingAudioFile {
   url: string;
 }
 
+export interface MeetingPdfFile {
+  id: string;
+  url: string;
+}
+
 export interface MeetingMinute {
   id: string;
   projectId: string;
@@ -21,6 +26,7 @@ export interface MeetingMinute {
   body?: string | null;
   actionItems?: MeetingActionItem[] | null;
   audio_files?: MeetingAudioFile[];
+  pdf_files?: MeetingPdfFile[];
   createdById?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -49,6 +55,7 @@ export interface CreateMeetingMinutePayload {
   action_items?: ActionItemInput[];
   /** Floating storage file ids (tokens) returned from the upload endpoint. */
   audio_files?: string[];
+  pdf_files?: string[];
 }
 
 export interface UpdateMeetingMinutePayload {
@@ -59,4 +66,5 @@ export interface UpdateMeetingMinutePayload {
   action_items?: ActionItemInput[];
   /** On update the backend expects an array of objects with the storage file id. */
   audio_files?: { id: string }[];
+  pdf_files?: { id: string }[];
 }

@@ -87,8 +87,8 @@ export function useProjectMeetingMinutes(projectId: string) {
     []
   );
 
-  /** Uploads an audio file and returns the floating storage token (id). */
-  const uploadAudio = useCallback(
+  /** Uploads an attachment file and returns the floating storage token (id). */
+  const uploadAttachment = useCallback(
     async (file: File) => {
       const { token } = await uploadFile(file);
       return token;
@@ -106,6 +106,7 @@ export function useProjectMeetingMinutes(projectId: string) {
     updateMinute,
     removeMinute,
     setActionItemStatus,
-    uploadAudio,
+    uploadAudio: uploadAttachment,
+    uploadAttachment,
   };
 }
