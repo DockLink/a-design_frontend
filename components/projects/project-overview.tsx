@@ -228,32 +228,52 @@ export function ProjectOverview() {
             canManage={canManage}
             onManage={() => setShowManageTeam(true)}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-            <div style={{ fontSize: "14px", fontWeight: 600 }}>Project brief</div>
-            {canManage && (
-              <button
-                type="button"
-                onClick={() => setShowEditBrief(true)}
-                style={{ background: "none", border: "none", color: "#D4A96A", cursor: "pointer", fontSize: "13px" }}
-              >
-                Edit
-              </button>
-            )}
-          </div>
           <div
             style={{
               background: "#FFFFFF",
               borderRadius: "12px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-              padding: "14px",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontSize: "13px", color: "#6C6C70", lineHeight: 1.65 }}>
-              {project!.description?.trim() || "No brief added yet."}
+            <div
+              style={{
+                padding: "16px 18px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>Project brief</div>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setShowEditBrief(true)}
+                  style={{
+                    height: "28px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    border: "1px solid rgba(90,60,30,0.18)",
+                    borderRadius: "8px",
+                    color: "#6B5744",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Edit
+                </button>
+              )}
             </div>
-            {(project!.brief_attachments?.length ?? 0) > 0 ? (
-              <ProjectBriefAttachmentsList attachments={project!.brief_attachments ?? []} />
-            ) : null}
+            <div style={{ padding: "0 18px 18px" }}>
+              <div style={{ fontSize: "13px", color: "#6C6C70", lineHeight: 1.65 }}>
+                {project!.description?.trim() || "No brief added yet."}
+              </div>
+              {(project!.brief_attachments?.length ?? 0) > 0 ? (
+                <ProjectBriefAttachmentsList attachments={project!.brief_attachments ?? []} />
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
