@@ -67,13 +67,6 @@ export function ProjectImageGallery({
     }
   }
 
-  const gridClass =
-    images.length <= 1
-      ? "project-gallery-grid project-gallery-grid--single"
-      : images.length === 2
-        ? "project-gallery-grid project-gallery-grid--double"
-        : "project-gallery-grid";
-
   return (
     <section className="project-gallery-card">
       <div className="project-gallery-card__header">
@@ -108,7 +101,7 @@ export function ProjectImageGallery({
         {images.length === 0 ? (
           <div className="project-gallery-empty">No project photos yet.</div>
         ) : (
-          <div className={gridClass}>
+          <div className="project-gallery-grid">
             {images.map((image, index) => (
               <div key={image.id} className="project-gallery-item">
                 <img src={image.url} alt={`Project photo ${index + 1}`} />
