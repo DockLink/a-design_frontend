@@ -9,42 +9,39 @@ import { useUsers } from "@/hooks/use-users";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { isGuestProjectMember } from "@/lib/user/guest";
 import type { ProjectMember } from "@/types/projects";
-import { PROJECT_LEAD_ROLE } from "@/types/projects";
 import type { User } from "@/types/users";
 
-export function ManageTeamSheet({
+export function ManageGuestsSheet({
   projectName,
   members,
-  projectLeadUserIds,
   onSave,
   onClose,
   isSaving,
 }: {
   projectName: string;
   members: ProjectMember[];
-  projectLeadUserIds: string[];
-  onSave: (userIds: string[], leadUserIds: string[]) => Promise<void>;
+  onSave: (guestUserIds: string[]) => Promise<void>;
   onClose: () => void;
   isSaving?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [draftIds, setDraftIds] = useState<string[]>(
+  const [draftGuestIds, setDraftGuestIds] = useState<string[]>(
     members
-      .filter((m) => m.status === "ACTIVE" && !isGuestProjectMember(m))
+      .filter((m) => m.status === "ACTIVE" && isGuestProjectMember(m))
       .map((m) => m.user_id),
   );
-  const [draftLeadIds, setDraftLeadIds] = useState<string[]>(
-    projectLeadUserIds.length > 0
-      ? projectLeadUserIds
-      : members.filter((m) => m.status === "ACTIVE" && m.role === PROJECT_LEAD_ROLE).map((m) => m.user_id)
-  );
 
-  const { users: orgUsers, isLoading } = useUsers({ page: 1, limit: 100, status: "ACTIVE" });
+  const { users: guestUsers, isLoading } = useUsers({
+    page: 1,
+    limit: 100,
+    status: "ACTIVE",
+    roles: ["GUEST"],
+  });
 
-  const memberUsers = useMemo(() => {
-    return draftIds
+  const guestMemberUsers = useMemo(() => {
+    return draftGuestIds
       .map((id) => {
-        const fromOrg = orgUsers.find((u) => u.id === id);
+        const fromOrg = guestUsers.find((u) => u.id === id);
         const fromMembers = members.find((m) => m.user_id === id)?.assignee;
         if (fromOrg) return fromOrg;
         if (fromMembers) {
@@ -53,46 +50,29 @@ export function ManageTeamSheet({
             email: fromMembers.email ?? "",
             first_name: fromMembers.first_name ?? fromMembers.firstName ?? "",
             last_name: fromMembers.last_name ?? fromMembers.lastName ?? "",
-            roles: (fromMembers.roles as User["roles"]) ?? ["MEMBER"],
+            roles: (fromMembers.roles as User["roles"]) ?? ["GUEST"],
             status: "ACTIVE" as const,
           };
         }
         return null;
       })
       .filter(Boolean) as User[];
-  }, [draftIds, orgUsers, members]);
+  }, [draftGuestIds, guestUsers, members]);
 
-  const available = orgUsers.filter(
+  const available = guestUsers.filter(
     (u) =>
-      !u.roles.includes("GUEST") &&
-      !draftIds.includes(u.id) &&
+      !draftGuestIds.includes(u.id) &&
       getUserDisplayName(u).toLowerCase().includes(search.toLowerCase()),
   );
 
-  function toggleLead(userId: string) {
-    setDraftLeadIds((ids) =>
-      ids.includes(userId) ? ids.filter((id) => id !== userId) : [...ids, userId]
-    );
-  }
-
   async function handleDone() {
-    const invalidLeads = draftLeadIds.filter((id) => !draftIds.includes(id));
-    if (invalidLeads.length > 0) {
-      toast.error("Project leads must be assigned members");
-      return;
-    }
     try {
-      await onSave(draftIds, draftLeadIds);
-      toast.success("Team updated");
+      await onSave(draftGuestIds);
+      toast.success("Guest access updated");
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update team");
+      toast.error(err instanceof Error ? err.message : "Failed to update guests");
     }
-  }
-
-  function removeMember(userId: string) {
-    setDraftIds((ids) => ids.filter((id) => id !== userId));
-    setDraftLeadIds((ids) => ids.filter((id) => id !== userId));
   }
 
   return (
@@ -131,8 +111,12 @@ export function ManageTeamSheet({
           }}
         >
           <div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-label)" }}>Manage team</div>
-            <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", marginTop: "2px" }}>{projectName}</div>
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-label)" }}>
+              Manage guests
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", marginTop: "2px" }}>
+              {projectName}
+            </div>
           </div>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <X size={18} color="#6C6C70" />
@@ -151,64 +135,78 @@ export function ManageTeamSheet({
               lineHeight: 1.45,
             }}
           >
-            <strong>Project leads:</strong> check one or more members below. Leads get project management controls on{" "}
-            <em>this project only</em>. Everyone else is a regular member.
+            Guests have <strong>view-only</strong> access to this project — they can browse all tabs
+            but cannot upload, edit, or download files.
           </div>
 
-          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--ds-tertiary-label)", marginBottom: "8px", textTransform: "uppercase" }}>
-            Project members · {memberUsers.length}
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--ds-tertiary-label)",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+            }}
+          >
+            Project guests · {guestMemberUsers.length}
           </div>
           <div style={{ border: "0.5px solid rgba(60,60,67,0.12)", borderRadius: "12px", marginBottom: "20px" }}>
-            {memberUsers.length === 0 && (
-              <div style={{ padding: "14px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No members yet.</div>
+            {guestMemberUsers.length === 0 && (
+              <div style={{ padding: "14px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
+                No guests assigned yet.
+              </div>
             )}
-            {memberUsers.map((user, i) => {
-              const isLead = draftLeadIds.includes(user.id);
-              return (
-                <div
-                  key={user.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "10px 14px",
-                    borderBottom: i < memberUsers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isLead}
-                    onChange={() => toggleLead(user.id)}
-                    title="Set as project lead"
-                  />
-                  <ProjectMemberAvatar initials={getUserInitials(user)} size={32} fontSize={11} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
-                    {isLead && (
-                      <div style={{ fontSize: "11px", color: "var(--ds-accent-hover)", marginTop: "2px" }}>Project lead</div>
-                    )}
+            {guestMemberUsers.map((user, i) => (
+              <div
+                key={user.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 14px",
+                  borderBottom:
+                    i < guestMemberUsers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
+                }}
+              >
+                <ProjectMemberAvatar initials={getUserInitials(user)} size={32} fontSize={11} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
+                  <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
+                    View only
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeMember(user.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ds-tertiary-label)" }}
-                  >
-                    <X size={13} />
-                  </button>
                 </div>
-              );
-            })}
+                <button
+                  type="button"
+                  onClick={() => setDraftGuestIds((ids) => ids.filter((id) => id !== user.id))}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ds-tertiary-label)" }}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
           </div>
 
-          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--ds-tertiary-label)", marginBottom: "8px", textTransform: "uppercase" }}>
-            Add from organisation
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 500,
+              color: "var(--ds-tertiary-label)",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+            }}
+          >
+            Add guest account
           </div>
           <div style={{ position: "relative", marginBottom: "10px" }}>
-            <Search size={14} color="var(--ds-tertiary-label)" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+            <Search
+              size={14}
+              color="var(--ds-tertiary-label)"
+              style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search members…"
+              placeholder="Search guests…"
               style={{
                 width: "100%",
                 height: "36px",
@@ -222,10 +220,17 @@ export function ManageTeamSheet({
           </div>
 
           {isLoading ? (
-            <div style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>Loading users…</div>
+            <div style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>Loading guests…</div>
           ) : available.length === 0 ? (
-            <div style={{ fontSize: "13px", color: "var(--ds-tertiary-label)", textAlign: "center", padding: "20px 0" }}>
-              {search ? "No members found." : "All organisation members are in this project."}
+            <div
+              style={{
+                fontSize: "13px",
+                color: "var(--ds-tertiary-label)",
+                textAlign: "center",
+                padding: "20px 0",
+              }}
+            >
+              {search ? "No guests found." : "All guest accounts are assigned to this project."}
             </div>
           ) : (
             <div style={{ border: "0.5px solid rgba(60,60,67,0.12)", borderRadius: "12px" }}>
@@ -244,9 +249,7 @@ export function ManageTeamSheet({
                   <div style={{ flex: 1, fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDraftIds((ids) => [...ids, user.id]);
-                    }}
+                    onClick={() => setDraftGuestIds((ids) => [...ids, user.id])}
                     style={{
                       height: "28px",
                       padding: "0 12px",

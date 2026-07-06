@@ -28,7 +28,7 @@ export function ProjectShell({
 }) {
   const pathname = usePathname();
   const { project, refetch } = useProjectContext();
-  const { effectiveRole } = useProjectMembers();
+  const { effectiveRole, isViewer } = useProjectMembers();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const activeTab = tabFromPathname(pathname, projectId);
@@ -102,7 +102,7 @@ export function ProjectShell({
             projectId={project.id}
             projectName={project.name}
             images={project.images}
-            canEdit={canManageProject(effectiveRole)}
+            canEdit={canManageProject(effectiveRole, isViewer)}
             onUpdated={refetch}
           />
         </div>

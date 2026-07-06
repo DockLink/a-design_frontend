@@ -4,10 +4,12 @@ export const NAV_ROUTES = {
   superAdminDashboard: "/dashboard/super-admin",
   leadDashboard: "/dashboard/lead",
   memberDashboard: "/dashboard/member",
+  guestDashboard: "/dashboard/guest",
   projects: "/projects",
   myTasks: "/my-tasks",
   notifications: "/notifications",
   userManagement: "/user-management",
+  guestUsers: "/guest-users",
   accessRequests: "/access-requests",
   settings: "/settings",
 } as const;
@@ -48,6 +50,20 @@ export const SUPER_ADMIN_ONLY_ROUTES = [
 /** Admin + Super Admin only */
 export const ADMIN_ONLY_ROUTES = [
   NAV_ROUTES.userManagement,
+  NAV_ROUTES.guestUsers,
+] as const;
+
+/** Routes blocked for guest org role */
+export const GUEST_BLOCKED_ROUTES = [
+  NAV_ROUTES.userManagement,
+  NAV_ROUTES.guestUsers,
+  NAV_ROUTES.accessRequests,
+  NAV_ROUTES.myTasks,
+  NAV_ROUTES.notifications,
+  NAV_ROUTES.superAdminDashboard,
+  NAV_ROUTES.adminDashboard,
+  NAV_ROUTES.leadDashboard,
+  NAV_ROUTES.memberDashboard,
 ] as const;
 
 /** Admin + Super Admin + Team Lead */

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { FloatingShapes } from "@/components/auth/floating-shapes";
 import { HandwritingText } from "@/components/auth/handwriting-text";
 import { LoginForm } from "@/components/auth/login-form";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,8 @@ import { getPrimaryRole } from "@/lib/auth/rbac";
 import { APP_NAME } from "@/lib/constants";
 import { NAV_ROUTES } from "@/types/navigation";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
+
+const LOGIN_BG = "#F9F5F1";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,34 +33,50 @@ export default function LoginPage() {
 
   if (!isHydrated || isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F9F5F1]">
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ background: LOGIN_BG }}
+      >
         <div className="size-8 animate-spin rounded-full border-2 border-[var(--ds-accent)] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full">
-      <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-[#F5EFE6] via-[#EAD9C8] to-[#E8D8C2] lg:flex lg:flex-col lg:justify-center lg:px-[70px] lg:py-20">
-        <FloatingShapes />
-        <div className="relative z-10">
+    <div className="flex min-h-screen w-full" style={{ background: LOGIN_BG }}>
+      {/* Left: brand + sign-in — form width matches the A→D span of the wordmark */}
+      <div
+        className="flex w-full flex-col justify-center px-8 py-12 lg:w-1/2 lg:px-[70px] lg:py-20"
+        style={{ background: LOGIN_BG }}
+      >
+        <div className="w-fit max-w-full">
           <HandwritingText />
+
+          <div className="mt-10 w-full">
+            <div className="mb-8">
+              <h1 className="text-[28px] font-light tracking-tight text-[var(--ds-label)]">
+                Sign in
+              </h1>
+              <p className="mt-1.5 text-[15px] font-light text-muted-foreground">
+                Use your {APP_NAME} account
+              </p>
+            </div>
+
+            <LoginForm />
+          </div>
         </div>
       </div>
 
-      <div className="flex w-full items-center justify-center bg-[#F9F5F1] px-8 py-12 lg:w-1/2">
-        <div className="w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-500">
-          <div className="mb-8">
-            <h1 className="text-[28px] font-semibold tracking-tight text-[var(--ds-label)]">
-              Sign in
-            </h1>
-            <p className="mt-1.5 text-[15px] text-muted-foreground">
-              Use your {APP_NAME} account
-            </p>
-          </div>
-
-          <LoginForm />
-        </div>
+      {/* Right: hero image */}
+      <div className="relative hidden min-h-screen lg:block lg:w-1/2">
+        <Image
+          src="/images/heroimage.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          sizes="50vw"
+        />
       </div>
     </div>
   );

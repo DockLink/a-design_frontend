@@ -11,7 +11,7 @@ export function UserActionMenu({
   canDeactivate = true,
 }: {
   disabled?: boolean;
-  onEditRole: () => void;
+  onEditRole?: () => void;
   onDeactivate: () => void;
   /** When provided, shows a "Delete permanently" action (super admin only). */
   onDelete?: () => void;
@@ -82,16 +82,18 @@ export function UserActionMenu({
             overflow: "hidden",
           }}
         >
-          <button
-            type="button"
-            style={itemStyle}
-            onClick={() => {
-              setOpen(false);
-              onEditRole();
-            }}
-          >
-            Edit role
-          </button>
+          {onEditRole && (
+            <button
+              type="button"
+              style={itemStyle}
+              onClick={() => {
+                setOpen(false);
+                onEditRole();
+              }}
+            >
+              Edit role
+            </button>
+          )}
           {canDeactivate && (
             <button
               type="button"

@@ -20,7 +20,7 @@ import type { CreateTaskRequest, Task, TaskableStatus } from "@/types/tasks";
 
 export function useProjectTimeline(projectId: string) {
   const { project } = useProjectContext();
-  const { effectiveRole } = useProjectMembers();
+  const { effectiveRole, isViewer } = useProjectMembers();
 
   const {
     tasks: stageTasks,
@@ -128,7 +128,7 @@ export function useProjectTimeline(projectId: string) {
     [project, stages, milestones]
   );
 
-  const canManage = canManageProject(effectiveRole);
+  const canManage = canManageProject(effectiveRole, isViewer);
   const isLoading = stagesLoading || milestonesLoading || hierarchyLoading;
   const error = stagesError ?? milestonesError;
 
