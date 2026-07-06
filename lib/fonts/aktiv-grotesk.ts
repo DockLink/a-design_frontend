@@ -20,14 +20,5 @@ export const aktivGrotesk = localFont({
   ],
   variable: "--font-aktiv-grotesk",
   display: "swap",
-  fallback: [
-    "system-ui",
-    "-apple-system",
-    "BlinkMacSystemFont",
-    "Segoe UI",
-    "Roboto",
-    "Helvetica Neue",
-    "Arial",
-    "sans-serif",
-  ],
+  fallback: [],
 });

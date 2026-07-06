@@ -56,7 +56,7 @@ function SheetHeader({ className, children }: React.ComponentProps<"div">) {
 }
 
 function SheetTitle({ className, children }: React.ComponentProps<"div">) {
-  return <div className={cn("pr-8 text-base font-medium text-foreground", className)}>{children}</div>;
+  return <div className={cn("pr-8 text-base font-light text-foreground", className)}>{children}</div>;
 }
 
 function SheetBody({ className, children }: React.ComponentProps<"div">) {

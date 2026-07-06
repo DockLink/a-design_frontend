@@ -57,7 +57,7 @@ function TabsTrigger({
       type="button"
       onClick={() => ctx.onValueChange(value)}
       className={cn(
-        "inline-flex h-7 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors",
+        "inline-flex h-7 items-center justify-center rounded-md px-3 text-sm font-light transition-colors",
         active ? "bg-background text-foreground shadow-sm" : "hover:text-foreground",
         className
       )}

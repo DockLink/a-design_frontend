@@ -104,7 +104,7 @@ function ContextMenuSeparator({ className }: { className?: string }) {
 
 function ContextMenuLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[#9C8573]", className)}>
+    <div className={cn("px-2.5 py-1 text-[11px] font-light uppercase tracking-wide text-[#9C8573]", className)}>
       {children}
     </div>
   );

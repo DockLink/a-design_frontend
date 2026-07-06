@@ -166,7 +166,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="-mx-7 -mt-6">
+    <div className="-mt-6">
       <div className="sticky top-[44px] z-[98] flex items-center justify-between gap-3 border-b border-[rgba(90,60,30,0.08)] bg-[#EDE3D4] px-7 py-3">
         <div className="flex items-center gap-3">
           <div className="inline-flex rounded-lg bg-[var(--ds-bg)] p-1">
@@ -273,7 +273,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
         )}
 
         {!isLoading && viewMode === "kanban" && (
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex min-w-full gap-3 overflow-x-auto pb-2">
             {BOARD_COLUMNS.map((col) => (
               <TaskKanbanColumn
                 key={col.id}

@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${aktivGrotesk.variable} h-full antialiased`}>
-      <body className={`${aktivGrotesk.className} min-h-full font-sans`}>
+    <html lang="en" className={`${aktivGrotesk.variable} ${aktivGrotesk.className} h-full antialiased`}>
+      <body className="min-h-full">
         <QueryProvider>
           <AuthHydration />
           {children}

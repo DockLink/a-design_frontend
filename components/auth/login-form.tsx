@@ -52,9 +52,11 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="w-full space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email address</Label>
+    <form onSubmit={handleSubmit} noValidate className="w-full space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="text-xs font-light">
+          Email address
+        </Label>
         <Input
           id="email"
           type="email"
@@ -66,13 +68,15 @@ export function LoginForm() {
             setError(null);
           }}
           aria-invalid={Boolean(error)}
-          className="h-11"
+          className="h-9 text-sm"
           required
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-xs font-light">
+          Password
+        </Label>
         <PasswordInput
           id="password"
           autoComplete="current-password"
@@ -83,12 +87,13 @@ export function LoginForm() {
             setError(null);
           }}
           invalid={Boolean(error)}
+          className="h-9 pr-10 text-sm"
           required
         />
       </div>
 
       {error && (
-        <p className="text-sm text-destructive" role="alert">
+        <p className="text-xs text-destructive" role="alert">
           {error}
         </p>
       )}
@@ -96,7 +101,7 @@ export function LoginForm() {
       <div className="flex justify-end">
         <button
           type="button"
-          className="text-sm font-light text-black hover:underline"
+          className="text-xs font-light text-black hover:underline"
         >
           Forgot password?
         </button>
@@ -106,12 +111,12 @@ export function LoginForm() {
         type="submit"
         disabled={isLoading}
         variant="outline"
-        className="h-12 w-full rounded-xl border border-black bg-transparent text-base font-normal text-black shadow-none hover:bg-black/[0.04]"
+        className="h-10 w-full rounded-xl border border-black bg-transparent text-sm font-normal text-black shadow-none hover:bg-black/[0.04]"
       >
         {isLoading ? "Signing in…" : "Sign in"}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-xs text-muted-foreground">
         Need an account?{" "}
         <span className="cursor-pointer font-light text-black">
           Contact your administrator.
