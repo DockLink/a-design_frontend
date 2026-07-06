@@ -16,6 +16,7 @@ interface SessionInfo {
   user_agent: string | null;
   created_at: string;
   updated_at: string;
+  is_current?: boolean;
 }
 
 function parseDeviceSummary(ua?: string | null): {
@@ -61,11 +62,28 @@ function timeAgo(dateStr: string): string {
 export function SecuritySettingsSection() {
   const router = useRouter();
   const { logout } = useAuth();
-  const currentDevice = useMemo(() => parseDeviceSummary(), []);
+  const browserDevice = useMemo(() => parseDeviceSummary(), []);
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const currentSession = useMemo(
+    () => sessions.find((s) => s.is_current),
+    [sessions],
+  );
+
+  const currentDevice = useMemo(() => {
+    if (currentSession?.user_agent) {
+      return parseDeviceSummary(currentSession.user_agent);
+    }
+    return browserDevice;
+  }, [browserDevice, currentSession?.user_agent]);
+
+  const otherSessions = useMemo(
+    () => sessions.filter((s) => !s.is_current),
+    [sessions],
+  );
 
   const fetchSessions = useCallback(async () => {
     setSessionsLoading(true);
@@ -117,8 +135,6 @@ export function SecuritySettingsSection() {
     }
   }
 
-  const otherSessions = sessions.length > 1 ? sessions.slice(1) : [];
-
   return (
     <section className="rounded-2xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
       <div className="mb-4 flex items-center gap-2">
@@ -142,6 +158,7 @@ export function SecuritySettingsSection() {
           <div className="mt-1 text-[13px] text-[var(--ds-label,#1A1410)]">{currentDevice.label}</div>
           <div className="mt-1 text-[12px] text-[var(--ds-secondary-label,#9C8573)]">
             You are currently signed in here.
+            {currentSession?.ip ? ` · ${currentSession.ip}` : ""}
           </div>
         </div>
 
@@ -206,7 +223,7 @@ export function SecuritySettingsSection() {
               })}
             </div>
           </div>
-        ) : sessions.length > 0 ? (
+        ) : sessions.length > 0 || currentSession ? (
           <p className="text-[12px] text-[var(--ds-secondary-label,#9C8573)]">
             No other active sessions. You are only signed in on this device.
           </p>

@@ -13,6 +13,11 @@ export function canViewAdminInsights(role: SidebarRole): boolean {
   return role === "superadmin" || role === "admin";
 }
 
+/** Org-level admins can edit all project fields (same as create flow). */
+export function canEditProjectDetails(orgRole: SidebarRole): boolean {
+  return orgRole === "superadmin" || orgRole === "admin";
+}
+
 export function canAccessProjectDetail(role: SidebarRole, isAssigned: boolean): boolean {
   if (role === "superadmin" || role === "admin") return true;
   return isAssigned;

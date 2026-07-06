@@ -5,6 +5,7 @@ import { Bell, Search } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useCommandPalette } from "@/components/layout/command-palette";
 import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
 import { BRAND_WORDMARK } from "@/lib/constants";
@@ -38,7 +39,9 @@ export function AppHeader() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const { unreadCount } = useNotifications();
+
   const hasUnreadNotifications = unreadCount > 0;
 
   const title = getPageTitle(pathname);
@@ -73,7 +76,7 @@ export function AppHeader() {
       </span>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <HeaderBtn title="Search">
+        <HeaderBtn title="Search (⌘K)" onClick={() => setCommandPaletteOpen(true)}>
           <Search size={18} />
         </HeaderBtn>
 

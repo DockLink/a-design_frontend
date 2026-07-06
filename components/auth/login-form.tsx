@@ -52,7 +52,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="w-full space-y-5">
       <div className="space-y-2">
         <Label htmlFor="email">Email address</Label>
         <Input

@@ -1,4 +1,5 @@
 import { normalizeLoginResponse } from "@/lib/auth/normalize-login";
+import { getSessionIdFromAccessToken } from "@/lib/auth/jwt";
 import type { AuthSession, BackendLoginResponse, LoginResponse } from "@/types/auth";
 
 export function toAuthSession(response: LoginResponse | BackendLoginResponse): AuthSession {
@@ -12,5 +13,6 @@ export function toAuthSession(response: LoginResponse | BackendLoginResponse): A
     expiresIn: normalized.expiresIn,
     source: "supabase",
     user: normalized.user,
+    sessionId: getSessionIdFromAccessToken(normalized.accessToken) ?? undefined,
   };
 }
