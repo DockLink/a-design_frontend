@@ -75,47 +75,41 @@ export function FileUploadDialog({
     if (queue.length === 0 || busy) return;
     setBusy(true);
 
-    let succeeded = 0;
-    let failed = 0;
-
-    // Upload large files one at a time so bandwidth isn't split across files.
-    for (let index = 0; index < queue.length; index++) {
-      const qf = queue[index];
-      if (qf.done) {
-        succeeded++;
-        continue;
-      }
-
-      setQueue((q) =>
-        q.map((x, i) =>
-          i === index ? { ...x, uploading: true, progress: 0, error: undefined } : x
-        )
-      );
-
-      try {
-        await onUpload(folderPath, qf.file, (pct) => {
+    const results = await Promise.allSettled(
+      queue.map(async (qf, index) => {
+        if (qf.done) return;
+        setQueue((q) =>
+          q.map((x, i) =>
+            i === index ? { ...x, uploading: true, progress: 0, error: undefined } : x
+          )
+        );
+        try {
+          await onUpload(folderPath, qf.file, (pct) => {
+            setQueue((q) =>
+              q.map((x, i) => (i === index ? { ...x, progress: pct } : x))
+            );
+          });
           setQueue((q) =>
-            q.map((x, i) => (i === index ? { ...x, progress: pct } : x))
+            q.map((x, i) =>
+              i === index ? { ...x, uploading: false, progress: 100, done: true } : x
+            )
           );
-        });
-        succeeded++;
-        setQueue((q) =>
-          q.map((x, i) =>
-            i === index ? { ...x, uploading: false, progress: 100, done: true } : x
-          )
-        );
-      } catch (err) {
-        failed++;
-        const msg = err instanceof Error ? err.message : "Upload failed";
-        setQueue((q) =>
-          q.map((x, i) =>
-            i === index ? { ...x, uploading: false, error: msg } : x
-          )
-        );
-      }
-    }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Upload failed";
+          setQueue((q) =>
+            q.map((x, i) =>
+              i === index ? { ...x, uploading: false, error: msg } : x
+            )
+          );
+          throw err;
+        }
+      })
+    );
 
     setBusy(false);
+
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const succeeded = results.length - failed;
 
     if (succeeded > 0) {
       toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} uploaded`);
