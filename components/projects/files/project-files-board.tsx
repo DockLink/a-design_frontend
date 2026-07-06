@@ -134,7 +134,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
   if (treeLoading || isProvisioning) {
     return (
-      <div className="flex h-[calc(100vh-140px)] items-center justify-center text-[13px] text-[#9C8573]">
+      <div className="flex h-[calc(100vh-140px)] items-center justify-center text-[13px] text-[var(--ds-secondary-label)]">
         {isProvisioning ? "Setting up project folders…" : "Loading…"}
       </div>
     );
@@ -160,11 +160,11 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   if (tree.length === 0) {
     return (
       <div className="flex h-[calc(100vh-140px)] flex-col items-center justify-center gap-4 text-[13px]">
-        <p className="text-[#9C8573]">Project folders have not been set up yet.</p>
+        <p className="text-[var(--ds-secondary-label)]">Project folders have not been set up yet.</p>
         {isAdmin && (
           <Button
             size="sm"
-            className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+            className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
             onClick={() => void provisionFolders()}
           >
             Set up project folders
@@ -181,9 +181,9 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         style={{ height: "calc(100vh - 140px)" }}
       >
         {/* Left: folder panel */}
-        <div className="flex w-60 shrink-0 flex-col overflow-hidden border-r border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]">
-          <div className="flex h-12 shrink-0 items-center justify-between border-b border-[rgba(90,60,30,0.12)] px-3.5">
-            <span className="text-[15px] font-medium text-[#1A1410]">Documents</span>
+        <div className="flex w-60 shrink-0 flex-col overflow-hidden border-r border-[var(--ds-separator)] bg-[var(--ds-bg)]">
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--ds-separator)] px-3.5">
+            <span className="text-[15px] font-medium text-[var(--ds-label)]">Documents</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             <FolderTree
@@ -197,7 +197,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
         {/* Right: file panel */}
         <div
-          className="relative flex flex-1 flex-col overflow-hidden bg-[#FDFAF6]"
+          className="relative flex flex-1 flex-col overflow-hidden bg-[var(--ds-surface-elevated)]"
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node))
@@ -211,19 +211,19 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         >
           {/* Drag overlay */}
           {isDragging && currentFolderPath && (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center border-[3px] border-dashed border-[#D4A96A] bg-[rgba(212,169,106,0.06)]">
-              <div className="rounded-xl bg-[#FDFAF6] px-10 py-5 text-[15px] font-medium text-[#D4A96A] shadow-lg">
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center border-[3px] border-dashed border-[var(--ds-accent)] bg-[rgba(212,169,106,0.06)]">
+              <div className="rounded-xl bg-[var(--ds-surface-elevated)] px-10 py-5 text-[15px] font-medium text-[var(--ds-accent)] shadow-lg">
                 Drop to upload
               </div>
             </div>
           )}
 
           {/* Breadcrumb + action bar */}
-          <div className="flex h-10 shrink-0 items-center justify-between border-b border-[rgba(90,60,30,0.10)] bg-[#F5EFE6] px-4">
+          <div className="flex h-10 shrink-0 items-center justify-between border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4">
             {/* Path */}
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
               {breadcrumb.length === 0 ? (
-                <span className="text-[13px] text-[#9C8573]">Select a folder</span>
+                <span className="text-[13px] text-[var(--ds-secondary-label)]">Select a folder</span>
               ) : (
                 breadcrumb.map((seg, i) => (
                   <span key={seg.path} className="flex shrink-0 items-center gap-1">
@@ -231,7 +231,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
                     <span
                       className="max-w-[140px] truncate text-[13px]"
                       style={{
-                        color: i === breadcrumb.length - 1 ? "#1A1410" : "#9C8573",
+                        color: i === breadcrumb.length - 1 ? "var(--ds-label)" : "var(--ds-secondary-label)",
                         fontWeight: i === breadcrumb.length - 1 ? 500 : 400,
                       }}
                     >
@@ -245,10 +245,10 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
             {/* Actions */}
             {currentFolderPath && (
               <div className="ml-3 flex shrink-0 items-center gap-2">
-                <span className="text-[11px] text-[#9C8573]">Drop files here</span>
+                <span className="text-[11px] text-[var(--ds-secondary-label)]">Drop files here</span>
                 <Button
                   size="sm"
-                  className="h-7 gap-1 bg-[#D4A96A] text-[12px] text-white hover:bg-[#C9894A]"
+                  className="h-7 gap-1 bg-[var(--ds-accent)] text-[12px] text-white hover:bg-[var(--ds-accent-hover)]"
                   onClick={() => setShowUpload(true)}
                 >
                   <Upload size={11} />

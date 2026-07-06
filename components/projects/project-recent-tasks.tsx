@@ -29,7 +29,7 @@ export function ProjectMemberAvatar({
         justifyContent: "center",
         fontSize,
         fontWeight: 600,
-        color: "#C9894A",
+        color: "var(--ds-accent-hover)",
         flexShrink: 0,
       }}
     >
@@ -52,10 +52,10 @@ export function ProjectRecentTasks({
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>Recent tasks</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent tasks</div>
         <Link
           href={projectTabRoute(projectId, "tasks")}
-          style={{ fontSize: "13px", color: "#D4A96A", fontWeight: 500, textDecoration: "none" }}
+          style={{ fontSize: "13px", color: "var(--ds-accent)", fontWeight: 500, textDecoration: "none" }}
         >
           View all
         </Link>
@@ -68,7 +68,7 @@ export function ProjectRecentTasks({
         }}
       >
         {items.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "#8E8E93" }}>No tasks yet.</div>
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No tasks yet.</div>
         ) : (
           items.map((task, i) => {
             const scfg = getTaskStatusStyle(task.status);
@@ -97,7 +97,7 @@ export function ProjectRecentTasks({
                   style={{
                     flex: 1,
                     fontSize: "13px",
-                    color: "#1C1C1E",
+                    color: "var(--ds-label)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",

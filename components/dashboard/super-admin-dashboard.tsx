@@ -71,7 +71,7 @@ export function SuperAdminDashboard() {
     refetch,
     deleteProject,
     isDeleting,
-  } = useProjects({ page: 1, limit: 100 });
+  } = useProjects({ page: 1, limit: 5 });
 
   const { meta: usersMeta, createUser, isMutating: isCreatingUser } = useUsers({
     page: 1,
@@ -135,11 +135,11 @@ export function SuperAdminDashboard() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
         <div>
           <div style={{ ...dsLargeTitle, display: "flex", alignItems: "center", gap: "10px" }}>
-            <Shield size={28} color="#D4A96A" />
+            <Shield size={28} color="var(--ds-accent)" />
             {greeting}, {displayName.split(" ")[0]}.
           </div>
           <div style={{ ...dsSubtitle, marginTop: "6px" }}>{dateStr}</div>
-          <div style={{ ...dsCaption, marginTop: "4px", color: "#9C8573" }}>
+          <div style={{ ...dsCaption, marginTop: "4px", color: "var(--ds-secondary-label)" }}>
             Super Admin · Full system access
           </div>
         </div>
@@ -148,9 +148,9 @@ export function SuperAdminDashboard() {
       <div style={{ display: "flex", gap: "10px", marginTop: "24px", flexWrap: "wrap", alignItems: "center" }}>
         <button
           onClick={() => setShowCreateProject(true)}
-          style={{ ...dsActionBtn, background: "#D4A96A", color: "white" }}
+          style={{ ...dsActionBtn, background: "var(--ds-accent)", color: "white" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--ds-accent)")}
         >
           + New project
         </button>
@@ -163,14 +163,14 @@ export function SuperAdminDashboard() {
         </button>
         <button
           onClick={() => router.push(NAV_ROUTES.userManagement)}
-          style={{ ...dsActionBtn, background: "rgba(212,169,106,0.12)", color: "#C9894A" }}
+          style={{ ...dsActionBtn, background: "var(--ds-accent-muted)", color: "var(--ds-accent-hover)" }}
         >
           <Users size={16} />
           Manage users
         </button>
         <button
           onClick={() => router.push(NAV_ROUTES.accessRequests)}
-          style={{ ...dsActionBtn, background: "rgba(255,59,48,0.10)", color: "#FF3B30" }}
+          style={{ ...dsActionBtn, background: "rgba(255,59,48,0.10)", color: "var(--ds-destructive)" }}
         >
           Access requests
         </button>
@@ -210,9 +210,26 @@ export function SuperAdminDashboard() {
       </div>
 
       <div style={{ marginTop: "8px" }}>
-        <div style={dsSectionLabel}>All Projects</div>
+        <div style={{ ...dsSectionLabel, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span>Recent Projects</span>
+          <button
+            type="button"
+            onClick={() => router.push("/projects")}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "var(--ds-text-callout)",
+              color: "var(--ds-accent)",
+              padding: 0,
+              fontWeight: 500,
+            }}
+          >
+            View all projects →
+          </button>
+        </div>
         {isLoading && <div style={dsCallout}>Loading projects…</div>}
-        {error && <div style={{ ...dsCallout, color: "#FF3B30" }}>{error}</div>}
+        {error && <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{error}</div>}
         {!isLoading && !error && projects.length === 0 && (
           <div style={dsCallout}>No projects in the system.</div>
         )}
@@ -269,18 +286,18 @@ export function SuperAdminDashboard() {
       <div style={{ marginTop: "28px", textAlign: "center" }}>
         <button
           type="button"
-          onClick={() => void refetch()}
+          onClick={() => router.push("/projects")}
           style={{
             background: "none",
             border: "none",
             cursor: "pointer",
             fontSize: "var(--ds-text-callout)",
-            color: "#D4A96A",
+            color: "var(--ds-accent)",
             padding: 0,
             fontWeight: 500,
           }}
         >
-          Refresh projects →
+          View all projects →
         </button>
       </div>
 
@@ -296,7 +313,7 @@ export function SuperAdminDashboard() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              background: "#FDFAF6",
+              background: "var(--ds-surface-elevated)",
               borderRadius: "16px",
               padding: "28px",
               maxWidth: "420px",
@@ -305,11 +322,11 @@ export function SuperAdminDashboard() {
               boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
             }}
           >
-            <div style={{ ...dsHeadline, marginBottom: "8px", color: "#FF3B30" }}>
+            <div style={{ ...dsHeadline, marginBottom: "8px", color: "var(--ds-destructive)" }}>
               Delete project permanently?
             </div>
-            <p style={{ fontSize: "14px", color: "#6B5744", margin: "0 0 20px", lineHeight: 1.5 }}>
-              <strong style={{ color: "#1A1410" }}>{deleteTarget.name}</strong> and all its files,
+            <p style={{ fontSize: "14px", color: "var(--ds-secondary-label)", margin: "0 0 20px", lineHeight: 1.5 }}>
+              <strong style={{ color: "var(--ds-label)" }}>{deleteTarget.name}</strong> and all its files,
               tasks, members, and timeline data will be permanently removed. This cannot be undone.
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -322,7 +339,7 @@ export function SuperAdminDashboard() {
                   height: "40px",
                   borderRadius: "10px",
                   border: "none",
-                  background: "#FF3B30",
+                  background: "var(--ds-destructive)",
                   color: "white",
                   fontWeight: 500,
                   cursor: isDeleting ? "not-allowed" : "pointer",
@@ -341,7 +358,7 @@ export function SuperAdminDashboard() {
                   borderRadius: "10px",
                   border: "1px solid rgba(90,60,30,0.15)",
                   background: "white",
-                  color: "#6B5744",
+                  color: "var(--ds-secondary-label)",
                   fontWeight: 500,
                   cursor: "pointer",
                 }}

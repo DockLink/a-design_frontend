@@ -118,7 +118,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
   }
 
   const selectClass =
-    "h-8 rounded-md border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6] px-2 text-xs text-[#6B5744] outline-none";
+    "h-8 rounded-md border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)] px-2 text-xs text-[var(--ds-secondary-label)] outline-none";
 
   // Date window of the selected task's parent STAGE, used to bound hold
   // requests. Holds may fall outside the milestone window but must stay within
@@ -169,7 +169,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
     <div className="-mx-7 -mt-6">
       <div className="sticky top-[44px] z-[98] flex items-center justify-between gap-3 border-b border-[rgba(90,60,30,0.08)] bg-[#EDE3D4] px-7 py-3">
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-lg bg-[#F5EFE6] p-1">
+          <div className="inline-flex rounded-lg bg-[var(--ds-bg)] p-1">
             {([
               { id: "kanban" as const, icon: LayoutGrid, label: "Kanban" },
               { id: "list" as const, icon: List, label: "List" },
@@ -180,14 +180,14 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
                 key={id}
                 type="button"
                 onClick={() => setViewMode(id)}
-                className={`inline-flex h-7 items-center gap-1.5 rounded-md px-3 text-sm ${viewMode === id ? "bg-white text-[#D4A96A] shadow-sm" : "text-[#9C8573]"}`}
+                className={`inline-flex h-7 items-center gap-1.5 rounded-md px-3 text-sm ${viewMode === id ? "bg-white text-[var(--ds-accent)] shadow-sm" : "text-[var(--ds-secondary-label)]"}`}
               >
                 <Icon className="size-3.5" />
                 {label}
               </button>
             ))}
           </div>
-          <span className="rounded-lg bg-[#F5EFE6] px-3 py-1.5 text-xs font-medium text-[#6B5744]">
+          <span className="rounded-lg bg-[var(--ds-bg)] px-3 py-1.5 text-xs font-medium text-[var(--ds-secondary-label)]">
             {viewMode === "milestones" || viewMode === "team"
               ? `Tasks: ${filteredAll.length}`
               : isAdmin
@@ -212,7 +212,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-b border-[rgba(90,60,30,0.08)] bg-[#F2E9DA] px-7 py-2.5">
-        <span className="text-[11px] font-medium tracking-wide text-[#9C8573] uppercase">Filters</span>
+        <span className="text-[11px] font-medium tracking-wide text-[var(--ds-secondary-label)] uppercase">Filters</span>
         <select
           value={filterStage}
           onChange={(e) => {
@@ -254,7 +254,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
           <button
             type="button"
             onClick={clearFilters}
-            className="text-xs font-medium text-[#C9894A] hover:underline"
+            className="text-xs font-medium text-[var(--ds-accent-hover)] hover:underline"
           >
             Clear
           </button>
@@ -266,8 +266,8 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
         {error && <p className="text-sm text-red-700">{error}</p>}
 
         {!isLoading && isAssigneesLoading && (
-          <div className="mb-3 flex items-center gap-2 text-xs text-[#9C8573]">
-            <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-[#D4A96A] border-t-transparent" />
+          <div className="mb-3 flex items-center gap-2 text-xs text-[var(--ds-secondary-label)]">
+            <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-[var(--ds-accent)] border-t-transparent" />
             Loading assignees…
           </div>
         )}
@@ -321,7 +321,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
           <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
             <TaskListHeader />
             {filteredVisible.length === 0 ? (
-              <div className="p-8 text-center text-sm text-[#8E8E93]">No tasks match the current filters.</div>
+              <div className="p-8 text-center text-sm text-[var(--ds-tertiary-label)]">No tasks match the current filters.</div>
             ) : (
               filteredVisible.map((task, i) => (
                 <div key={task.id} className={i < filteredVisible.length - 1 ? "border-b" : ""}>

@@ -108,10 +108,10 @@ export function LeadDashboard() {
           onClick={() => router.push(NAV_ROUTES.myTasks)}
           style={{
             ...dsActionBtn,
-            background: "#D4A96A", color: "white",
+            background: "var(--ds-accent)", color: "white",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--ds-accent)")}
         >
           View my tasks
         </button>
@@ -119,7 +119,7 @@ export function LeadDashboard() {
           onClick={() => router.push(NAV_ROUTES.accessRequests)}
           style={{
             ...dsActionBtn,
-            background: "rgba(212,169,106,0.12)", color: "#C9894A",
+            background: "var(--ds-accent-muted)", color: "var(--ds-accent-hover)",
           }}
         >
           Access requests
@@ -138,7 +138,7 @@ export function LeadDashboard() {
         <div>
           <div style={dsSectionLabel}>Your tasks</div>
           {tasksLoading && <div style={dsCallout}>Loading tasks…</div>}
-          {error && <div style={{ ...dsCallout, color: "#FF3B30" }}>{error}</div>}
+          {error && <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{error}</div>}
           <div style={dsCard}>
             {TASKS.length === 0 && !tasksLoading && (
               <div style={{ padding: "18px", ...dsCallout }}>No tasks on your led projects.</div>
@@ -158,8 +158,8 @@ export function LeadDashboard() {
                     onClick={() => toggleDone(task.id)}
                     style={{
                       width: 20, height: 20, borderRadius: "50%",
-                      border: `1.5px solid ${done ? "#D4A96A" : "rgba(60,60,67,0.25)"}`,
-                      background: done ? "#D4A96A" : "transparent",
+                      border: `1.5px solid ${done ? "var(--ds-accent)" : "rgba(60,60,67,0.25)"}`,
+                      background: done ? "var(--ds-accent)" : "transparent",
                       cursor: "pointer", flexShrink: 0, padding: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       transition: "all 0.15s",
@@ -192,7 +192,7 @@ export function LeadDashboard() {
           <div style={{ marginTop: "12px", padding: "0 2px" }}>
             <button
               onClick={() => router.push(NAV_ROUTES.myTasks)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--ds-text-callout)", color: "#D4A96A", padding: 0, fontWeight: 500 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--ds-text-callout)", color: "var(--ds-accent)", padding: 0, fontWeight: 500 }}
             >
               View all tasks →
             </button>
@@ -233,7 +233,7 @@ export function LeadDashboard() {
                       {project.name}
                     </div>
                     <div style={{ marginTop: "6px", height: "4px", borderRadius: "9999px", background: "#F2EDE8", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${project.progress}%`, background: "#D4A96A", borderRadius: "9999px" }} />
+                      <div style={{ height: "100%", width: `${project.progress}%`, background: "var(--ds-accent)", borderRadius: "9999px" }} />
                     </div>
                   </div>
                   <span style={{ background: cfg.bg, color: cfg.color, fontSize: "var(--ds-text-caption-2)", fontWeight: 500, borderRadius: "8px", padding: "4px 8px", flexShrink: 0 }}>
@@ -263,7 +263,7 @@ export function LeadDashboard() {
                   width: "32px", height: "32px", borderRadius: "50%",
                   background: "rgba(212,169,106,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "var(--ds-text-caption-2)", fontWeight: 600, color: "#C9894A", flexShrink: 0,
+                  fontSize: "var(--ds-text-caption-2)", fontWeight: 600, color: "var(--ds-accent-hover)", flexShrink: 0,
                 }}>
                   {member.initials}
                 </div>

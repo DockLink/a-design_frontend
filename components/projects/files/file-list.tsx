@@ -55,7 +55,7 @@ export function FileList({
 
   if (!folderPath) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-[#9C8573]">
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--ds-secondary-label)]">
         <Folder size={40} className="opacity-30" />
         <p className="text-[13px]">Select a folder to view files</p>
       </div>
@@ -64,7 +64,7 @@ export function FileList({
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center text-[13px] text-[#9C8573]">
+      <div className="flex h-48 items-center justify-center text-[13px] text-[var(--ds-secondary-label)]">
         Loading files…
       </div>
     );
@@ -80,7 +80,7 @@ export function FileList({
 
   if (files.length === 0) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center gap-2 text-[#9C8573]">
+      <div className="flex h-48 flex-col items-center justify-center gap-2 text-[var(--ds-secondary-label)]">
         <Folder size={32} className="opacity-30" />
         <p className="text-[13px]">This folder is empty</p>
       </div>
@@ -90,7 +90,7 @@ export function FileList({
   return (
     <div className="overflow-y-auto">
       {/* Column headers */}
-      <div className="sticky top-0 z-10 grid h-9 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[#F5EFE6] px-4 text-[12px] text-[#9C8573]">
+      <div className="sticky top-0 z-10 grid h-9 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-[12px] text-[var(--ds-secondary-label)]">
         <span>Name</span>
         <span>Date</span>
         <span>Size</span>
@@ -173,7 +173,7 @@ function FileRow({
           onMouseLeave={onMouseLeave}
           className={cn(
             "grid h-10 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors",
-            hovered ? "bg-[#F5EFE6]" : "bg-transparent"
+            hovered ? "bg-[var(--ds-bg)]" : "bg-transparent"
           )}
         >
           {/* Hidden file input for new-version upload */}
@@ -187,23 +187,23 @@ function FileRow({
           {/* Name */}
           <div className="flex min-w-0 items-center gap-2">
             <FileTypeIcon ext={ext} size={15} />
-            <span className="truncate text-[13px] font-medium text-[#1A1410]">
+            <span className="truncate text-[13px] font-medium text-[var(--ds-label)]">
               {file.fileName}
             </span>
             {isVersioned && file.version > 1 && (
-              <span className="shrink-0 rounded-[3px] bg-[#F5E6D0] px-1 text-[9px] font-bold text-[#D4A96A]">
+              <span className="shrink-0 rounded-[3px] bg-[#F5E6D0] px-1 text-[9px] font-bold text-[var(--ds-accent)]">
                 v{file.version}
               </span>
             )}
           </div>
 
           {/* Date */}
-          <span className="text-[12px] text-[#9C8573]">
+          <span className="text-[12px] text-[var(--ds-secondary-label)]">
             {formatFileDate(file.created_at)}
           </span>
 
           {/* Size */}
-          <span className="text-[12px] text-[#9C8573]">
+          <span className="text-[12px] text-[var(--ds-secondary-label)]">
             {formatFileSize(file.fileSize)}
           </span>
 
@@ -324,8 +324,8 @@ function ActionButton({
       className="flex items-center rounded p-0.5 transition-colors"
       style={{
         color: danger
-          ? hovered ? "#9B1C1C" : "#C4A090"
-          : hovered ? "#1A1410" : "#9C8573",
+          ? hovered ? "var(--ds-destructive)" : "#C4A090"
+          : hovered ? "var(--ds-label)" : "var(--ds-secondary-label)",
       }}
     >
       {icon}

@@ -1,34 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
+import { queryKeys } from "@/lib/query/keys";
 import type { Project } from "@/types/projects";
 
+async function fetchProject(projectId: string): Promise<Project> {
+  return authApiClient<Project>(`/projects/${projectId}`);
+}
+
 export function useProject(projectId: string | null) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(projectId));
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.projects.detail(projectId ?? ""),
+    queryFn: () => fetchProject(projectId!),
+    enabled: Boolean(projectId),
+    staleTime: 30_000,
+  });
 
-  const fetchProject = useCallback(async () => {
-    if (!projectId) return;
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await authApiClient<Project>(`/projects/${projectId}`);
-      setProject(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load project");
-      setProject(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    void fetchProject();
-  }, [fetchProject]);
-
-  return { project, isLoading, error, refetch: fetchProject };
+  return {
+    project: data ?? null,
+    isLoading,
+    error: error ? (error instanceof Error ? error.message : "Failed to load project") : null,
+    refetch: () => refetch().then(() => undefined),
+  };
 }

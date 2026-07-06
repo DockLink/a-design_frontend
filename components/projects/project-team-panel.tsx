@@ -28,7 +28,7 @@ export function ProjectTeamPanel({
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>Project team</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Project team</div>
         {canManage && (
           <button
             type="button"
@@ -36,13 +36,13 @@ export function ProjectTeamPanel({
             style={{
               height: "28px",
               padding: "0 12px",
-              background: "rgba(212,169,106,0.12)",
+              background: "var(--ds-accent-muted)",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#C9894A",
+              color: "var(--ds-accent-hover)",
               display: "flex",
               alignItems: "center",
               gap: "4px",
@@ -63,7 +63,7 @@ export function ProjectTeamPanel({
         }}
       >
         {active.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "#8E8E93" }}>
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
             No team members yet. {canManage ? "Add members to get started." : ""}
           </div>
         ) : (
@@ -90,7 +90,7 @@ export function ProjectTeamPanel({
                   style={{
                     flex: 1,
                     fontSize: "13px",
-                    color: "#1C1C1E",
+                    color: "var(--ds-label)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",

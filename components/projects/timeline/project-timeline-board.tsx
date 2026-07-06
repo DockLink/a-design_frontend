@@ -47,9 +47,9 @@ export function ProjectTimelineBoard({ projectId }: { projectId: string }) {
   return (
     <div className="-mx-7 -mt-6">
       <div className="sticky top-[44px] z-[98] flex items-center justify-between gap-3 border-b border-[rgba(90,60,30,0.08)] bg-[#EDE3D4] px-7 py-3">
-        <span className="text-[22px] font-medium text-[#1A1410]">Timeline</span>
+        <span className="text-[22px] font-medium text-[var(--ds-label)]">Timeline</span>
         <div className="flex items-center gap-2.5">
-          <div className="inline-flex h-[38px] rounded-lg bg-[#F5EFE6] p-0.5">
+          <div className="inline-flex h-[38px] rounded-lg bg-[var(--ds-bg)] p-0.5">
             {(["gantt", "list"] as ViewMode[]).map((mode) => {
               const active = viewMode === mode;
               return (
@@ -57,7 +57,7 @@ export function ProjectTimelineBoard({ projectId }: { projectId: string }) {
                   key={mode}
                   type="button"
                   onClick={() => setViewMode(mode)}
-                  className={`h-full rounded-md px-4 text-[13px] capitalize transition-all ${active ? "border border-[#D4A96A] bg-[#FDFAF6] font-medium text-[#D4A96A]" : "text-[#9C8573]"}`}
+                  className={`h-full rounded-md px-4 text-[13px] capitalize transition-all ${active ? "border border-[var(--ds-accent)] bg-[var(--ds-surface-elevated)] font-medium text-[var(--ds-accent)]" : "text-[var(--ds-secondary-label)]"}`}
                 >
                   {mode}
                 </button>
@@ -70,7 +70,7 @@ export function ProjectTimelineBoard({ projectId }: { projectId: string }) {
               variant="outline"
               size="sm"
               onClick={() => setShowAdd(true)}
-              className="h-8 gap-1 border-[rgba(90,60,30,0.22)] text-[#6B5744]"
+              className="h-8 gap-1 border-[rgba(90,60,30,0.22)] text-[var(--ds-secondary-label)]"
             >
               <Plus className="size-3.5" />
               Add milestone

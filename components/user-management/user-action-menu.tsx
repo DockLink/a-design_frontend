@@ -40,7 +40,7 @@ export function UserActionMenu({
     border: "none",
     textAlign: "left",
     fontSize: "13px",
-    color: "#1A1410",
+    color: "var(--ds-label)",
     cursor: "pointer",
   };
 
@@ -60,7 +60,7 @@ export function UserActionMenu({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#9C8573",
+          color: "var(--ds-secondary-label)",
           opacity: disabled ? 0.5 : 1,
         }}
       >
@@ -74,7 +74,7 @@ export function UserActionMenu({
             right: 0,
             top: "32px",
             width: "170px",
-            background: "#FDFAF6",
+            background: "var(--ds-surface-elevated)",
             border: "1px solid rgba(90,60,30,0.14)",
             borderRadius: "8px",
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
@@ -95,7 +95,7 @@ export function UserActionMenu({
           {canDeactivate && (
             <button
               type="button"
-              style={{ ...itemStyle, color: "#9B1C1C" }}
+              style={{ ...itemStyle, color: "var(--ds-destructive)" }}
               onClick={() => {
                 setOpen(false);
                 onDeactivate();
@@ -107,7 +107,7 @@ export function UserActionMenu({
           {onDelete && (
             <button
               type="button"
-              style={{ ...itemStyle, color: "#9B1C1C", fontWeight: 500 }}
+              style={{ ...itemStyle, color: "var(--ds-destructive)", fontWeight: 500 }}
               onClick={() => {
                 setOpen(false);
                 onDelete();

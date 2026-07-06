@@ -256,16 +256,16 @@ export function MilestoneManagementModal({
         onClick={onClose}
         className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px]"
       />
-      <div className="fixed left-1/2 top-1/2 z-[201] flex max-h-[88vh] w-[min(580px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-[#FDFAF6] shadow-[0_24px_70px_rgba(60,40,20,0.28)]">
+      <div className="fixed left-1/2 top-1/2 z-[201] flex max-h-[88vh] w-[min(580px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-[var(--ds-surface-elevated)] shadow-[0_24px_70px_rgba(60,40,20,0.28)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(90,60,30,0.10)] bg-white px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#F5E6D0] text-[#C9894A]">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[#F5E6D0] text-[var(--ds-accent-hover)]">
               <Flag size={16} />
             </span>
             <div>
-              <h2 className="text-[16px] font-semibold leading-tight text-[#1A1410]">Manage milestones</h2>
-              <p className="text-[12px] text-[#9C8573]">
+              <h2 className="text-[16px] font-semibold leading-tight text-[var(--ds-label)]">Manage milestones</h2>
+              <p className="text-[12px] text-[var(--ds-secondary-label)]">
                 {milestones.length} milestone{milestones.length === 1 ? "" : "s"} across{" "}
                 {stageViews.length} stage{stageViews.length === 1 ? "" : "s"}
               </p>
@@ -274,7 +274,7 @@ export function MilestoneManagementModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-lg text-[#9C8573] transition-colors hover:bg-[#F5EFE6] hover:text-[#6B5744]"
+            className="flex size-8 items-center justify-center rounded-lg text-[var(--ds-secondary-label)] transition-colors hover:bg-[var(--ds-bg)] hover:text-[var(--ds-secondary-label)]"
           >
             <X size={18} />
           </button>
@@ -283,10 +283,10 @@ export function MilestoneManagementModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {stageViews.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[rgba(90,60,30,0.20)] bg-[#F5EFE6]/40 px-4 py-8 text-center">
+            <div className="rounded-xl border border-dashed border-[rgba(90,60,30,0.20)] bg-[var(--ds-bg)]/40 px-4 py-8 text-center">
               <Flag size={22} className="mx-auto mb-2 text-[#C4B5A5]" />
-              <p className="text-[13px] font-medium text-[#6B5744]">No stages yet</p>
-              <p className="text-[12px] text-[#9C8573]">
+              <p className="text-[13px] font-medium text-[var(--ds-secondary-label)]">No stages yet</p>
+              <p className="text-[12px] text-[var(--ds-secondary-label)]">
                 Create a stage first from &ldquo;Manage stages&rdquo;.
               </p>
             </div>
@@ -300,9 +300,9 @@ export function MilestoneManagementModal({
                   <div key={s.id}>
                     <div className="mb-2 flex items-center gap-2">
                       <span
-                        className={`size-1.5 rounded-full ${s.isCompleted ? "bg-[#3D8B5E]" : "bg-[#D4A96A]"}`}
+                        className={`size-1.5 rounded-full ${s.isCompleted ? "bg-[#3D8B5E]" : "bg-[var(--ds-accent)]"}`}
                       />
-                      <span className="text-[12px] font-semibold text-[#6B5744]">{s.name}</span>
+                      <span className="text-[12px] font-semibold text-[var(--ds-secondary-label)]">{s.name}</span>
                       <span className="text-[11px] text-[#C4B5A5]">
                         {items?.length ?? 0} milestone{(items?.length ?? 0) === 1 ? "" : "s"}
                       </span>
@@ -347,7 +347,7 @@ export function MilestoneManagementModal({
                 <div>
                   <div className="mb-2 flex items-center gap-2">
                     <span className="size-1.5 rounded-full bg-[#C4B5A5]" />
-                    <span className="text-[12px] font-semibold text-[#9C8573]">Unassigned</span>
+                    <span className="text-[12px] font-semibold text-[var(--ds-secondary-label)]">Unassigned</span>
                   </div>
                   <div className="space-y-1.5">
                     {grouped.unassigned.map((m) => (
@@ -384,18 +384,18 @@ export function MilestoneManagementModal({
           onSubmit={(e) => void handleCreateMilestone(e)}
           className="border-t border-[rgba(90,60,30,0.10)] bg-white px-5 py-4"
         >
-          <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[#9C8573]">
+          <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[var(--ds-secondary-label)]">
             Add milestone
           </div>
           {stageViews.length === 0 ? (
-            <p className="text-[12px] text-[#9C8573]">Add a stage first to create milestones.</p>
+            <p className="text-[12px] text-[var(--ds-secondary-label)]">Add a stage first to create milestones.</p>
           ) : (
             <>
               <div className="mb-2.5 flex gap-2.5">
                 <select
                   value={stageId || stageViews[0]?.id}
                   onChange={(e) => setStageId(e.target.value)}
-                  className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A] focus:bg-white"
+                  className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)] focus:bg-white"
                 >
                   {stageViews.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -408,34 +408,34 @@ export function MilestoneManagementModal({
                 placeholder="Milestone name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mb-2.5 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none placeholder:text-[#C4B5A5] focus:border-[#D4A96A] focus:bg-white"
+                className="mb-2.5 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none placeholder:text-[#C4B5A5] focus:border-[var(--ds-accent)] focus:bg-white"
               />
               <div className="flex gap-2.5">
                 <label className="flex-1">
-                  <span className="mb-1 block text-[11px] text-[#9C8573]">Start date</span>
+                  <span className="mb-1 block text-[11px] text-[var(--ds-secondary-label)]">Start date</span>
                   <input
                     type="date"
                     value={start}
                     min={stageStart}
                     max={stageEnd}
                     onChange={(e) => setStart(e.target.value)}
-                    className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A] focus:bg-white"
+                    className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)] focus:bg-white"
                   />
                 </label>
                 <label className="flex-1">
-                  <span className="mb-1 block text-[11px] text-[#9C8573]">End date</span>
+                  <span className="mb-1 block text-[11px] text-[var(--ds-secondary-label)]">End date</span>
                   <input
                     type="date"
                     value={end}
                     min={start || stageStart}
                     max={stageEnd}
                     onChange={(e) => setEnd(e.target.value)}
-                    className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A] focus:bg-white"
+                    className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)] focus:bg-white"
                   />
                 </label>
               </div>
               {stageStart && stageEnd && (
-                <p className="mt-2 text-[11px] text-[#9C8573]">
+                <p className="mt-2 text-[11px] text-[var(--ds-secondary-label)]">
                   Must fall within the stage period: {new Date(stageStart).toLocaleDateString()} –{" "}
                   {new Date(stageEnd).toLocaleDateString()}
                 </p>
@@ -443,7 +443,7 @@ export function MilestoneManagementModal({
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#D4A96A] text-[13px] font-semibold text-white transition-colors hover:bg-[#C9894A] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--ds-accent)] text-[13px] font-semibold text-white transition-colors hover:bg-[var(--ds-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={15} />
                 {isSaving ? "Creating…" : "Add milestone"}
@@ -498,12 +498,12 @@ function MilestoneRow({
 }) {
   if (isEditing) {
     return (
-      <div className="flex flex-col gap-2 rounded-xl border border-[#D4A96A]/45 bg-[#F5E6D0]/25 p-3">
+      <div className="flex flex-col gap-2 rounded-xl border border-[var(--ds-accent)]/45 bg-[#F5E6D0]/25 p-3">
         <input
           value={editName}
           onChange={(e) => onChangeName(e.target.value)}
           placeholder="Milestone name"
-          className="h-9 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A]"
+          className="h-9 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)]"
         />
         <div className="flex gap-2">
           <input
@@ -512,7 +512,7 @@ function MilestoneRow({
             min={stageStart}
             max={stageEnd}
             onChange={(e) => onChangeStart(e.target.value)}
-            className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A]"
+            className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)]"
           />
           <input
             type="date"
@@ -520,11 +520,11 @@ function MilestoneRow({
             min={editStart || stageStart}
             max={stageEnd}
             onChange={(e) => onChangeEnd(e.target.value)}
-            className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A]"
+            className="h-9 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)]"
           />
         </div>
         {stageStart && stageEnd && (
-          <p className="text-[11px] text-[#9C8573]">
+          <p className="text-[11px] text-[var(--ds-secondary-label)]">
             Within stage: {new Date(stageStart).toLocaleDateString()} –{" "}
             {new Date(stageEnd).toLocaleDateString()}
           </p>
@@ -534,7 +534,7 @@ function MilestoneRow({
             type="button"
             onClick={onSave}
             disabled={isSaving}
-            className="h-8 flex-1 rounded-lg bg-[#D4A96A] text-[12.5px] font-semibold text-white transition-colors hover:bg-[#C9894A] disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8 flex-1 rounded-lg bg-[var(--ds-accent)] text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--ds-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? "Saving…" : "Save"}
           </button>
@@ -542,7 +542,7 @@ function MilestoneRow({
             type="button"
             onClick={onCancel}
             disabled={isSaving}
-            className="h-8 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white text-[12.5px] font-medium text-[#6B5744] transition-colors hover:bg-[#F5EFE6]"
+            className="h-8 flex-1 rounded-lg border border-[rgba(90,60,30,0.18)] bg-white text-[12.5px] font-medium text-[var(--ds-secondary-label)] transition-colors hover:bg-[var(--ds-bg)]"
           >
             Cancel
           </button>
@@ -561,7 +561,7 @@ function MilestoneRow({
       <div className="flex min-w-0 items-center gap-2.5">
         <span
           className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-            isCompleted ? "bg-[#3D8B5E] text-white" : "bg-[#F5E6D0] text-[#C9894A]"
+            isCompleted ? "bg-[#3D8B5E] text-white" : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
           }`}
         >
           <Flag size={11} />
@@ -569,12 +569,12 @@ function MilestoneRow({
         <div className="min-w-0">
           <div
             className={`truncate text-[13px] font-medium ${
-              isCompleted ? "text-[#248A3D]" : "text-[#1A1410]"
+              isCompleted ? "text-[#248A3D]" : "text-[var(--ds-label)]"
             }`}
           >
             {name}
           </div>
-          {range && <div className="text-[11px] text-[#9C8573]">{range}</div>}
+          {range && <div className="text-[11px] text-[var(--ds-secondary-label)]">{range}</div>}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
@@ -584,7 +584,7 @@ function MilestoneRow({
             onClick={onReopen}
             disabled={busy}
             title="Reopen milestone"
-            className="flex items-center gap-1 rounded-lg border border-[rgba(90,60,30,0.22)] bg-white px-2 py-1.5 text-[11px] font-medium text-[#6B5744] transition-colors hover:bg-[#F5EFE6] disabled:opacity-50"
+            className="flex items-center gap-1 rounded-lg border border-[rgba(90,60,30,0.22)] bg-white px-2 py-1.5 text-[11px] font-medium text-[var(--ds-secondary-label)] transition-colors hover:bg-[var(--ds-bg)] disabled:opacity-50"
           >
             <RotateCcw size={11} /> Reopen
           </button>
@@ -603,7 +603,7 @@ function MilestoneRow({
           type="button"
           onClick={onEdit}
           title="Edit milestone"
-          className="flex size-8 items-center justify-center rounded-lg text-[#C9894A] transition-colors hover:bg-[#F5EFE6]"
+          className="flex size-8 items-center justify-center rounded-lg text-[var(--ds-accent-hover)] transition-colors hover:bg-[var(--ds-bg)]"
         >
           <Pencil size={13} />
         </button>

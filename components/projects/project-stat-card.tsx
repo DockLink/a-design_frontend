@@ -34,7 +34,7 @@ export function ProjectStatCard({
         <div
           style={{
             fontSize: "12px",
-            color: "#8E8E93",
+            color: "var(--ds-tertiary-label)",
             fontWeight: 500,
             textTransform: "uppercase",
             letterSpacing: "0.05em",
@@ -42,13 +42,13 @@ export function ProjectStatCard({
         >
           {label}
         </div>
-        {icon && <div style={{ color: "#D4A96A" }}>{icon}</div>}
+        {icon && <div style={{ color: "var(--ds-accent)" }}>{icon}</div>}
       </div>
       <div
         style={{
           fontSize: "28px",
           fontWeight: 600,
-          color: "#1C1C1E",
+          color: "var(--ds-label)",
           letterSpacing: "-0.8px",
           lineHeight: 1,
         }}

@@ -39,12 +39,12 @@ function ProjectAccessGate({
   }, [isLoading, user, sidebarRole, assigned, router]);
 
   if (isLoading) {
-    return <div style={{ padding: "24px", color: "#8E8E93", fontSize: "14px" }}>Loading project…</div>;
+    return <div style={{ padding: "24px", color: "var(--ds-tertiary-label)", fontSize: "14px" }}>Loading project…</div>;
   }
 
   if (error || !project) {
     return (
-      <div style={{ padding: "24px", color: "#9B1C1C", fontSize: "14px" }}>
+      <div style={{ padding: "24px", color: "var(--ds-destructive)", fontSize: "14px" }}>
         {error ?? "Project not found"}
       </div>
     );

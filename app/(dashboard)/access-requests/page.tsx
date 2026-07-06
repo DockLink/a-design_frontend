@@ -135,7 +135,7 @@ export default function AccessRequestsPage() {
       </div>
 
       {error && (
-        <div style={{ ...dsCallout, color: "#9B1C1C", background: "#FEE2E2", marginBottom: 16 }}>
+        <div style={{ ...dsCallout, color: "var(--ds-destructive)", background: "#FEE2E2", marginBottom: 16 }}>
           {error}
         </div>
       )}
@@ -143,7 +143,7 @@ export default function AccessRequestsPage() {
       {isLoading && <div style={dsCallout}>Loading access requests…</div>}
 
       {!isLoading && visible.length === 0 && (
-        <div style={{ ...dsCallout, textAlign: "center", padding: "40px 20px", color: "#9C8573" }}>
+        <div style={{ ...dsCallout, textAlign: "center", padding: "40px 20px", color: "var(--ds-secondary-label)" }}>
           No pending access requests.
         </div>
       )}
@@ -157,21 +157,21 @@ export default function AccessRequestsPage() {
               key={req.id}
               style={{
                 borderRadius: 12,
-                border: "1px solid rgba(90,60,30,0.12)",
-                background: "#FDFAF6",
+                border: "1px solid var(--ds-separator)",
+                background: "var(--ds-surface-elevated)",
                 padding: "16px 18px",
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)" }}>
                     {req.project?.name ?? "Project"}
                   </div>
-                  <div style={{ fontSize: 13, color: "#6B5744", marginTop: 4 }}>
+                  <div style={{ fontSize: 13, color: "var(--ds-secondary-label)", marginTop: 4 }}>
                     Requested by <strong>{requesterLabel(req)}</strong>
                   </div>
                   {req.requestNote && (
-                    <div style={{ fontSize: 13, color: "#9C8573", marginTop: 6, lineHeight: 1.45 }}>
+                    <div style={{ fontSize: 13, color: "var(--ds-secondary-label)", marginTop: 6, lineHeight: 1.45 }}>
                       {req.requestNote}
                     </div>
                   )}
@@ -250,7 +250,7 @@ const btnSecondary: React.CSSProperties = {
   ...btnBase,
   border: "1px solid rgba(90,60,30,0.18)",
   background: "white",
-  color: "#6B5744",
+  color: "var(--ds-secondary-label)",
 };
 
 const btnDanger: React.CSSProperties = {

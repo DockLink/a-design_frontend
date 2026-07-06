@@ -77,8 +77,8 @@ export function ProjectCard({
         <div style={{ padding: "16px 18px" }}>
           <div style={dsFootnote}>{project.client}</div>
           {project.location ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", fontSize: "12px", color: "#8E8E93" }}>
-              <MapPin size={13} color="#C9894A" style={{ flexShrink: 0 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", fontSize: "12px", color: "var(--ds-tertiary-label)" }}>
+              <MapPin size={13} color="var(--ds-accent-hover)" style={{ flexShrink: 0 }} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.location}</span>
             </div>
           ) : null}
@@ -90,14 +90,14 @@ export function ProjectCard({
                   alignItems: "center",
                   gap: "6px",
                   background: "rgba(212,169,106,0.14)",
-                  color: "#C9894A",
+                  color: "var(--ds-accent-hover)",
                   borderRadius: "9999px",
                   padding: "3px 10px",
                   fontSize: "11px",
                   fontWeight: 500,
                 }}
               >
-                <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "#D4A96A" }} />
+                <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "var(--ds-accent)" }} />
                 {project.currentStage}
               </div>
             ) : (

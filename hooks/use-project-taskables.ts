@@ -41,7 +41,6 @@ export function useProjectTaskables(
     queryFn: () => fetchTaskables(projectId!, taskableType, options),
     enabled: Boolean(projectId),
     staleTime: 20_000,
-    refetchOnMount: "always",
   });
 
   const tasks = data ?? EMPTY_TASKS;

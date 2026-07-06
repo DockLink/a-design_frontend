@@ -78,15 +78,15 @@ function HoldNotificationRow({
   return (
     <NotificationShell
       isUnread={isUnread}
-      icon={<Clock size={17} color="#C9894A" />}
-      iconBg="rgba(212,169,106,0.16)"
+      icon={<Clock size={17} color="var(--ds-accent-hover)" />}
+      iconBg="var(--ds-accent-muted)"
       title={n.title}
       statusLabel={holdRequestStatusLabel(n.status)}
       statusStyle={style}
       createdAt={n.createdAt}
       body={n.body}
       extra={
-        <div style={{ fontSize: 12, color: "#9C8573", marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: "var(--ds-secondary-label)", marginTop: 4 }}>
           {formatHoldDate(n.raw.requestedStartDate)} – {formatHoldDate(n.raw.requestedEndDate)}
         </div>
       }
@@ -94,11 +94,11 @@ function HoldNotificationRow({
         <>
           {mode === "adjust" && (
             <div style={{ display: "flex", gap: 8, marginTop: 10, maxWidth: 320 }}>
-              <label style={{ flex: 1, fontSize: 11, color: "#9C8573" }}>
+              <label style={{ flex: 1, fontSize: 11, color: "var(--ds-secondary-label)" }}>
                 Start
                 <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={dateInput} />
               </label>
-              <label style={{ flex: 1, fontSize: 11, color: "#9C8573" }}>
+              <label style={{ flex: 1, fontSize: 11, color: "var(--ds-secondary-label)" }}>
                 End
                 <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} style={dateInput} />
               </label>
@@ -279,7 +279,7 @@ function FileVersionNotificationRow({
   return (
     <NotificationShell
       isUnread={isUnread}
-      icon={<FileStack size={17} color="#6B5744" />}
+      icon={<FileStack size={17} color="var(--ds-secondary-label)" />}
       iconBg="rgba(107,87,68,0.12)"
       title={n.title}
       statusLabel="File"
@@ -309,8 +309,8 @@ function ShareLinkNotificationRow({
   return (
     <NotificationShell
       isUnread={isUnread}
-      icon={<Link2 size={17} color="#D4A96A" />}
-      iconBg="rgba(212,169,106,0.15)"
+      icon={<Link2 size={17} color="var(--ds-accent)" />}
+      iconBg="var(--ds-accent-muted)"
       title={n.title}
       statusLabel="Share link"
       statusStyle={{ bg: "rgba(212,169,106,0.15)", color: "#B07D3C" }}
@@ -357,8 +357,8 @@ function NotificationShell({
         gap: "12px",
         padding: "14px 16px",
         borderRadius: "12px",
-        background: isUnread ? "rgba(212,169,106,0.07)" : "#FDFAF6",
-        border: `1px solid ${isUnread ? "rgba(212,169,106,0.3)" : "rgba(90,60,30,0.1)"}`,
+        background: isUnread ? "var(--ds-accent-muted)" : "var(--ds-surface-elevated)",
+        border: `1px solid ${isUnread ? "rgba(212,169,106,0.3)" : "var(--ds-separator)"}`,
       }}
     >
       <div
@@ -377,7 +377,7 @@ function NotificationShell({
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#1A1410" }}>{title}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ds-label)" }}>{title}</span>
           <span
             style={{
               fontSize: 11,
@@ -393,11 +393,11 @@ function NotificationShell({
           {isUnread && (
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ds-accent)" }} />
           )}
-          <span style={{ marginLeft: "auto", fontSize: 11, color: "#9C8573" }}>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--ds-secondary-label)" }}>
             {relativeTime(createdAt)}
           </span>
         </div>
-        <p style={{ fontSize: 13, color: "#6B5744", margin: "4px 0 0", lineHeight: 1.45 }}>{body}</p>
+        <p style={{ fontSize: 13, color: "var(--ds-secondary-label)", margin: "4px 0 0", lineHeight: 1.45 }}>{body}</p>
         {extra}
         {actions}
       </div>
@@ -434,7 +434,7 @@ export default function NotificationsPage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
           <div style={{ ...dsLargeTitle, display: "flex", alignItems: "center", gap: 10 }}>
-            <Bell size={26} color="#D4A96A" />
+            <Bell size={26} color="var(--ds-accent)" />
             Notifications
           </div>
           <div style={{ ...dsSubtitle, marginTop: 6 }}>
@@ -467,7 +467,7 @@ export default function NotificationsPage() {
               border: "none",
               cursor: "pointer",
               background: filter === t.id ? "#fff" : "transparent",
-              color: filter === t.id ? "#C9894A" : "#9C8573",
+              color: filter === t.id ? "var(--ds-accent-hover)" : "var(--ds-secondary-label)",
               boxShadow: filter === t.id ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
             }}
           >
@@ -479,7 +479,7 @@ export default function NotificationsPage() {
       {isLoading && notifications.length === 0 && <div style={dsCallout}>Loading notifications…</div>}
 
       {!isLoading && visible.length === 0 && (
-        <div style={{ ...dsCallout, textAlign: "center", padding: "48px 24px", color: "#9C8573" }}>
+        <div style={{ ...dsCallout, textAlign: "center", padding: "48px 24px", color: "var(--ds-secondary-label)" }}>
           {filter === "action" ? "No requests need your action." : "No notifications yet."}
         </div>
       )}
@@ -552,12 +552,12 @@ export default function NotificationsPage() {
 
 const markAllBtn: React.CSSProperties = {
   background: "none",
-  border: "1px solid rgba(90,60,30,0.18)",
+  border: "1px solid var(--ds-separator)",
   borderRadius: 10,
   padding: "8px 14px",
   fontSize: 13,
   fontWeight: 500,
-  color: "#6B5744",
+  color: "var(--ds-secondary-label)",
   cursor: "pointer",
 };
 
@@ -566,11 +566,11 @@ const dateInput: React.CSSProperties = {
   marginTop: 2,
   height: 32,
   borderRadius: 8,
-  border: "1px solid rgba(90,60,30,0.18)",
-  background: "#F5EFE6",
+  border: "1px solid var(--ds-separator)",
+  background: "var(--ds-bg)",
   padding: "0 8px",
   fontSize: 13,
-  color: "#1A1410",
+  color: "var(--ds-label)",
   outline: "none",
 };
 
@@ -617,9 +617,9 @@ const btnGhost: React.CSSProperties = {
   height: 32,
   padding: "0 14px",
   borderRadius: 8,
-  border: "1px solid rgba(90,60,30,0.18)",
+  border: "1px solid var(--ds-separator)",
   background: "transparent",
-  color: "#6B5744",
+  color: "var(--ds-secondary-label)",
   fontSize: 13,
   fontWeight: 500,
   cursor: "pointer",
@@ -629,7 +629,7 @@ const btnLink: React.CSSProperties = {
   marginLeft: "auto",
   background: "none",
   border: "none",
-  color: "#C9894A",
+  color: "var(--ds-accent-hover)",
   fontSize: 13,
   fontWeight: 500,
   cursor: "pointer",

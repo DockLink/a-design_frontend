@@ -5,7 +5,7 @@ const title = "ADS + MAD";
 export function HandwritingText() {
   return (
     <div className="relative">
-      <div className="font-sans text-[72px] leading-[1.1] font-semibold tracking-wide text-[#1C1C1E]">
+      <div className="font-sans text-[72px] leading-[1.1] font-semibold tracking-wide text-[var(--ds-label)]">
         <div className="whitespace-nowrap">
           {title.split("").map((char, i) => (
             <span

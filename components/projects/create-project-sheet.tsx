@@ -279,8 +279,8 @@ export function CreateProjectSheet({
           top: "var(--ds-header-height)",
           width: "min(480px, 100vw)",
           height: "calc(100vh - var(--ds-header-height))",
-          background: "#FDFAF6",
-          borderLeft: "1px solid rgba(90,60,30,0.12)",
+          background: "var(--ds-surface-elevated)",
+          borderLeft: "1px solid var(--ds-separator)",
           zIndex: 30,
           display: "flex",
           flexDirection: "column",
@@ -289,7 +289,7 @@ export function CreateProjectSheet({
         <div
           style={{
             padding: "18px 22px",
-            borderBottom: "1px solid rgba(90,60,30,0.12)",
+            borderBottom: "1px solid var(--ds-separator)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -307,7 +307,7 @@ export function CreateProjectSheet({
         >
           <div className="space-y-2">
             <Label htmlFor="proj-name">Project name</Label>
-            <Input id="proj-name" value={name} onChange={(e) => setName(e.target.value)} className="bg-[#F5EFE6] h-10" required />
+            <Input id="proj-name" value={name} onChange={(e) => setName(e.target.value)} className="bg-[var(--ds-bg)] h-10" required />
           </div>
 
           <div className="space-y-2">
@@ -321,13 +321,13 @@ export function CreateProjectSheet({
                 width: "100%",
                 borderRadius: "10px",
                 border: "1px solid rgba(90,60,30,0.15)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 padding: "10px 12px",
                 fontSize: "var(--ds-text-footnote)",
               }}
             />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>
+              <span style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)" }}>
                 Attach PDFs, audio, images, or any reference files
               </span>
               <input
@@ -359,10 +359,10 @@ export function CreateProjectSheet({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-[#F5EFE6] h-10"
+              className="bg-[var(--ds-bg)] h-10"
               required
             />
-            <p style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93", lineHeight: 1.4 }}>
+            <p style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)", lineHeight: 1.4 }}>
               The project end date is set automatically from the last stage&apos;s end date.
             </p>
           </div>
@@ -371,13 +371,13 @@ export function CreateProjectSheet({
             <Label htmlFor="proj-location">Location</Label>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
-                <MapPin size={16} color="#8E8E93" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+                <MapPin size={16} color="var(--ds-tertiary-label)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
                 <Input
                   id="proj-location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Search or enter address…"
-                  className="bg-[#F5EFE6] h-10 pl-9"
+                  className="bg-[var(--ds-bg)] h-10 pl-9"
                 />
               </div>
               <Button type="button" variant="outline" className="h-10 shrink-0 whitespace-nowrap" onClick={() => setShowLocationPicker(true)}>
@@ -393,13 +393,13 @@ export function CreateProjectSheet({
               value={vimeoUrl}
               onChange={(e) => setVimeoUrl(e.target.value)}
               placeholder="https://vimeo.com/123456789 or https://vimeo.com/123456789/abc123"
-              className="bg-[#F5EFE6] h-10"
+              className="bg-[var(--ds-bg)] h-10"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="client-name">Client name</Label>
-            <Input id="client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} className="bg-[#F5EFE6] h-10" required />
+            <Input id="client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} className="bg-[var(--ds-bg)] h-10" required />
           </div>
 
           <div className="space-y-2">
@@ -412,7 +412,7 @@ export function CreateProjectSheet({
               loading={membersLoading}
               placeholder="Select project lead…"
             />
-            <p style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93", lineHeight: 1.4 }}>
+            <p style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)", lineHeight: 1.4 }}>
               This member gets <strong>lead access on this project only</strong>. On other projects they remain a regular member unless assigned as lead there too.
             </p>
           </div>
@@ -426,7 +426,7 @@ export function CreateProjectSheet({
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#C9894A",
+                  color: "var(--ds-accent-hover)",
                   cursor: "pointer",
                   fontSize: "var(--ds-text-caption-1)",
                   display: "inline-flex",
@@ -448,16 +448,16 @@ export function CreateProjectSheet({
                   padding: "12px",
                   background: "#FFFFFF",
                   borderRadius: "10px",
-                  border: "1px solid rgba(90,60,30,0.12)",
+                  border: "1px solid var(--ds-separator)",
                 }}
               >
                 <Input
                   value={customStageName}
                   onChange={(e) => setCustomStageName(e.target.value)}
                   placeholder="Stage name"
-                  className="bg-[#F5EFE6] flex-1"
+                  className="bg-[var(--ds-bg)] flex-1"
                 />
-                <Button type="button" size="sm" onClick={addCustomStage} className="bg-[#D4A96A] hover:bg-[#C4956A]">
+                <Button type="button" size="sm" onClick={addCustomStage} className="bg-[var(--ds-accent)] hover:bg-[#C4956A]">
                   Add
                 </Button>
               </div>
@@ -477,12 +477,12 @@ export function CreateProjectSheet({
                       gap: "10px",
                       padding: "14px",
                       borderRadius: "12px",
-                      border: `1px solid ${selected ? "#D4A96A" : "rgba(212,169,106,0.35)"}`,
-                      background: selected ? "rgba(212,169,106,0.10)" : "#FDFAF6",
+                      border: `1px solid ${selected ? "var(--ds-accent)" : "rgba(212,169,106,0.35)"}`,
+                      background: selected ? "rgba(212,169,106,0.10)" : "var(--ds-surface-elevated)",
                       cursor: "pointer",
                       textAlign: "left",
                       fontSize: "var(--ds-text-footnote)",
-                      color: "#5A3C1E",
+                      color: "var(--ds-secondary-label)",
                       lineHeight: 1.35,
                       minHeight: "52px",
                     }}
@@ -494,7 +494,7 @@ export function CreateProjectSheet({
                         borderRadius: "5px",
                         flexShrink: 0,
                         marginTop: "1px",
-                        background: selected ? "#D4A96A" : "#FFFFFF",
+                        background: selected ? "var(--ds-accent)" : "#FFFFFF",
                         border: selected ? "none" : "1.5px solid rgba(212,169,106,0.5)",
                         display: "flex",
                         alignItems: "center",
@@ -518,7 +518,7 @@ export function CreateProjectSheet({
                             removeCustomStage(stage.id);
                           }
                         }}
-                        style={{ color: "#8E8E93", flexShrink: 0 }}
+                        style={{ color: "var(--ds-tertiary-label)", flexShrink: 0 }}
                       >
                         <X size={14} />
                       </span>
@@ -532,7 +532,7 @@ export function CreateProjectSheet({
           {selectedCount > 0 && (
             <div>
               <Label>Stage timeline</Label>
-              <p style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93", lineHeight: 1.4, margin: "4px 0 10px" }}>
+              <p style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)", lineHeight: 1.4, margin: "4px 0 10px" }}>
                 Set a start and end date for each stage.{projectStartDay
                   ? ` Stages can't start before the project start (${new Date(projectStartDay).toLocaleDateString()}).`
                   : " Set the project start date first."}
@@ -547,32 +547,32 @@ export function CreateProjectSheet({
                       style={{
                         padding: "12px",
                         borderRadius: "10px",
-                        border: "1px solid rgba(90,60,30,0.12)",
+                        border: "1px solid var(--ds-separator)",
                         background: "#FFFFFF",
                       }}
                     >
-                      <div style={{ fontSize: "var(--ds-text-footnote)", fontWeight: 500, color: "#5A3C1E", marginBottom: "8px" }}>
+                      <div style={{ fontSize: "var(--ds-text-footnote)", fontWeight: 500, color: "var(--ds-secondary-label)", marginBottom: "8px" }}>
                         {stage.name}
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                         <div>
-                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>Start</span>
+                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)" }}>Start</span>
                           <Input
                             type="date"
                             value={stage.startDate ?? ""}
                             min={projectStartDay}
                             onChange={(e) => updateStageDate(stage.id, "startDate", e.target.value)}
-                            className="bg-[#F5EFE6] h-9 mt-1"
+                            className="bg-[var(--ds-bg)] h-9 mt-1"
                           />
                         </div>
                         <div>
-                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>End</span>
+                          <span style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)" }}>End</span>
                           <Input
                             type="date"
                             value={stage.endDate ?? ""}
                             min={stage.startDate ?? projectStartDay}
                             onChange={(e) => updateStageDate(stage.id, "endDate", e.target.value)}
-                            className="bg-[#F5EFE6] h-9 mt-1"
+                            className="bg-[var(--ds-bg)] h-9 mt-1"
                           />
                         </div>
                       </div>
@@ -600,7 +600,7 @@ export function CreateProjectSheet({
                 minHeight: "120px",
                 borderRadius: "12px",
                 border: "1px dashed rgba(90,60,30,0.25)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
@@ -625,15 +625,15 @@ export function CreateProjectSheet({
                 </div>
               ) : (
                 <>
-                  <ImagePlus size={22} color="#C9894A" />
-                  <span style={{ fontSize: "var(--ds-text-footnote)", color: "#8E8E93" }}>Upload project photos</span>
+                  <ImagePlus size={22} color="var(--ds-accent-hover)" />
+                  <span style={{ fontSize: "var(--ds-text-footnote)", color: "var(--ds-tertiary-label)" }}>Upload project photos</span>
                 </>
               )}
             </button>
           </div>
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingTop: "8px" }}>
-            <Button type="submit" disabled={isSubmitting || isUploadingBrief} className="h-10 w-full bg-[#D4A96A] hover:bg-[#C4956A] text-[15px]">
+            <Button type="submit" disabled={isSubmitting || isUploadingBrief} className="h-10 w-full bg-[var(--ds-accent)] hover:bg-[#C4956A] text-[15px]">
               {isSubmitting ? "Creating…" : "Create project"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} className="h-10 w-full">

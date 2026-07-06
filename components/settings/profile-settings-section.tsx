@@ -120,7 +120,7 @@ export function ProfileSettingsSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-[rgba(90,60,30,0.12)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
+    <section className="rounded-2xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
       <h2 className="mb-4 text-[15px] font-semibold text-[var(--ds-label,#1A1410)]">Profile</h2>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -179,12 +179,12 @@ export function ProfileSettingsSection() {
           </div>
 
           <ProfileRow
-            icon={<Mail size={15} color="#9C8573" />}
+            icon={<Mail size={15} color="var(--ds-secondary-label)" />}
             label="Email"
             value={user.email}
           />
           <ProfileRow
-            icon={<Shield size={15} color="#9C8573" />}
+            icon={<Shield size={15} color="var(--ds-secondary-label)" />}
             label="Role"
             value={roleLabel}
           />

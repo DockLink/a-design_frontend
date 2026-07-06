@@ -1,92 +1,146 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Palette } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Palette, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useUserPreferences } from "@/components/providers/user-preferences-provider";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { ACCENT_SWATCHES, mergeUserPreferences } from "@/lib/theme/preferences";
+import {
+  CUSTOM_COLOR_FIELDS,
+  getPresetColorValue,
+  mergeAppAppearance,
+} from "@/lib/theme/preferences";
+import type { AppAppearanceSettings, CustomColorOverrides } from "@/types/app-settings";
 import type {
   DensityPreference,
   FontSizePreference,
   SidebarModePreference,
   ThemePreset,
-  UserPreferences,
 } from "@/types/users";
 
 const THEME_OPTIONS: { id: ThemePreset; label: string; description: string }[] = [
   { id: "default", label: "Default", description: "ADS+MAD cream and gold" },
+  { id: "light", label: "Light", description: "Clean white surfaces" },
   { id: "dark", label: "Dark", description: "Dark surfaces and light text" },
   { id: "high_contrast", label: "High contrast", description: "Stronger text and borders" },
 ];
 
-function appearancePatch(draft: UserPreferences) {
+const COLOR_GROUPS: ("Backgrounds" | "Text" | "Accents" | "Borders" | "Status")[] = [
+  "Backgrounds",
+  "Text",
+  "Accents",
+  "Borders",
+  "Status",
+];
+
+function appearancePatch(draft: AppAppearanceSettings) {
   return {
     theme_preset: draft.theme_preset,
     accent_color: draft.accent_color,
     density: draft.density,
     font_size: draft.font_size,
     sidebar_mode: draft.sidebar_mode,
+    custom_colors: draft.custom_colors,
   };
 }
 
 export function AppearanceSettingsSection() {
-  const { setPreferences, savePreferences, isSaving } = useUserPreferences();
-  const { user, refreshUser } = useAuth();
+  const {
+    appAppearance,
+    setPreferences,
+    preferences,
+    saveAppAppearance,
+    pausePolling,
+    resumePolling,
+    isSavingAppearance,
+  } = useUserPreferences();
   const savedBaseline = useMemo(
-    () => mergeUserPreferences(user?.preferences),
-    [user?.preferences],
+    () => mergeAppAppearance(appAppearance),
+    [appAppearance],
   );
-  const [draft, setDraft] = useState<UserPreferences>(savedBaseline);
+  const [draft, setDraft] = useState<AppAppearanceSettings>(savedBaseline);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
-    setDraft(savedBaseline);
+    if (!dirtyRef.current) {
+      setDraft(savedBaseline);
+    }
   }, [savedBaseline]);
 
-  function updateDraft(patch: Partial<UserPreferences>) {
+  useEffect(() => {
+    return () => {
+      resumePolling();
+    };
+  }, [resumePolling]);
+
+  function updateDraft(patch: Partial<AppAppearanceSettings>) {
+    if (!dirtyRef.current) {
+      dirtyRef.current = true;
+      pausePolling();
+    }
     const next = { ...draft, ...patch };
     setDraft(next);
-    setPreferences(next);
+    setPreferences({ ...preferences, ...next });
+  }
+
+  function updateCustomColor(key: keyof CustomColorOverrides, value: string | null) {
+    updateDraft({ custom_colors: { ...draft.custom_colors, [key]: value } });
   }
 
   async function handleSave() {
     try {
-      await savePreferences(appearancePatch(draft));
-      await refreshUser();
-      toast.success("Appearance saved");
+      await saveAppAppearance(appearancePatch(draft));
+      dirtyRef.current = false;
+      resumePolling();
+      toast.success("Appearance saved for all users");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save appearance");
+      dirtyRef.current = false;
+      resumePolling();
       setDraft(savedBaseline);
-      setPreferences(savedBaseline);
+      setPreferences({ ...preferences, ...savedBaseline });
     }
   }
 
   function handleResetDraft() {
+    dirtyRef.current = false;
+    resumePolling();
     setDraft(savedBaseline);
-    setPreferences(savedBaseline);
+    setPreferences({ ...preferences, ...savedBaseline });
+  }
+
+  function handleResetAllColors() {
+    updateDraft({ custom_colors: {} });
   }
 
   const isDirty =
     JSON.stringify(appearancePatch(draft)) !==
     JSON.stringify(appearancePatch(savedBaseline));
-  const accent = draft.accent_color ?? (draft.theme_preset === "dark" ? "#E0B07A" : "#D4A96A");
+  const accent =
+    draft.custom_colors.accent ??
+    draft.accent_color ??
+    (draft.theme_preset === "dark" ? "#E0B07A" : "#D4A96A");
+  const hasCustomColors = Object.values(draft.custom_colors).some((v) => v);
 
   return (
     <section className="mt-5 rounded-2xl border border-[rgba(90,60,30,0.12)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
       <div className="mb-4 flex items-center gap-2">
         <Palette size={16} color="var(--ds-accent, #D4A96A)" />
-        <h2 className="text-[15px] font-semibold text-[var(--ds-label,#1A1410)]">Appearance</h2>
+        <h2 className="text-[15px] font-semibold text-[var(--ds-label,#1A1410)]">
+          Organization appearance
+        </h2>
       </div>
       <p className="mb-5 text-[13px] text-[var(--ds-secondary-label,#9C8573)]">
-        Personalize how ADS+MAD looks for your account. Changes preview live; save to sync across devices.
+        Set the theme, colors, and layout for everyone in ADS+MAD. Only super admins can change
+        these settings. Other users see updates automatically within about a minute, or when they
+        return to the app.
       </p>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_minmax(280px,360px)]">
         <div className="space-y-5">
           <FieldGroup label="Theme preset">
-            <div className="grid w-full gap-2 sm:grid-cols-3">
+            <div className="grid w-full gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {THEME_OPTIONS.map((opt) => {
                 const active = draft.theme_preset === opt.id;
                 return (
@@ -105,43 +159,6 @@ export function AppearanceSettingsSection() {
                   </button>
                 );
               })}
-            </div>
-          </FieldGroup>
-
-          <FieldGroup label="Accent color">
-            <div className="flex flex-wrap items-center gap-2">
-              {ACCENT_SWATCHES.map((swatch) => {
-                const active = draft.accent_color === swatch.color;
-                return (
-                  <button
-                    key={swatch.id}
-                    type="button"
-                    title={swatch.label}
-                    onClick={() => updateDraft({ accent_color: swatch.color })}
-                    className="h-8 w-8 rounded-full border-2"
-                    style={{
-                      background: swatch.color,
-                      borderColor: active ? "var(--ds-label, #1C1C1E)" : "transparent",
-                    }}
-                  />
-                );
-              })}
-              <label className="inline-flex items-center gap-2 text-[12px] text-[var(--ds-secondary-label,#9C8573)]">
-                Custom
-                <input
-                  type="color"
-                  value={draft.accent_color ?? "#D4A96A"}
-                  onChange={(e) => updateDraft({ accent_color: e.target.value })}
-                  className="h-8 w-10 cursor-pointer rounded border border-[rgba(90,60,30,0.15)] bg-transparent"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => updateDraft({ accent_color: null })}
-                className="text-[12px] text-[var(--ds-accent,#D4A96A)] underline-offset-2 hover:underline"
-              >
-                Reset accent
-              </button>
             </div>
           </FieldGroup>
 
@@ -178,6 +195,35 @@ export function AppearanceSettingsSection() {
               onChange={(value) => updateDraft({ sidebar_mode: value as SidebarModePreference })}
             />
           </FieldGroup>
+
+          <div className="border-t border-[rgba(90,60,30,0.12)] pt-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-[12px] font-semibold uppercase tracking-wide text-[var(--ds-secondary-label,#9C8573)]">
+                Full color customization
+              </div>
+              {hasCustomColors ? (
+                <button
+                  type="button"
+                  onClick={handleResetAllColors}
+                  className="inline-flex items-center gap-1 text-[12px] text-[var(--ds-accent,#D4A96A)] underline-offset-2 hover:underline"
+                >
+                  <RotateCcw size={12} />
+                  Reset all colors to preset
+                </button>
+              ) : null}
+            </div>
+
+            <div className="space-y-4">
+              {COLOR_GROUPS.map((group) => (
+                <ColorGroupBlock
+                  key={group}
+                  group={group}
+                  draft={draft}
+                  onChange={updateCustomColor}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <AppearancePreview draft={draft} accent={accent} />
@@ -186,12 +232,12 @@ export function AppearanceSettingsSection() {
       <div className="mt-5 flex flex-wrap gap-2">
         <Button
           type="button"
-          disabled={!isDirty || isSaving}
+          disabled={!isDirty || isSavingAppearance}
           onClick={() => void handleSave()}
           className="h-10 rounded-lg text-white"
           style={{ background: "var(--ds-accent, #D4A96A)" }}
         >
-          {isSaving ? "Saving…" : "Save appearance"}
+          {isSavingAppearance ? "Saving…" : "Save for all users"}
         </Button>
         {isDirty ? (
           <Button type="button" variant="outline" onClick={handleResetDraft} className="h-10">
@@ -203,18 +249,71 @@ export function AppearanceSettingsSection() {
   );
 }
 
+function ColorGroupBlock({
+  group,
+  draft,
+  onChange,
+}: {
+  group: "Backgrounds" | "Text" | "Accents" | "Borders" | "Status";
+  draft: AppAppearanceSettings;
+  onChange: (key: keyof CustomColorOverrides, value: string | null) => void;
+}) {
+  const fields = CUSTOM_COLOR_FIELDS.filter((f) => f.group === group);
+  if (fields.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-2 text-[11px] font-medium text-[var(--ds-tertiary-label,#B8A695)]">{group}</div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {fields.map((field) => {
+          const override = draft.custom_colors[field.key];
+          const effective = override ?? getPresetColorValue(draft.theme_preset, field.key);
+          return (
+            <div
+              key={field.key}
+              className="flex items-center justify-between gap-2 rounded-lg border border-[rgba(90,60,30,0.1)] px-2.5 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <input
+                  type="color"
+                  value={effective}
+                  onChange={(e) => onChange(field.key, e.target.value)}
+                  className="h-7 w-9 shrink-0 cursor-pointer rounded border border-[rgba(90,60,30,0.15)] bg-transparent"
+                />
+                <span className="truncate text-[12px] text-[var(--ds-label,#1A1410)]">{field.label}</span>
+              </div>
+              {override ? (
+                <button
+                  type="button"
+                  onClick={() => onChange(field.key, null)}
+                  className="shrink-0 text-[11px] text-[var(--ds-secondary-label,#9C8573)] underline-offset-2 hover:underline"
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AppearancePreview({
   draft,
   accent,
 }: {
-  draft: UserPreferences;
+  draft: AppAppearanceSettings;
   accent: string;
 }) {
-  const isDark = draft.theme_preset === "dark";
-  const bg = isDark ? "#121214" : draft.theme_preset === "high_contrast" ? "#fff" : "#f5f2ed";
-  const surface = isDark ? "#1c1c1e" : "#fdfaf6";
-  const label = isDark ? "#f2f2f7" : draft.theme_preset === "high_contrast" ? "#000" : "#1a1410";
-  const secondary = isDark ? "#aeaeb2" : "#9c8573";
+  const colors = draft.custom_colors;
+  const preset = draft.theme_preset;
+  const isDark = preset === "dark";
+  const bg = colors.bg ?? getPresetColorValue(preset, "bg");
+  const surface = colors.surface_elevated ?? colors.surface ?? getPresetColorValue(preset, "surface_elevated");
+  const label = colors.label ?? getPresetColorValue(preset, "label");
+  const secondary = colors.secondary_label ?? getPresetColorValue(preset, "secondary_label");
+  const sidebarBg = colors.sidebar_bg ?? getPresetColorValue(preset, "sidebar_bg");
 
   return (
     <div
@@ -232,7 +331,7 @@ function AppearancePreview({
           <div
             style={{
               width: draft.sidebar_mode === "collapsed" ? 36 : 72,
-              background: isDark ? "#1c1c1e" : "#f7f1eb",
+              background: sidebarBg,
               borderRight: "1px solid rgba(90,60,30,0.1)",
               padding: "8px 6px",
             }}

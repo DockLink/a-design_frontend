@@ -57,12 +57,12 @@ export function ProjectShell({
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Link
             href={NAV_ROUTES.projects}
-            style={{ fontSize: "13px", color: "#8E8E93", textDecoration: "none" }}
+            style={{ fontSize: "13px", color: "var(--ds-tertiary-label)", textDecoration: "none" }}
           >
             Projects
           </Link>
           <span style={{ fontSize: "13px", color: "#C7C7CC" }}>/</span>
-          <span style={{ fontSize: "13px", fontWeight: 500, color: "#1C1C1E" }}>{projectName}</span>
+          <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--ds-label)" }}>{projectName}</span>
         </div>
 
         <div style={{ display: "flex", height: "44px", overflowX: "auto" }}>
@@ -83,8 +83,8 @@ export function ProjectShell({
                   cursor: "pointer",
                   fontSize: "13px",
                   fontWeight: active ? 600 : 400,
-                  color: active ? "#D4A96A" : isHovered ? "#1C1C1E" : "#8E8E93",
-                  borderBottom: active ? "2px solid #D4A96A" : "2px solid transparent",
+                  color: active ? "var(--ds-accent)" : isHovered ? "var(--ds-label)" : "var(--ds-tertiary-label)",
+                  borderBottom: active ? "2px solid var(--ds-accent)" : "2px solid transparent",
                   textDecoration: "none",
                   whiteSpace: "nowrap",
                 }}

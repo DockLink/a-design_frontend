@@ -95,7 +95,7 @@ export const dsStatValue: CSSProperties = {
 };
 
 export const dsMono: CSSProperties = {
-  fontFamily: '"Century Gothic", "CenturyGothic", "AppleGothic", "Futura", "Trebuchet MS", monospace',
+  fontFamily: "var(--ds-font-sans)",
 };
 
 export const dsVibrancy: CSSProperties = {

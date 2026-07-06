@@ -67,12 +67,12 @@ export function TaskMilestoneView({
         const stageTaskCount = Array.from(milestoneMap.values()).reduce((n, arr) => n + arr.length, 0);
 
         return (
-          <div key={stageName} className="overflow-hidden rounded-[14px] border bg-[#FDFAF6]">
-            <div className="flex items-center gap-2 border-b bg-[#F5EFE6] px-4 py-3">
-              <span className="text-[15px] font-medium text-[#1A1410]">
+          <div key={stageName} className="overflow-hidden rounded-[14px] border bg-[var(--ds-surface-elevated)]">
+            <div className="flex items-center gap-2 border-b bg-[var(--ds-bg)] px-4 py-3">
+              <span className="text-[15px] font-medium text-[var(--ds-label)]">
                 {stageName === UNASSIGNED_STAGE ? "Unassigned" : stageName}
               </span>
-              <Badge variant="secondary" className="bg-[#EDE3D4] text-[#9C8573]">
+              <Badge variant="secondary" className="bg-[#EDE3D4] text-[var(--ds-secondary-label)]">
                 {stageTaskCount} task{stageTaskCount === 1 ? "" : "s"}
               </Badge>
             </div>
@@ -84,11 +84,11 @@ export function TaskMilestoneView({
                 return (
                   <div key={milestoneName} className="px-4 py-3">
                     <div className="mb-2 flex items-center gap-2">
-                      <Flag className="size-3.5 text-[#D4A96A]" />
-                      <span className="text-[13px] font-medium text-[#6B5744]">
+                      <Flag className="size-3.5 text-[var(--ds-accent)]" />
+                      <span className="text-[13px] font-medium text-[var(--ds-secondary-label)]">
                         {milestoneName === NO_MILESTONE ? "No milestone (directly on stage)" : milestoneName}
                       </span>
-                      <span className="text-[11px] text-[#9C8573]">
+                      <span className="text-[11px] text-[var(--ds-secondary-label)]">
                         {done}/{list.length} done
                       </span>
                     </div>
@@ -100,7 +100,7 @@ export function TaskMilestoneView({
                             key={task.id}
                             type="button"
                             onClick={() => onTaskClick(task)}
-                            className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-[#F5EFE6] px-3 py-2 text-left hover:border-[#D4A96A]/40"
+                            className="flex w-full items-center gap-3 rounded-lg border border-transparent bg-[var(--ds-bg)] px-3 py-2 text-left hover:border-[var(--ds-accent)]/40"
                           >
                             <span className="size-1.5 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[task.priority] }} />
                             <span className={cn("flex-1 truncate text-sm", task.status === "done" && "text-[#6C6C70] line-through")}>

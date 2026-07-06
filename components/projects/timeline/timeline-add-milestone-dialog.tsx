@@ -97,7 +97,7 @@ export function TimelineAddMilestoneDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <DialogTitle>Add milestone</DialogTitle>
           <DialogCloseButton onClick={() => onOpenChange(false)} />
@@ -105,34 +105,34 @@ export function TimelineAddMilestoneDialog({
 
         <DialogBody className="space-y-3.5">
           {stages.length === 0 ? (
-            <p className="text-sm text-[#9C8573]">
+            <p className="text-sm text-[var(--ds-secondary-label)]">
               Create project stages on the overview first, then add milestones here.
             </p>
           ) : (
             <>
               <div>
-                <Label className="mb-1.5 text-xs text-[#6B5744]">Title</Label>
+                <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Title</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Milestone title…"
-                  className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                  className="h-9 border-[var(--ds-separator)] bg-[var(--ds-bg)]"
                 />
               </div>
 
               <div>
-                <Label className="mb-1.5 text-xs text-[#6B5744]">Description</Label>
+                <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Description</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description…"
-                  className="min-h-[60px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                  className="min-h-[60px] resize-none border-[var(--ds-separator)] bg-[var(--ds-bg)]"
                 />
               </div>
 
               <div>
-                <Label className="mb-1.5 text-xs text-[#6B5744]">Stage</Label>
-                <div className="flex flex-wrap gap-1 rounded-lg bg-[#F5EFE6] p-1">
+                <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Stage</Label>
+                <div className="flex flex-wrap gap-1 rounded-lg bg-[var(--ds-bg)] p-1">
                   {stages.map((s, index) => {
                     const active = stageId === s.id;
                     const color = stageColor(index);
@@ -141,7 +141,7 @@ export function TimelineAddMilestoneDialog({
                         key={s.id}
                         type="button"
                         onClick={() => setStageId(s.id)}
-                        className={`h-8 flex-1 truncate rounded-md px-2 text-[11px] ${active ? "border bg-[#FDFAF6] font-medium" : "text-[#9C8573]"}`}
+                        className={`h-8 flex-1 truncate rounded-md px-2 text-[11px] ${active ? "border bg-[var(--ds-surface-elevated)] font-medium" : "text-[var(--ds-secondary-label)]"}`}
                         style={
                           active
                             ? { borderColor: "rgba(90,60,30,0.14)", color }
@@ -157,42 +157,42 @@ export function TimelineAddMilestoneDialog({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="mb-1.5 text-xs text-[#6B5744]">Start date</Label>
+                  <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Start date</Label>
                   <Input
                     type="date"
                     value={startDate}
                     min={stageStart}
                     max={stageEnd}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                    className="h-9 border-[var(--ds-separator)] bg-[var(--ds-bg)]"
                   />
                 </div>
                 <div>
-                  <Label className="mb-1.5 text-xs text-[#6B5744]">End date</Label>
+                  <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">End date</Label>
                   <Input
                     type="date"
                     value={endDate}
                     min={startDate || stageStart}
                     max={stageEnd}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                    className="h-9 border-[var(--ds-separator)] bg-[var(--ds-bg)]"
                   />
                 </div>
               </div>
               {stageStart && stageEnd && (
-                <p className="text-[11px] text-[#9C8573]">
+                <p className="text-[11px] text-[var(--ds-secondary-label)]">
                   Must fall within the stage period: {new Date(stageStart).toLocaleDateString()} – {new Date(stageEnd).toLocaleDateString()}
                 </p>
               )}
 
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#6B5744]">Mark as completed</span>
+                <span className="text-[13px] text-[var(--ds-secondary-label)]">Mark as completed</span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={completed}
                   onClick={() => setCompleted((c) => !c)}
-                  className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors ${completed ? "bg-[#D4A96A]" : "bg-[rgba(90,60,30,0.18)]"}`}
+                  className={`relative h-[22px] w-10 shrink-0 rounded-full transition-colors ${completed ? "bg-[var(--ds-accent)]" : "bg-[rgba(90,60,30,0.18)]"}`}
                 >
                   <span
                     className={`absolute top-[3px] size-4 rounded-full bg-white shadow transition-[left] ${completed ? "left-[21px]" : "left-[3px]"}`}
@@ -203,7 +203,7 @@ export function TimelineAddMilestoneDialog({
           )}
         </DialogBody>
 
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -211,7 +211,7 @@ export function TimelineAddMilestoneDialog({
             type="button"
             disabled={!canSubmit || isSaving || stages.length === 0}
             onClick={() => void handleSave()}
-            className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+            className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
           >
             {isSaving ? "Saving…" : "Save milestone"}
           </Button>

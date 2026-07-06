@@ -5,7 +5,7 @@ import type { ProjectStageView } from "@/lib/projects/map-stages";
 export function ProjectPhaseBar({ stages }: { stages: ProjectStageView[] }) {
   if (stages.length === 0) {
     return (
-      <div className="project-phase-bar" style={{ fontSize: "13px", color: "#8E8E93" }}>
+      <div className="project-phase-bar" style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
         No stages defined yet.
       </div>
     );

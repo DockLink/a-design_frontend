@@ -84,10 +84,10 @@ export function ProjectOverview() {
       <div className="project-overview">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", gap: "16px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "11px", color: "#9C8573", fontFamily: "var(--ds-font-sans)", marginBottom: "4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", fontFamily: "var(--ds-font-sans)", marginBottom: "4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
             Ref · {project!.code?.toUpperCase()}
           </div>
-          <div style={{ fontSize: "26px", fontWeight: 600, color: "#1C1C1E" }}>{project!.name}</div>
+          <div style={{ fontSize: "26px", fontWeight: 600, color: "var(--ds-label)" }}>{project!.name}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "12px", background: statusCfg.bg, color: statusCfg.color, borderRadius: "9999px", padding: "4px 12px", fontWeight: 500 }}>
@@ -101,12 +101,12 @@ export function ProjectOverview() {
                 style={{
                   height: "30px",
                   padding: "0 12px",
-                  background: "rgba(212,169,106,0.12)",
+                  background: "var(--ds-accent-muted)",
                   border: "none",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "12px",
-                  color: "#C9894A",
+                  color: "var(--ds-accent-hover)",
                 }}
               >
                 Manage Stages
@@ -117,12 +117,12 @@ export function ProjectOverview() {
                 style={{
                   height: "30px",
                   padding: "0 12px",
-                  background: "rgba(212,169,106,0.12)",
+                  background: "var(--ds-accent-muted)",
                   border: "none",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "12px",
-                  color: "#C9894A",
+                  color: "var(--ds-accent-hover)",
                 }}
               >
                 Manage Milestones
@@ -193,10 +193,10 @@ export function ProjectOverview() {
         >
           <AlertCircle size={16} color="#FF9F0A" />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "13px", fontWeight: 500, color: "#C85000" }}>
+            <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--ds-warning)" }}>
               {stats.overdueCount} task{stats.overdueCount === 1 ? "" : "s"} overdue
             </div>
-            <div style={{ fontSize: "12px", color: "#8E8E93" }}>{stats.overdueTitles.join(", ")}</div>
+            <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)" }}>{stats.overdueTitles.join(", ")}</div>
           </div>
           <Link
             href={projectTabRoute(projectId, "tasks")}
@@ -245,7 +245,7 @@ export function ProjectOverview() {
                 gap: "12px",
               }}
             >
-              <div style={{ fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>Project brief</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Project brief</div>
               {canManage && (
                 <button
                   type="button"
@@ -256,7 +256,7 @@ export function ProjectOverview() {
                     background: "transparent",
                     border: "1px solid rgba(90,60,30,0.18)",
                     borderRadius: "8px",
-                    color: "#6B5744",
+                    color: "var(--ds-secondary-label)",
                     cursor: "pointer",
                     fontSize: "12px",
                     fontWeight: 500,

@@ -90,8 +90,8 @@ export function CreateUserSheet({
           top: "52px",
           width: "400px",
           height: "calc(100vh - 52px)",
-          background: "#FDFAF6",
-          borderLeft: "1px solid rgba(90,60,30,0.12)",
+          background: "var(--ds-surface-elevated)",
+          borderLeft: "1px solid var(--ds-separator)",
           boxShadow: "-8px 0 32px rgba(0,0,0,0.10)",
           zIndex: 30,
           display: "flex",
@@ -101,7 +101,7 @@ export function CreateUserSheet({
         <div
           style={{
             height: "52px",
-            borderBottom: "1px solid rgba(90,60,30,0.12)",
+            borderBottom: "1px solid var(--ds-separator)",
             padding: "0 20px",
             display: "flex",
             alignItems: "center",
@@ -109,7 +109,7 @@ export function CreateUserSheet({
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: "17px", fontWeight: 500, color: "#1A1410" }}>
+          <span style={{ fontSize: "17px", fontWeight: 500, color: "var(--ds-label)" }}>
             {title}
           </span>
           <button
@@ -118,7 +118,7 @@ export function CreateUserSheet({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#9C8573",
+              color: "var(--ds-secondary-label)",
               display: "flex",
               padding: 0,
             }}
@@ -139,7 +139,7 @@ export function CreateUserSheet({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First"
-                className="h-9 bg-[#F5EFE6]"
+                className="h-9 bg-[var(--ds-bg)]"
               />
             </div>
             <div className="space-y-2">
@@ -149,7 +149,7 @@ export function CreateUserSheet({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last"
-                className="h-9 bg-[#F5EFE6]"
+                className="h-9 bg-[var(--ds-bg)]"
               />
             </div>
           </div>
@@ -162,7 +162,7 @@ export function CreateUserSheet({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@studio.lk"
-              className="h-9 bg-[#F5EFE6]"
+              className="h-9 bg-[var(--ds-bg)]"
             />
           </div>
 
@@ -173,7 +173,7 @@ export function CreateUserSheet({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 chars with symbols"
-              className="h-9 bg-[#F5EFE6]"
+              className="h-9 bg-[var(--ds-bg)]"
             />
           </div>
 
@@ -188,10 +188,10 @@ export function CreateUserSheet({
                 height: "36px",
                 borderRadius: "8px",
                 border: "1px solid rgba(90,60,30,0.15)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 padding: "0 10px",
                 fontSize: "13px",
-                color: "#1A1410",
+                color: "var(--ds-label)",
               }}
             >
               {roleOptions.map((item) => (
@@ -200,13 +200,13 @@ export function CreateUserSheet({
                 </option>
               ))}
             </select>
-            <p style={{ fontSize: "12px", color: "#9C8573", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "var(--ds-secondary-label)", margin: 0 }}>
               {subtitle}
             </p>
           </div>
 
           {error && (
-            <p style={{ fontSize: "13px", color: "#9B1C1C", marginTop: "-2px" }}>
+            <p style={{ fontSize: "13px", color: "var(--ds-destructive)", marginTop: "-2px" }}>
               {error}
             </p>
           )}
@@ -215,7 +215,7 @@ export function CreateUserSheet({
             <Button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              className="h-9 w-full rounded-lg bg-[#D4A96A] hover:bg-[#C4956A]"
+              className="h-9 w-full rounded-lg bg-[var(--ds-accent)] hover:bg-[#C4956A]"
             >
               {isSubmitting ? "Creating…" : "Create user"}
             </Button>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
+import { queryKeys } from "@/lib/query/keys";
 import { toUsersQueryString } from "@/lib/users/query-string";
 import type { User, UserRole, UserStatus } from "@/types/users";
 import type {
@@ -12,71 +14,67 @@ import type {
   UsersQueryParams,
 } from "@/types/users-api";
 
-function rolesKey(roles?: UserRole[]): string {
-  return roles?.join(",") ?? "";
+async function fetchUsersPage(params: UsersQueryParams): Promise<UsersListResponse> {
+  const query = toUsersQueryString(params);
+  return authApiClient<UsersListResponse>(`/users${query}`);
 }
 
 export function useUsers(params: UsersQueryParams = { page: 1, limit: 20 }) {
-  const [users, setUsers] = useState<User[]>([]);
-  const [meta, setMeta] = useState<UsersListResponse["meta"] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const qc = useQueryClient();
   const [isMutating, setIsMutating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const usersRef = useRef(users);
-  usersRef.current = users;
 
   const page = params.page ?? 1;
   const limit = params.limit ?? 20;
   const search = params.search ?? "";
   const status = params.status;
-  const rolesKeyStr = rolesKey(params.roles);
+  const normalizedParams: UsersQueryParams = { page, limit, search, status, roles: params.roles };
+  const qKey = queryKeys.users.list(normalizedParams);
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const query = toUsersQueryString({ page, limit, search, status, roles: params.roles });
-      const response = await authApiClient<UsersListResponse>(`/users${query}`);
-      setUsers(response.data);
-      setMeta(response.meta);
-    } catch (err) {
-      setUsers([]);
-      setMeta(null);
-      setError(err instanceof Error ? err.message : "Failed to load users");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, limit, search, status, rolesKeyStr, params.roles]);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: qKey,
+    queryFn: () => fetchUsersPage(normalizedParams),
+    staleTime: 20_000,
+  });
+
+  const users = data?.data ?? [];
+  const meta = data?.meta ?? null;
+
+  type UpdateUserVars = { userId: string; payload: UpdateUserRequest; optimistic?: Partial<User> };
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ userId, payload }: UpdateUserVars) =>
+      authApiClient<User>(`/users/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onMutate: async ({ userId, optimistic }: UpdateUserVars) => {
+      if (!optimistic) return;
+      qc.setQueryData<UsersListResponse>(qKey, (prev) =>
+        prev
+          ? { ...prev, data: prev.data.map((u) => (u.id === userId ? { ...u, ...optimistic } : u)) }
+          : prev
+      );
+    },
+    onSuccess: (updated) => {
+      qc.setQueryData<UsersListResponse>(qKey, (prev) =>
+        prev ? { ...prev, data: prev.data.map((u) => (u.id === updated.id ? updated : u)) } : prev
+      );
+    },
+    onError: () => {
+      void qc.invalidateQueries({ queryKey: qKey });
+    },
+  });
 
   const updateUser = useCallback(
     async (userId: string, payload: UpdateUserRequest, optimistic?: Partial<User>) => {
-      const snapshot = usersRef.current.find((u) => u.id === userId);
-      if (!snapshot) throw new Error("User not found");
-
-      if (optimistic) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, ...optimistic } : u))
-        );
-      }
-
       setIsMutating(true);
       try {
-        const updated = await authApiClient<User>(`/users/${userId}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
-        setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
-        return updated;
-      } catch (err) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === userId ? snapshot : u))
-        );
-        throw err;
+        return await updateMutation.mutateAsync({ userId, payload, optimistic });
       } finally {
         setIsMutating(false);
       }
     },
-    []
+    [updateMutation]
   );
 
   const setUserRole = useCallback(
@@ -93,57 +91,82 @@ export function useUsers(params: UsersQueryParams = { page: 1, limit: 20 }) {
     [updateUser]
   );
 
-  const deleteUser = useCallback(async (userId: string) => {
-    setIsMutating(true);
-    try {
-      await authApiClient<{ id: string; deleted: true }>(`/users/${userId}`, {
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) =>
+      authApiClient<{ id: string; deleted: true }>(`/users/${userId}`, {
         method: "DELETE",
-      });
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-      setMeta((prev) =>
+      }),
+    onSuccess: (_result, userId) => {
+      qc.setQueryData<UsersListResponse>(qKey, (prev) =>
         prev
           ? {
               ...prev,
-              total: Math.max(0, prev.total - 1),
-              totalPages: Math.ceil(Math.max(0, prev.total - 1) / limit),
+              data: prev.data.filter((u) => u.id !== userId),
+              meta: prev.meta
+                ? {
+                    ...prev.meta,
+                    total: Math.max(0, prev.meta.total - 1),
+                    totalPages: Math.ceil(Math.max(0, prev.meta.total - 1) / limit),
+                  }
+                : prev.meta,
             }
           : prev
       );
-    } finally {
-      setIsMutating(false);
-    }
-  }, [limit]);
+    },
+  });
 
-  const createUser = useCallback(async (payload: CreateUserRequest) => {
-    setIsMutating(true);
-    try {
-      const created = await authApiClient<User>("/users", {
+  const deleteUser = useCallback(
+    async (userId: string) => {
+      setIsMutating(true);
+      try {
+        await deleteMutation.mutateAsync(userId);
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [deleteMutation]
+  );
+
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateUserRequest) =>
+      authApiClient<User>("/users", {
         method: "POST",
         body: JSON.stringify(payload),
+      }),
+    onSuccess: (created) => {
+      qc.setQueryData<UsersListResponse>(qKey, (prev) => {
+        if (!prev) return prev;
+        const nextData = page === 1 ? [created, ...prev.data].slice(0, limit) : prev.data;
+        return {
+          ...prev,
+          data: nextData,
+          meta: prev.meta
+            ? { ...prev.meta, total: prev.meta.total + 1, totalPages: Math.ceil((prev.meta.total + 1) / limit) }
+            : prev.meta,
+        };
       });
-      if (page === 1) {
-        setUsers((prev) => [created, ...prev].slice(0, limit));
-      }
-      setMeta((prev) =>
-        prev ? { ...prev, total: prev.total + 1, totalPages: Math.ceil((prev.total + 1) / limit) } : prev
-      );
-      return created;
-    } finally {
-      setIsMutating(false);
-    }
-  }, [page, limit]);
+    },
+  });
 
-  useEffect(() => {
-    void fetchUsers();
-  }, [fetchUsers]);
+  const createUser = useCallback(
+    async (payload: CreateUserRequest) => {
+      setIsMutating(true);
+      try {
+        return await createMutation.mutateAsync(payload);
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [createMutation]
+  );
 
   return {
     users,
     meta,
     isLoading,
     isMutating,
-    error,
-    refetch: fetchUsers,
+    error: error ? (error instanceof Error ? error.message : "Failed to load users") : null,
+    refetch: () => refetch().then(() => undefined),
     createUser,
     updateUser,
     setUserRole,

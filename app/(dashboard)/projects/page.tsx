@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { RequestAccessDialog } from "@/components/access-requests/request-access-dialog";
@@ -10,12 +10,9 @@ import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
 import { ProjectCard } from "@/components/projects/project-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useAccessRequests } from "@/hooks/use-access-requests";
-import { useProjects } from "@/hooks/use-projects";
-import { authApiClient } from "@/lib/api/authenticated-client";
+import { useInfiniteProjects } from "@/hooks/use-infinite-projects";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
-import { mapProjectToCard } from "@/lib/projects/map-projects";
-import { toProjectsQueryString } from "@/lib/projects/query-string";
 import {
   dsActionBtn,
   dsCallout,
@@ -23,8 +20,10 @@ import {
   dsSubtitle,
 } from "@/lib/styles/dashboard-tokens";
 import { projectRoute } from "@/types/navigation";
-import type { ProjectCardView, ProjectsListResponse } from "@/types/projects";
+import type { ProjectCardView } from "@/types/projects";
 import { PROJECT_LEAD_ROLE } from "@/types/projects";
+
+const PAGE_SIZE = 12;
 
 function ProjectCardGrid({
   cards,
@@ -101,6 +100,44 @@ function ProjectCardGrid({
   );
 }
 
+function ScrollSentinel({
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+}: {
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => void;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  return (
+    <div ref={sentinelRef} style={{ height: 1 }}>
+      {isFetchingNextPage && (
+        <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}>
+          <Loader2 size={22} style={{ animation: "spin 1s linear infinite", color: "var(--ds-accent)" }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectsListPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -109,12 +146,37 @@ export default function ProjectsListPage() {
   const isSuperAdmin = sidebarRole === "superadmin";
   const showSplitView = !canCreateProject;
 
-  const { projects: allProjects, isLoading: allLoading, error, refetch, deleteProject, isDeleting } =
-    useProjects({ page: 1, limit: 100, status: "ACTIVE" });
+  const {
+    projects: allProjects,
+    isLoading: allLoading,
+    isFetchingNextPage: allFetchingNext,
+    hasNextPage: allHasNext,
+    fetchNextPage: allFetchNext,
+    error,
+    refetch,
+    deleteProject,
+    isDeleting,
+  } = useInfiniteProjects({ limit: PAGE_SIZE, status: "ACTIVE" });
 
-  const [myProjects, setMyProjects] = useState<ProjectCardView[]>([]);
-  const [ledProjectIds, setLedProjectIds] = useState<Set<string>>(new Set());
-  const [myLoading, setMyLoading] = useState(showSplitView);
+  const {
+    projects: memberProjectsRaw,
+    isLoading: memberLoading,
+    isFetchingNextPage: memberFetchingNext,
+    hasNextPage: memberHasNext,
+    fetchNextPage: memberFetchNext,
+  } = useInfiniteProjects(
+    { limit: PAGE_SIZE, status: "ACTIVE", as_member: true },
+    { enabled: showSplitView },
+  );
+
+  const {
+    projects: ledProjectsRaw,
+    isLoading: ledLoading,
+  } = useInfiniteProjects(
+    { limit: PAGE_SIZE, status: "ACTIVE", as_member: true, as_member_role: PROJECT_LEAD_ROLE },
+    { enabled: showSplitView },
+  );
+
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProjectCardView | null>(null);
   const [requestTarget, setRequestTarget] = useState<ProjectCardView | null>(null);
@@ -122,7 +184,7 @@ export default function ProjectsListPage() {
   const userId = user?.id;
   const { requests: myAccessRequests, createRequest } = useAccessRequests(
     { page: 1, limit: 100, requested_by_id: userId },
-    { enabled: showSplitView && !!userId }
+    { enabled: showSplitView && !!userId },
   );
 
   const pendingByProjectId = useMemo(() => {
@@ -133,62 +195,33 @@ export default function ProjectsListPage() {
     return map;
   }, [myAccessRequests]);
 
-  const fetchMyProjects = useCallback(async () => {
-    if (!showSplitView) return;
+  const ledProjectIds = useMemo(
+    () => new Set(ledProjectsRaw.map((p) => p.id)),
+    [ledProjectsRaw],
+  );
 
-    setMyLoading(true);
-    // Resolve the two queries independently so a failure in the "led" lookup
-    // never wipes out the member projects (and vice-versa).
-    const [memberRes, ledRes] = await Promise.allSettled([
-      authApiClient<ProjectsListResponse>(
-        `/projects${toProjectsQueryString({ page: 1, limit: 100, status: "ACTIVE", as_member: true })}`
-      ),
-      authApiClient<ProjectsListResponse>(
-        `/projects${toProjectsQueryString({
-          page: 1,
-          limit: 100,
-          status: "ACTIVE",
-          as_member: true,
-          as_member_role: PROJECT_LEAD_ROLE,
-        })}`
-      ),
-    ]);
-
-    if (memberRes.status === "fulfilled") {
-      setMyProjects(memberRes.value.data.map(mapProjectToCard));
-    } else {
-      setMyProjects([]);
-    }
-
-    setLedProjectIds(
-      ledRes.status === "fulfilled"
-        ? new Set(ledRes.value.data.map((p) => p.id))
-        : new Set()
-    );
-
-    setMyLoading(false);
-  }, [showSplitView]);
-
-  useEffect(() => {
-    void fetchMyProjects();
-  }, [fetchMyProjects]);
-
-  const myProjectIds = useMemo(() => new Set(myProjects.map((p) => p.id)), [myProjects]);
+  const myProjectIds = useMemo(
+    () => new Set(memberProjectsRaw.map((p) => p.id)),
+    [memberProjectsRaw],
+  );
 
   const leadProjects = useMemo(
-    () => myProjects.filter((p) => ledProjectIds.has(p.id)),
-    [myProjects, ledProjectIds]
+    () => memberProjectsRaw.filter((p) => ledProjectIds.has(p.id)),
+    [memberProjectsRaw, ledProjectIds],
   );
 
   const memberProjects = useMemo(
-    () => myProjects.filter((p) => !ledProjectIds.has(p.id)),
-    [myProjects, ledProjectIds]
+    () => memberProjectsRaw.filter((p) => !ledProjectIds.has(p.id)),
+    [memberProjectsRaw, ledProjectIds],
   );
 
   const discoverProjects = useMemo(
     () => (showSplitView ? allProjects.filter((p) => !myProjectIds.has(p.id)) : []),
-    [showSplitView, allProjects, myProjectIds]
+    [showSplitView, allProjects, myProjectIds],
   );
+
+  const myLoading = showSplitView && (memberLoading || ledLoading);
+  const isLoading = allLoading || myLoading;
 
   async function handleDeleteProject() {
     if (!deleteTarget) return;
@@ -208,7 +241,8 @@ export default function ProjectsListPage() {
     setRequestTarget(null);
   }
 
-  const isLoading = allLoading || (showSplitView && myLoading);
+  const handleAllFetchNext = useCallback(() => allFetchNext(), [allFetchNext]);
+  const handleMemberFetchNext = useCallback(() => memberFetchNext(), [memberFetchNext]);
 
   return (
     <div>
@@ -225,9 +259,9 @@ export default function ProjectsListPage() {
           <button
             type="button"
             onClick={() => setShowCreateProject(true)}
-            style={{ ...dsActionBtn, background: "#D4A96A", color: "white", marginTop: "4px" }}
+            style={{ ...dsActionBtn, background: "var(--ds-accent)", color: "white", marginTop: "4px" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--ds-accent)")}
           >
             + New project
           </button>
@@ -248,7 +282,7 @@ export default function ProjectsListPage() {
         <>
           {leadProjects.length > 0 && (
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)", marginBottom: 12 }}>
                 Projects you lead ({leadProjects.length})
               </div>
               <ProjectCardGrid
@@ -262,75 +296,89 @@ export default function ProjectsListPage() {
           )}
 
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)", marginBottom: 12 }}>
               Projects you&apos;re a member of ({memberProjects.length})
             </div>
             {memberProjects.length === 0 ? (
               <div style={dsCallout}>You are not a member of any other projects yet.</div>
             ) : (
-              <ProjectCardGrid
-                cards={memberProjects}
-                isSuperAdmin={false}
-                isDeleting={isDeleting}
-                onOpen={(id) => router.push(projectRoute(id))}
-                onDelete={() => undefined}
-              />
+              <>
+                <ProjectCardGrid
+                  cards={memberProjects}
+                  isSuperAdmin={false}
+                  isDeleting={isDeleting}
+                  onOpen={(id) => router.push(projectRoute(id))}
+                  onDelete={() => undefined}
+                />
+                <ScrollSentinel
+                  hasNextPage={memberHasNext}
+                  isFetchingNextPage={memberFetchingNext}
+                  fetchNextPage={handleMemberFetchNext}
+                />
+              </>
             )}
           </div>
 
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#1A1410", marginBottom: 12 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)", marginBottom: 12 }}>
               Other projects ({discoverProjects.length})
             </div>
             {discoverProjects.length === 0 ? (
               <div style={dsCallout}>No other projects to discover.</div>
             ) : (
-              <ProjectCardGrid
-                cards={discoverProjects}
-                isSuperAdmin={false}
-                isDeleting={isDeleting}
-                onOpen={() => undefined}
-                onDelete={() => undefined}
-                renderExtra={(p) => (
-                  <div style={{ marginTop: 12 }}>
-                    {pendingByProjectId.has(p.id) ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          height: 32,
-                          padding: "0 12px",
-                          borderRadius: 8,
-                          background: "rgba(212,169,106,0.14)",
-                          color: "#C9894A",
-                          fontSize: 12,
-                          fontWeight: 500,
-                        }}
-                      >
-                        Request pending
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setRequestTarget(p)}
-                        style={{
-                          height: 32,
-                          padding: "0 14px",
-                          borderRadius: 8,
-                          border: "none",
-                          background: "#D4A96A",
-                          color: "white",
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Request access
-                      </button>
-                    )}
-                  </div>
-                )}
-              />
+              <>
+                <ProjectCardGrid
+                  cards={discoverProjects}
+                  isSuperAdmin={false}
+                  isDeleting={isDeleting}
+                  onOpen={() => undefined}
+                  onDelete={() => undefined}
+                  renderExtra={(p) => (
+                    <div style={{ marginTop: 12 }}>
+                      {pendingByProjectId.has(p.id) ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            height: 32,
+                            padding: "0 12px",
+                            borderRadius: 8,
+                            background: "rgba(212,169,106,0.14)",
+                            color: "var(--ds-accent-hover)",
+                            fontSize: 12,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Request pending
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setRequestTarget(p)}
+                          style={{
+                            height: 32,
+                            padding: "0 14px",
+                            borderRadius: 8,
+                            border: "none",
+                            background: "var(--ds-accent)",
+                            color: "white",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Request access
+                        </button>
+                      )}
+                    </div>
+                  )}
+                />
+                <ScrollSentinel
+                  hasNextPage={allHasNext}
+                  isFetchingNextPage={allFetchingNext}
+                  fetchNextPage={handleAllFetchNext}
+                />
+              </>
             )}
           </div>
         </>
@@ -343,7 +391,7 @@ export default function ProjectsListPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateProject(true)}
-                style={{ background: "none", border: "none", padding: 0, color: "#D4A96A", cursor: "pointer", fontWeight: 500 }}
+                style={{ background: "none", border: "none", padding: 0, color: "var(--ds-accent)", cursor: "pointer", fontWeight: 500 }}
               >
                 Create your first project
               </button>
@@ -351,13 +399,20 @@ export default function ProjectsListPage() {
           )}
         </div>
       ) : (
-        <ProjectCardGrid
-          cards={allProjects}
-          isSuperAdmin={isSuperAdmin}
-          isDeleting={isDeleting}
-          onOpen={(id) => router.push(projectRoute(id))}
-          onDelete={(p) => setDeleteTarget(p)}
-        />
+        <>
+          <ProjectCardGrid
+            cards={allProjects}
+            isSuperAdmin={isSuperAdmin}
+            isDeleting={isDeleting}
+            onOpen={(id) => router.push(projectRoute(id))}
+            onDelete={(p) => setDeleteTarget(p)}
+          />
+          <ScrollSentinel
+            hasNextPage={allHasNext}
+            isFetchingNextPage={allFetchingNext}
+            fetchNextPage={handleAllFetchNext}
+          />
+        </>
       )}
 
       {deleteTarget && (
@@ -372,7 +427,7 @@ export default function ProjectsListPage() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              background: "#FDFAF6",
+              background: "var(--ds-surface-elevated)",
               borderRadius: "16px",
               padding: "28px",
               maxWidth: "420px",
@@ -381,11 +436,11 @@ export default function ProjectsListPage() {
               boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
             }}
           >
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#FF3B30", marginBottom: "8px" }}>
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-destructive)", marginBottom: "8px" }}>
               Delete project permanently?
             </div>
-            <p style={{ fontSize: "14px", color: "#6B5744", margin: "0 0 20px", lineHeight: 1.5 }}>
-              <strong style={{ color: "#1A1410" }}>{deleteTarget.name}</strong> and all its files,
+            <p style={{ fontSize: "14px", color: "var(--ds-secondary-label)", margin: "0 0 20px", lineHeight: 1.5 }}>
+              <strong style={{ color: "var(--ds-label)" }}>{deleteTarget.name}</strong> and all its files,
               tasks, members, and timeline data will be permanently removed. This cannot be undone.
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -398,7 +453,7 @@ export default function ProjectsListPage() {
                   height: "40px",
                   borderRadius: "10px",
                   border: "none",
-                  background: "#FF3B30",
+                  background: "var(--ds-destructive)",
                   color: "white",
                   fontWeight: 500,
                   cursor: isDeleting ? "not-allowed" : "pointer",
@@ -417,7 +472,7 @@ export default function ProjectsListPage() {
                   borderRadius: "10px",
                   border: "1px solid rgba(90,60,30,0.15)",
                   background: "white",
-                  color: "#6B5744",
+                  color: "var(--ds-secondary-label)",
                   fontWeight: 500,
                   cursor: "pointer",
                 }}
@@ -441,7 +496,6 @@ export default function ProjectsListPage() {
         onClose={() => setShowCreateProject(false)}
         onCreated={(id) => {
           void refetch();
-          void fetchMyProjects();
           router.push(projectRoute(id));
         }}
       />

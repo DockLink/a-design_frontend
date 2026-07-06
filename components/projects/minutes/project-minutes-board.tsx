@@ -306,8 +306,8 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
           style={{
             width: "280px",
             flexShrink: 0,
-            background: "#FDFAF6",
-            borderRight: "1px solid rgba(90,60,30,0.12)",
+            background: "var(--ds-surface-elevated)",
+            borderRight: "1px solid var(--ds-separator)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -323,7 +323,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: "14px", fontWeight: 500, color: "#1A1410" }}>
+            <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ds-label)" }}>
               Meeting minutes
             </span>
             {canManage && (
@@ -333,7 +333,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
                   display: "flex",
                   alignItems: "center",
                   gap: "4px",
-                  background: "#D4A96A",
+                  background: "var(--ds-accent)",
                   border: "none",
                   borderRadius: "6px",
                   height: "26px",
@@ -352,13 +352,13 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
 
           <div style={{ overflowY: "auto", flex: 1 }}>
             {isLoading && (
-              <div style={{ padding: "16px", fontSize: "13px", color: "#9C8573" }}>Loading…</div>
+              <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-secondary-label)" }}>Loading…</div>
             )}
             {!isLoading && error && (
               <div style={{ padding: "16px", fontSize: "13px", color: "#C0392B" }}>{error}</div>
             )}
             {!isLoading && !error && minutes.length === 0 && (
-              <div style={{ padding: "16px", fontSize: "13px", color: "#9C8573" }}>
+              <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-secondary-label)" }}>
                 No meeting minutes yet.
               </div>
             )}
@@ -374,9 +374,9 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
                   style={{
                     width: "100%",
                     height: "60px",
-                    background: active ? "#F5EFE6" : "transparent",
+                    background: active ? "var(--ds-bg)" : "transparent",
                     border: "none",
-                    borderLeft: active ? "3px solid #D4A96A" : "3px solid transparent",
+                    borderLeft: active ? "3px solid var(--ds-accent)" : "3px solid transparent",
                     borderBottom: "1px solid rgba(90,60,30,0.08)",
                     cursor: "pointer",
                     padding: "0 14px 0 13px",
@@ -391,7 +391,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
                     style={{
                       fontSize: "13px",
                       fontWeight: 500,
-                      color: "#1A1410",
+                      color: "var(--ds-label)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -399,7 +399,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
                   >
                     {m.title}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#9C8573" }}>{fmtDate(m.meetingDate)}</div>
+                  <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)" }}>{fmtDate(m.meetingDate)}</div>
                 </button>
               );
             })}
@@ -418,7 +418,7 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
             />
           )}
           {mode === "detail" && !selected && !isLoading && (
-            <div style={{ padding: "40px 32px", fontSize: "14px", color: "#9C8573" }}>
+            <div style={{ padding: "40px 32px", fontSize: "14px", color: "var(--ds-secondary-label)" }}>
               {canManage
                 ? "Select a meeting minute, or create a new one."
                 : "No meeting minutes have been published yet."}
@@ -489,7 +489,7 @@ function DetailView({
           marginBottom: "6px",
         }}
       >
-        <div style={{ fontSize: "26px", fontWeight: 500, color: "#1A1410", lineHeight: 1.2 }}>
+        <div style={{ fontSize: "26px", fontWeight: 500, color: "var(--ds-label)", lineHeight: 1.2 }}>
           {minute.title}
         </div>
         {canManage && (
@@ -497,13 +497,13 @@ function DetailView({
             <button
               onClick={onEdit}
               style={{
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 border: "1px solid rgba(90,60,30,0.18)",
                 borderRadius: "6px",
                 height: "28px",
                 padding: "0 12px",
                 fontSize: "12px",
-                color: "#6B5744",
+                color: "var(--ds-secondary-label)",
                 cursor: "pointer",
               }}
             >
@@ -513,7 +513,7 @@ function DetailView({
               onClick={onDelete}
               title="Delete meeting minute"
               style={{
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 border: "1px solid rgba(90,60,30,0.18)",
                 borderRadius: "6px",
                 height: "28px",
@@ -542,8 +542,8 @@ function DetailView({
         <div style={{ marginBottom: "24px" }}>
           <div
             style={{
-              background: "#FDFAF6",
-              border: "1px solid rgba(90,60,30,0.12)",
+              background: "var(--ds-surface-elevated)",
+              border: "1px solid var(--ds-separator)",
               borderRadius: "12px",
               padding: "16px",
             }}
@@ -561,14 +561,14 @@ function DetailView({
                   flexShrink: 0,
                 }}
               >
-                <Mic size={20} color="#D4A96A" />
+                <Mic size={20} color="var(--ds-accent)" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: "13px",
                     fontWeight: 500,
-                    color: "#1A1410",
+                    color: "var(--ds-label)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -576,7 +576,7 @@ function DetailView({
                 >
                   {attachmentNameFromUrl(audio.url, "Audio recording")}
                 </div>
-                <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                   Audio recording
                 </div>
               </div>
@@ -589,7 +589,7 @@ function DetailView({
 
       {pdfFiles.length > 0 && (
         <div style={{ marginBottom: "24px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 500, color: "#6B5744", marginBottom: "8px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--ds-secondary-label)", marginBottom: "8px" }}>
             PDF documents
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -603,8 +603,8 @@ function DetailView({
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
-                  background: "#FDFAF6",
-                  border: "1px solid rgba(90,60,30,0.12)",
+                  background: "var(--ds-surface-elevated)",
+                  border: "1px solid var(--ds-separator)",
                   borderRadius: "12px",
                   padding: "12px 16px",
                   textDecoration: "none",
@@ -622,14 +622,14 @@ function DetailView({
                     flexShrink: 0,
                   }}
                 >
-                  <FileText size={18} color="#D4A96A" />
+                  <FileText size={18} color="var(--ds-accent)" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
                       fontSize: "13px",
                       fontWeight: 500,
-                      color: "#1A1410",
+                      color: "var(--ds-label)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -637,7 +637,7 @@ function DetailView({
                   >
                     {attachmentNameFromUrl(pdf.url, "Document.pdf")}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                     Open PDF
                   </div>
                 </div>
@@ -663,7 +663,7 @@ function DetailView({
 
       {actionItems.length > 0 && (
         <>
-          <div style={{ fontSize: "14px", fontWeight: 500, color: "#1A1410", marginBottom: "12px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--ds-label)", marginBottom: "12px" }}>
             Action items
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -676,7 +676,7 @@ function DetailView({
                     display: "flex",
                     alignItems: "center",
                     gap: "10px",
-                    background: "#FDFAF6",
+                    background: "var(--ds-surface-elevated)",
                     borderRadius: "8px",
                     border: "1px solid rgba(90,60,30,0.10)",
                     padding: "10px 14px",
@@ -688,8 +688,8 @@ function DetailView({
                       width: "18px",
                       height: "18px",
                       borderRadius: "50%",
-                      border: `2px solid ${done ? "#D4A96A" : "rgba(90,60,30,0.25)"}`,
-                      background: done ? "#D4A96A" : "transparent",
+                      border: `2px solid ${done ? "var(--ds-accent)" : "rgba(90,60,30,0.25)"}`,
+                      background: done ? "var(--ds-accent)" : "transparent",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -704,14 +704,14 @@ function DetailView({
                     <div
                       style={{
                         fontSize: "13px",
-                        color: done ? "#9C8573" : "#1A1410",
+                        color: done ? "var(--ds-secondary-label)" : "var(--ds-label)",
                         textDecoration: done ? "line-through" : "none",
                       }}
                     >
                       {action.text}
                     </div>
                     {action.assignee && action.assignee !== "Unassigned" && (
-                      <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                      <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                         {action.assignee}
                       </div>
                     )}
@@ -732,7 +732,7 @@ function MetaPill({ label, value }: { label: string; value: string }) {
       <div
         style={{
           fontSize: "10px",
-          color: "#9C8573",
+          color: "var(--ds-secondary-label)",
           marginBottom: "2px",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
@@ -740,13 +740,13 @@ function MetaPill({ label, value }: { label: string; value: string }) {
       >
         {label}
       </div>
-      <div style={{ fontSize: "13px", color: "#6B5744" }}>{value}</div>
+      <div style={{ fontSize: "13px", color: "var(--ds-secondary-label)" }}>{value}</div>
     </div>
   );
 }
 
 function Divider() {
-  return <div style={{ height: "1px", background: "rgba(90,60,30,0.12)", marginBottom: "14px" }} />;
+  return <div style={{ height: "1px", background: "var(--ds-separator)", marginBottom: "14px" }} />;
 }
 
 /* ── Attendees multi-select (project members) ────────────── */
@@ -791,7 +791,7 @@ function AttendeesSelect({
         }}
       >
         {value.length === 0 ? (
-          <span style={{ color: "#9C8573" }}>Select attendees…</span>
+          <span style={{ color: "var(--ds-secondary-label)" }}>Select attendees…</span>
         ) : (
           value.map((name) => (
             <span
@@ -801,7 +801,7 @@ function AttendeesSelect({
                 alignItems: "center",
                 gap: "4px",
                 background: "#F5E6D0",
-                color: "#6B5744",
+                color: "var(--ds-secondary-label)",
                 borderRadius: "6px",
                 padding: "2px 6px",
                 fontSize: "12px",
@@ -819,7 +819,7 @@ function AttendeesSelect({
             </span>
           ))
         )}
-        <ChevronDown size={14} color="#9C8573" style={{ marginLeft: "auto", flexShrink: 0 }} />
+        <ChevronDown size={14} color="var(--ds-secondary-label)" style={{ marginLeft: "auto", flexShrink: 0 }} />
       </button>
 
       {open && (
@@ -832,7 +832,7 @@ function AttendeesSelect({
               left: 0,
               right: 0,
               zIndex: 41,
-              background: "#FDFAF6",
+              background: "var(--ds-surface-elevated)",
               border: "1px solid rgba(90,60,30,0.18)",
               borderRadius: "8px",
               boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
@@ -842,7 +842,7 @@ function AttendeesSelect({
             }}
           >
             {allOptions.length === 0 ? (
-              <div style={{ padding: "10px 12px", fontSize: "12px", color: "#9C8573" }}>
+              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--ds-secondary-label)" }}>
                 No team members assigned to this project.
               </div>
             ) : (
@@ -858,14 +858,14 @@ function AttendeesSelect({
                       alignItems: "center",
                       gap: "8px",
                       width: "100%",
-                      background: checked ? "#F5EFE6" : "transparent",
+                      background: checked ? "var(--ds-bg)" : "transparent",
                       border: "none",
                       borderRadius: "6px",
                       padding: "8px 10px",
                       cursor: "pointer",
                       textAlign: "left",
                       fontSize: "13px",
-                      color: "#1A1410",
+                      color: "var(--ds-label)",
                     }}
                   >
                     <span
@@ -873,8 +873,8 @@ function AttendeesSelect({
                         width: "16px",
                         height: "16px",
                         borderRadius: "4px",
-                        border: `2px solid ${checked ? "#D4A96A" : "rgba(90,60,30,0.25)"}`,
-                        background: checked ? "#D4A96A" : "transparent",
+                        border: `2px solid ${checked ? "var(--ds-accent)" : "rgba(90,60,30,0.25)"}`,
+                        background: checked ? "var(--ds-accent)" : "transparent",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -953,12 +953,12 @@ function EditorView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const inputBase: React.CSSProperties = {
-    background: "#FDFAF6",
+    background: "var(--ds-surface-elevated)",
     border: "1px solid rgba(90,60,30,0.18)",
     borderRadius: "8px",
     padding: "8px 12px",
     fontSize: "13px",
-    color: "#1A1410",
+    color: "var(--ds-label)",
     outline: "none",
     width: "100%",
     boxSizing: "border-box",
@@ -1018,12 +1018,12 @@ function EditorView({
                   gap: "8px",
                   width: "100%",
                   height: "60px",
-                  background: "#FDFAF6",
+                  background: "var(--ds-surface-elevated)",
                   border: "2px dashed rgba(90,60,30,0.25)",
                   borderRadius: "12px",
                   cursor: uploadingAudio ? "default" : "pointer",
                   fontSize: "13px",
-                  color: "#9C8573",
+                  color: "var(--ds-secondary-label)",
                 }}
               >
                 <Upload size={18} />
@@ -1033,8 +1033,8 @@ function EditorView({
           ) : (
             <div
               style={{
-                background: "#FDFAF6",
-                border: "1px solid rgba(90,60,30,0.12)",
+                background: "var(--ds-surface-elevated)",
+                border: "1px solid var(--ds-separator)",
                 borderRadius: "12px",
                 padding: "12px 16px",
               }}
@@ -1052,14 +1052,14 @@ function EditorView({
                     flexShrink: 0,
                   }}
                 >
-                  <Mic size={18} color="#D4A96A" />
+                  <Mic size={18} color="var(--ds-accent)" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
                       fontSize: "13px",
                       fontWeight: 500,
-                      color: "#1A1410",
+                      color: "var(--ds-label)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -1067,7 +1067,7 @@ function EditorView({
                   >
                     {audio.name}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                     Audio file attached
                   </div>
                 </div>
@@ -1100,8 +1100,8 @@ function EditorView({
                 <div
                   key={pdf.id}
                   style={{
-                    background: "#FDFAF6",
-                    border: "1px solid rgba(90,60,30,0.12)",
+                    background: "var(--ds-surface-elevated)",
+                    border: "1px solid var(--ds-separator)",
                     borderRadius: "12px",
                     padding: "12px 16px",
                   }}
@@ -1119,14 +1119,14 @@ function EditorView({
                         flexShrink: 0,
                       }}
                     >
-                      <FileText size={18} color="#D4A96A" />
+                      <FileText size={18} color="var(--ds-accent)" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
                           fontSize: "13px",
                           fontWeight: 500,
-                          color: "#1A1410",
+                          color: "var(--ds-label)",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -1134,7 +1134,7 @@ function EditorView({
                       >
                         {pdf.name}
                       </div>
-                      <div style={{ fontSize: "11px", color: "#9C8573", marginTop: "2px" }}>
+                      <div style={{ fontSize: "11px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                         PDF attached
                       </div>
                     </div>
@@ -1180,12 +1180,12 @@ function EditorView({
               gap: "8px",
               width: "100%",
               height: "52px",
-              background: "#FDFAF6",
+              background: "var(--ds-surface-elevated)",
               border: "2px dashed rgba(90,60,30,0.25)",
               borderRadius: "12px",
               cursor: uploadingPdf ? "default" : "pointer",
               fontSize: "13px",
-              color: "#9C8573",
+              color: "var(--ds-secondary-label)",
             }}
           >
             <Upload size={18} />
@@ -1203,7 +1203,7 @@ function EditorView({
         />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 500, color: "#1A1410" }}>Action items</span>
+          <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ds-label)" }}>Action items</span>
           <button
             onClick={onAddAction}
             style={{
@@ -1216,7 +1216,7 @@ function EditorView({
               height: "26px",
               padding: "0 10px",
               fontSize: "12px",
-              color: "#6B5744",
+              color: "var(--ds-secondary-label)",
               cursor: "pointer",
             }}
           >
@@ -1233,7 +1233,7 @@ function EditorView({
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                background: "#FDFAF6",
+                background: "var(--ds-surface-elevated)",
                 borderRadius: "8px",
                 border: "1px solid rgba(90,60,30,0.10)",
                 padding: "8px 12px",
@@ -1252,13 +1252,13 @@ function EditorView({
                 value={action.text}
                 onChange={(e) => onUpdateAction(action.id, "text", e.target.value)}
                 placeholder="Action item"
-                style={{ flex: 2, background: "none", border: "none", outline: "none", fontSize: "13px", color: "#1A1410" }}
+                style={{ flex: 2, background: "none", border: "none", outline: "none", fontSize: "13px", color: "var(--ds-label)" }}
               />
               <input
                 value={action.assignee}
                 onChange={(e) => onUpdateAction(action.id, "assignee", e.target.value)}
                 placeholder="Assignee"
-                style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "12px", color: "#9C8573" }}
+                style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "12px", color: "var(--ds-secondary-label)" }}
               />
               <button
                 onClick={() => onRemoveAction(action.id)}
@@ -1278,7 +1278,7 @@ function EditorView({
             </div>
           ))}
           {actions.length === 0 && (
-            <div style={{ fontSize: "13px", color: "#9C8573", padding: "10px 0" }}>
+            <div style={{ fontSize: "13px", color: "var(--ds-secondary-label)", padding: "10px 0" }}>
               No action items yet. Click &quot;Add item&quot; to add one.
             </div>
           )}
@@ -1287,7 +1287,7 @@ function EditorView({
 
       <div
         style={{
-          borderTop: "1px solid rgba(90,60,30,0.12)",
+          borderTop: "1px solid var(--ds-separator)",
           background: "#EDE3D4",
           padding: "12px 32px",
           display: "flex",
@@ -1300,13 +1300,13 @@ function EditorView({
           onClick={onCancel}
           disabled={isSaving}
           style={{
-            background: "#F5EFE6",
+            background: "var(--ds-bg)",
             border: "1px solid rgba(90,60,30,0.18)",
             borderRadius: "8px",
             height: "32px",
             padding: "0 16px",
             fontSize: "13px",
-            color: "#6B5744",
+            color: "var(--ds-secondary-label)",
             cursor: "pointer",
           }}
         >
@@ -1316,7 +1316,7 @@ function EditorView({
           onClick={onPublish}
           disabled={isSaving}
           style={{
-            background: "#D4A96A",
+            background: "var(--ds-accent)",
             border: "none",
             borderRadius: "8px",
             height: "32px",
@@ -1337,7 +1337,7 @@ function EditorView({
 
 const labelStyle: React.CSSProperties = {
   fontSize: "11px",
-  color: "#9C8573",
+  color: "var(--ds-secondary-label)",
   display: "block",
   marginBottom: "4px",
   textTransform: "uppercase",
