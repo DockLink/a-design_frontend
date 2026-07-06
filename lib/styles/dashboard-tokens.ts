@@ -11,7 +11,7 @@ export const dsCard: CSSProperties = {
 
 export const dsLargeTitle: CSSProperties = {
   fontSize: "var(--ds-text-large-title)",
-  fontWeight: 600,
+  fontWeight: 300,
   color: "var(--ds-label)",
   letterSpacing: "-0.02em",
   lineHeight: 1.15,
@@ -25,7 +25,7 @@ export const dsSubtitle: CSSProperties = {
 
 export const dsSectionLabel: CSSProperties = {
   fontSize: "var(--ds-text-caption-1)",
-  fontWeight: 600,
+  fontWeight: 300,
   color: "var(--ds-tertiary-label)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
@@ -43,7 +43,7 @@ export const dsActionBtn: CSSProperties = {
   padding: "0 20px",
   borderRadius: "var(--ds-radius-control)",
   fontSize: "var(--ds-text-callout)",
-  fontWeight: 500,
+  fontWeight: 300,
   cursor: "pointer",
   border: "none",
   letterSpacing: "-0.01em",
@@ -53,7 +53,7 @@ export const dsActionBtn: CSSProperties = {
 
 export const dsHeadline: CSSProperties = {
   fontSize: "var(--ds-text-headline)",
-  fontWeight: 600,
+  fontWeight: 300,
   color: "var(--ds-label)",
   letterSpacing: "-0.01em",
 };
@@ -88,7 +88,7 @@ export const dsCaption2: CSSProperties = {
 
 export const dsStatValue: CSSProperties = {
   fontSize: "var(--ds-text-title-1)",
-  fontWeight: 600,
+  fontWeight: 300,
   color: "var(--ds-label)",
   letterSpacing: "-0.02em",
   lineHeight: 1.1,

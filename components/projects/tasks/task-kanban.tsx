@@ -133,7 +133,7 @@ export const TaskKanbanColumn = memo(function TaskKanbanColumn({
   const column = BOARD_COLUMNS.find((c) => c.id === columnId)!;
 
   return (
-    <div className="flex min-w-[220px] max-w-[320px] flex-1 flex-col">
+    <div className="flex min-w-[220px] flex-1 flex-col">
       <div className="mb-2.5 flex items-center justify-between px-0.5">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full" style={{ background: column.accent }} />

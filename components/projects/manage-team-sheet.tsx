@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ProjectMemberAvatar } from "@/components/projects/project-recent-tasks";
 import { useUsers } from "@/hooks/use-users";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
-import { isGuestProjectMember } from "@/lib/user/guest";
+import { isGuestProjectMember, isGuestUser } from "@/lib/user/guest";
 import type { ProjectMember } from "@/types/projects";
 import { PROJECT_LEAD_ROLE } from "@/types/projects";
 import type { User } from "@/types/users";
@@ -64,7 +64,7 @@ export function ManageTeamSheet({
 
   const available = orgUsers.filter(
     (u) =>
-      !u.roles.includes("GUEST") &&
+      !isGuestUser(u) &&
       !draftIds.includes(u.id) &&
       getUserDisplayName(u).toLowerCase().includes(search.toLowerCase()),
   );

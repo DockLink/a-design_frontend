@@ -215,7 +215,7 @@ export function GuestUsersPage() {
           background: "var(--ds-surface-elevated)",
           borderRadius: "12px",
           border: "1px solid var(--ds-separator)",
-          overflow: "hidden",
+          overflow: "visible",
         }}
       >
         <div

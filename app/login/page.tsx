@@ -44,27 +44,26 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full" style={{ background: LOGIN_BG }}>
-      {/* Left: brand + sign-in — form width matches the A→D span of the wordmark */}
+      {/* Left: brand + sign-in — tighter to viewport left, more space before hero */}
       <div
-        className="flex w-full flex-col justify-center px-8 py-12 lg:w-1/3 lg:px-[70px] lg:py-20"
+        className="flex w-full flex-col justify-center px-6 py-10 lg:w-1/3 lg:pl-10 lg:pr-24 lg:py-16"
         style={{ background: LOGIN_BG }}
       >
         <HandwritingText>
-          <div className="mb-8">
-            <h1 className="text-[28px] font-light tracking-tight text-[var(--ds-label)]">
+          <div className="mb-6">
+            <h1 className="text-[22px] font-light tracking-tight text-[var(--ds-label)]">
               Sign in
             </h1>
-            <p className="mt-1.5 text-[15px] font-light text-muted-foreground">
+            <p className="mt-1 text-[13px] font-light text-muted-foreground">
               Use your {APP_NAME} account
             </p>
           </div>
-
           <LoginForm />
         </HandwritingText>
       </div>
 
-      {/* Right: hero image */}
-      <div className="relative hidden min-h-screen lg:block lg:w-2/3">
+      {/* Right: hero image — extra inset from the form column */}
+      <div className="relative hidden min-h-screen lg:block lg:w-2/3 lg:pl-8">
         <Image
           src="/images/heroimage.jpg"
           alt=""

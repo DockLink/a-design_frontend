@@ -47,7 +47,7 @@ function DialogHeader({ className, children }: React.ComponentProps<"div">) {
 }
 
 function DialogTitle({ className, children }: React.ComponentProps<"div">) {
-  return <div className={cn("text-base font-medium text-foreground", className)}>{children}</div>;
+  return <div className={cn("text-base font-light text-foreground", className)}>{children}</div>;
 }
 
 function DialogBody({ className, children }: React.ComponentProps<"div">) {

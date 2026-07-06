@@ -402,12 +402,14 @@ export function ProjectOverview() {
         </div>
       </div>
 
-      <ProjectImageGallery
-        projectId={projectId}
-        images={project!.images}
-        canEdit={canManage && !canEditDetails}
-        onUpdated={refetch}
-      />
+      <div style={{ marginTop: "24px" }}>
+        <ProjectImageGallery
+          projectId={projectId}
+          images={project!.images}
+          canEdit={canManage && !canEditDetails}
+          onUpdated={refetch}
+        />
+      </div>
 
       <div className="project-overview-bottom-grid">
         <ProjectLocationSection

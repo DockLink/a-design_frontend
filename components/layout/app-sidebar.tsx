@@ -120,10 +120,10 @@ export function AppSidebar() {
           height: "var(--ds-header-height)",
           display: "flex",
           alignItems: "center",
+          justifyContent: collapsed ? "center" : "flex-start",
           gap: "10px",
           padding: collapsed ? "0 10px" : "0 18px",
           borderBottom: "0.5px solid var(--ds-separator)",
-          justifyContent: collapsed ? "center" : "flex-start",
           flexShrink: 0,
         }}
       >
@@ -131,13 +131,15 @@ export function AppSidebar() {
         {!collapsed ? (
         <span
           style={{
-            fontSize: "var(--ds-text-callout)",
+            fontSize: "var(--ds-text-title-2)",
             fontWeight: 300,
             color: "var(--ds-accent)",
             letterSpacing: "0.02em",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            textAlign: "center",
+            width: "100%",
           }}
         >
           {BRAND_WORDMARK}
