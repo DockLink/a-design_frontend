@@ -45,7 +45,7 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const { projects, activeProjects, meta, isLoading, error } = useProjects({
     page: 1,
-    limit: 100,
+    limit: 5,
     status: "ACTIVE",
   });
   const { meta: accessMeta } = useAccessRequests({ page: 1, limit: 1, status: "PENDING" });
@@ -155,7 +155,7 @@ export function AdminDashboard() {
                   height: "18px",
                   padding: "0 5px",
                   borderRadius: "9999px",
-                  background: "#FF3B30",
+                  background: "var(--ds-destructive)",
                   color: "white",
                   fontSize: "11px",
                   fontWeight: 600,
@@ -172,7 +172,7 @@ export function AdminDashboard() {
             onClick={() => setShowCreateProject(true)}
             style={primaryBtn}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--ds-accent)")}
           >
             <Plus size={16} />
             New project
@@ -199,7 +199,7 @@ export function AdminDashboard() {
             style={{
               background: "#FFFFFF",
               borderRadius: "16px",
-              border: "0.5px solid rgba(90,60,30,0.12)",
+              border: "0.5px solid var(--ds-separator)",
               boxShadow: "0 1px 3px rgba(60,40,20,0.06)",
               padding: "18px",
               display: "flex",
@@ -240,12 +240,12 @@ export function AdminDashboard() {
               </span>
               {stat.onClick && <ArrowRight size={15} color="#C7C7CC" />}
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 600, color: "#1A1410", lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+            <div style={{ fontSize: "28px", fontWeight: 600, color: "var(--ds-label)", lineHeight: 1.05, letterSpacing: "-0.02em" }}>
               {stat.value}
             </div>
             <div>
-              <div style={{ fontSize: "13px", fontWeight: 500, color: "#1A1410" }}>{stat.label}</div>
-              <div style={{ fontSize: "12px", color: "#9C8573", marginTop: "1px" }}>{stat.subtext}</div>
+              <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--ds-label)" }}>{stat.label}</div>
+              <div style={{ fontSize: "12px", color: "var(--ds-secondary-label)", marginTop: "1px" }}>{stat.subtext}</div>
             </div>
           </div>
         ))}
@@ -257,7 +257,7 @@ export function AdminDashboard() {
         action={{ label: "View all", onClick: () => router.push(NAV_ROUTES.projects) }}
       />
       {isLoading && <div style={dsCallout}>Loading projects…</div>}
-      {error && <div style={{ ...dsCallout, color: "#FF3B30" }}>{error}</div>}
+      {error && <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{error}</div>}
       {!isLoading && !error && activeProjects.length === 0 && (
         <EmptyState
           message="No active projects yet"
@@ -280,7 +280,7 @@ export function AdminDashboard() {
                 padding: 0,
                 background: "#FFFFFF",
                 borderRadius: "16px",
-                border: `1px solid ${isHovered ? "#D4A96A" : "rgba(90,60,30,0.12)"}`,
+                border: `1px solid ${isHovered ? "var(--ds-accent)" : "var(--ds-separator)"}`,
                 boxShadow: isHovered ? "0 10px 26px rgba(60,40,20,0.12)" : "0 1px 3px rgba(60,40,20,0.06)",
                 cursor: "pointer",
                 transition: "all 0.15s",
@@ -300,10 +300,10 @@ export function AdminDashboard() {
               <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "center", gap: "8px", minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: "15px", fontWeight: 600, color: "#1A1410", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--ds-label)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {project.name}
                     </div>
-                    <div style={{ fontSize: "12.5px", color: "#9C8573", marginTop: "2px" }}>
+                    <div style={{ fontSize: "12.5px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
                       {project.client}
                     </div>
                   </div>
@@ -314,15 +314,15 @@ export function AdminDashboard() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "5px",
-                        background: "rgba(212,169,106,0.14)",
-                        color: "#C9894A",
+                        background: "var(--ds-accent-muted)",
+                        color: "var(--ds-accent-hover)",
                         borderRadius: "9999px",
                         padding: "3px 10px",
                         fontSize: "11px",
                         fontWeight: 500,
                       }}
                     >
-                      <span style={{ width: "5px", height: "5px", borderRadius: "9999px", background: "#D4A96A" }} />
+                      <span style={{ width: "5px", height: "5px", borderRadius: "9999px", background: "var(--ds-accent)" }} />
                       {project.currentStage}
                     </span>
                   )}
@@ -330,15 +330,15 @@ export function AdminDashboard() {
                 {showProgress && (
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "11.5px", color: "#9C8573" }}>
+                      <span style={{ fontSize: "11.5px", color: "var(--ds-secondary-label)" }}>
                         {project.lead ? `Lead · ${project.lead}` : "Progress"}
                       </span>
-                      <span style={{ fontSize: "11.5px", fontWeight: 600, color: "#6B5744" }}>
+                      <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--ds-secondary-label)" }}>
                         {project.completion}%
                       </span>
                     </div>
                     <div style={{ height: "5px", borderRadius: "9999px", background: "#F2EDE8", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${project.completion}%`, background: "#D4A96A", borderRadius: "9999px" }} />
+                      <div style={{ height: "100%", width: `${project.completion}%`, background: "var(--ds-accent)", borderRadius: "9999px" }} />
                     </div>
                   </div>
                 )}
@@ -349,7 +349,10 @@ export function AdminDashboard() {
       </div>
 
       {/* All projects */}
-      <SectionHeader title="All projects" />
+      <SectionHeader
+        title="Recent projects"
+        action={{ label: "View all projects →", onClick: () => router.push("/projects") }}
+      />
       <div className="project-card-grid">
         {projects.map((project) => (
           <ProjectCard
@@ -360,7 +363,7 @@ export function AdminDashboard() {
               (project.teamSize ?? 0) > 0 || (project.completion ?? 0) > 0
                 ? (p) => (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "10px" }}>
-                      <span style={{ fontSize: "11.5px", color: "#9C8573", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                      <span style={{ fontSize: "11.5px", color: "var(--ds-secondary-label)", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                         {(p.teamSize ?? 0) > 0 && (
                           <>
                             <Users size={12} color="#C4B5A5" />
@@ -369,7 +372,7 @@ export function AdminDashboard() {
                         )}
                       </span>
                       {(p.completion ?? 0) > 0 && (
-                        <span style={{ fontSize: "11.5px", fontWeight: 500, color: "#6B5744", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ fontSize: "11.5px", fontWeight: 500, color: "var(--ds-secondary-label)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                           <CheckCircle2 size={12} color="#2D8B5E" />
                           {p.completion}%
                         </span>
@@ -380,6 +383,24 @@ export function AdminDashboard() {
             }
           />
         ))}
+      </div>
+
+      <div style={{ marginTop: "20px", textAlign: "center" }}>
+        <button
+          type="button"
+          onClick={() => router.push("/projects")}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "var(--ds-text-callout)",
+            color: "var(--ds-accent)",
+            padding: 0,
+            fontWeight: 500,
+          }}
+        >
+          View all projects →
+        </button>
       </div>
 
       <CreateProjectSheet
@@ -409,7 +430,7 @@ function SectionHeader({
         padding: "0 2px",
       }}
     >
-      <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#1A1410", margin: 0, letterSpacing: "-0.01em" }}>
+      <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-label)", margin: 0, letterSpacing: "-0.01em" }}>
         {title}
       </h2>
       {action && (
@@ -424,7 +445,7 @@ function SectionHeader({
             cursor: "pointer",
             fontSize: "13px",
             fontWeight: 500,
-            color: "#D4A96A",
+            color: "var(--ds-accent)",
             padding: 0,
           }}
         >
@@ -456,7 +477,7 @@ function EmptyState({
       }}
     >
       <FolderOpen size={26} color="#C4B5A5" style={{ margin: "0 auto 10px" }} />
-      <div style={{ fontSize: "14px", fontWeight: 500, color: "#6B5744" }}>{message}</div>
+      <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--ds-secondary-label)" }}>{message}</div>
       {actionLabel && onAction && (
         <button
           onClick={onAction}
@@ -465,7 +486,7 @@ function EmptyState({
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: "#D4A96A",
+            color: "var(--ds-accent)",
             fontWeight: 500,
             fontSize: "13px",
           }}
@@ -489,7 +510,7 @@ const primaryBtn: React.CSSProperties = {
   fontWeight: 600,
   cursor: "pointer",
   border: "none",
-  background: "#D4A96A",
+  background: "var(--ds-accent)",
   color: "white",
   whiteSpace: "nowrap",
   transition: "background 0.15s",
@@ -508,7 +529,7 @@ const secondaryBtn: React.CSSProperties = {
   cursor: "pointer",
   border: "1px solid rgba(90,60,30,0.16)",
   background: "#FFFFFF",
-  color: "#6B5744",
+  color: "var(--ds-secondary-label)",
   whiteSpace: "nowrap",
   transition: "background 0.15s",
 };

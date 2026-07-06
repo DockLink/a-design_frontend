@@ -54,7 +54,7 @@ export function ShareLocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
-      <DialogContent className="w-[min(440px,100vw)] border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="w-[min(440px,100vw)] border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <div className="flex items-center gap-2">
             <MapPin size={15} style={{ color: "var(--ds-accent, #D4A96A)" }} />
@@ -64,13 +64,13 @@ export function ShareLocationDialog({
         </DialogHeader>
 
         <DialogBody className="space-y-4">
-          <p className="text-[13px] font-medium text-[#1A1410]">{title}</p>
+          <p className="text-[13px] font-medium text-[var(--ds-label)]">{title}</p>
           <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-[#9C8573]">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--ds-secondary-label)]">
               Google Maps link
             </p>
-            <div className="flex items-center gap-2 rounded-lg border border-[rgba(90,60,30,0.12)] bg-[#F5EFE6] p-2.5">
-              <span className="flex-1 break-all text-[12px] text-[#1A1410]">{url}</span>
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--ds-separator)] bg-[var(--ds-bg)] p-2.5">
+              <span className="flex-1 break-all text-[12px] text-[var(--ds-label)]">{url}</span>
               <button
                 type="button"
                 onClick={() => void handleCopy()}
@@ -83,7 +83,7 @@ export function ShareLocationDialog({
           </div>
         </DialogBody>
 
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           <Button variant="outline" onClick={handleClose}>
             Close
           </Button>

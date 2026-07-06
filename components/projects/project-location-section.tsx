@@ -69,8 +69,8 @@ export function ProjectLocationSection({
         }}
       >
         <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>
-            <MapPin size={16} color="#C9894A" />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
+            <MapPin size={16} color="var(--ds-accent-hover)" />
             Project location
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -92,7 +92,7 @@ export function ProjectLocationSection({
               </>
             ) : null}
             {canEdit ? (
-              <Button type="button" size="sm" className="bg-[#D4A96A] hover:bg-[#C4956A]" disabled={isSaving} onClick={() => setShowPicker(true)}>
+              <Button type="button" size="sm" className="bg-[var(--ds-accent)] hover:bg-[#C4956A]" disabled={isSaving} onClick={() => setShowPicker(true)}>
                 {hasLocation ? "Edit" : "Add location"}
               </Button>
             ) : null}
@@ -100,12 +100,12 @@ export function ProjectLocationSection({
         </div>
 
         {!hasLocation ? (
-          <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "#8E8E93" }}>
+          <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
             No location set for this project.
           </div>
         ) : (
           <>
-            <div style={{ padding: "0 18px 14px", fontSize: "14px", color: "#1C1C1E", lineHeight: 1.5 }}>
+            <div style={{ padding: "0 18px 14px", fontSize: "14px", color: "var(--ds-label)", lineHeight: 1.5 }}>
               {address || `${latitude}, ${longitude}`}
             </div>
             {mapsConfigured && latitude != null && longitude != null ? (

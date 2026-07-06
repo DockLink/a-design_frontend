@@ -15,13 +15,13 @@ export function LoadingSpinner({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 py-16 text-[#9C8573]",
+        "flex flex-col items-center justify-center gap-3 py-16 text-[var(--ds-secondary-label)]",
         className
       )}
     >
       <Loader2
         size={size}
-        className="animate-spin text-[#D4A96A]"
+        className="animate-spin text-[var(--ds-accent)]"
         aria-hidden
       />
       {label && <p className="text-sm">{label}</p>}

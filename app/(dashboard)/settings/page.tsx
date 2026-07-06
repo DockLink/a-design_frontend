@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { authApiClient } from "@/lib/api/authenticated-client";
+import { isSuperAdminRole } from "@/lib/navigation/sidebar-role";
 import { dsLargeTitle, dsSubtitle } from "@/lib/styles/dashboard-tokens";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, primaryRole } = useAuth();
+  const isSuperAdmin = isSuperAdminRole(primaryRole);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -64,11 +66,13 @@ export default function SettingsPage() {
   return (
     <div className="w-full">
       <div style={{ ...dsLargeTitle, display: "flex", alignItems: "center", gap: 10 }}>
-        <UserIcon size={26} color="#D4A96A" />
+        <UserIcon size={26} color="var(--ds-accent)" />
         Account settings
       </div>
       <div style={{ ...dsSubtitle, marginTop: 6 }}>
-        Manage your profile, security, and appearance.
+        {isSuperAdmin
+          ? "Manage your profile, security, and organization-wide appearance."
+          : "Manage your profile and security."}
       </div>
 
       <div className="mt-7 grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -76,9 +80,9 @@ export default function SettingsPage() {
         <SecuritySettingsSection />
       </div>
 
-      <AppearanceSettingsSection />
+      {isSuperAdmin ? <AppearanceSettingsSection /> : null}
 
-      <section className="mt-5 rounded-2xl border border-[rgba(90,60,30,0.12)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
+      <section className="mt-5 rounded-2xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated,#FDFAF6)] p-5">
         <div className="mb-4 flex items-center gap-2">
           <KeyRound size={16} color="var(--ds-accent, #D4A96A)" />
           <h2 className="text-[15px] font-semibold text-[var(--ds-label,#1A1410)]">
@@ -125,7 +129,7 @@ export default function SettingsPage() {
 
           <div className="sm:col-span-2">
             {(validationError || error) && (
-              <p className="mb-3 text-[13px] text-[#9B1C1C]">
+              <p className="mb-3 text-[13px] text-[var(--ds-destructive)]">
                 {validationError ?? error}
               </p>
             )}

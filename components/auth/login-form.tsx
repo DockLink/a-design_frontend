@@ -96,7 +96,7 @@ export function LoginForm() {
       <div className="flex justify-end">
         <button
           type="button"
-          className="text-sm font-medium text-[#D4A96A] hover:underline"
+          className="text-sm font-medium text-[var(--ds-accent)] hover:underline"
         >
           Forgot password?
         </button>
@@ -105,14 +105,14 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={isLoading}
-        className="h-12 w-full rounded-xl bg-[#D4A96A] text-base font-semibold text-white shadow-[0_4px_16px_rgba(212,169,106,0.4)] hover:bg-[#C4956A]"
+        className="h-12 w-full rounded-xl bg-[var(--ds-accent)] text-base font-semibold text-white shadow-[0_4px_16px_rgba(212,169,106,0.4)] hover:bg-[#C4956A]"
       >
         {isLoading ? "Signing in…" : "Sign in"}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         Need an account?{" "}
-        <span className="cursor-pointer font-medium text-[#D4A96A]">
+        <span className="cursor-pointer font-medium text-[var(--ds-accent)]">
           Contact your administrator.
         </span>
       </p>

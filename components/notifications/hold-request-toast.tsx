@@ -50,7 +50,7 @@ export function HoldRequestToast({
     <div
       style={{
         width: 360,
-        background: "#FDFAF6",
+        background: "var(--ds-surface-elevated)",
         border: "1px solid rgba(90,60,30,0.14)",
         borderRadius: 14,
         boxShadow: "0 12px 40px rgba(0,0,0,0.16)",
@@ -71,20 +71,20 @@ export function HoldRequestToast({
             flexShrink: 0,
           }}
         >
-          <Clock size={16} color="#C9894A" />
+          <Clock size={16} color="var(--ds-accent-hover)" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1410" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-label)" }}>
             {notification.title}
           </div>
-          <div style={{ fontSize: 12, color: "#6B5744", marginTop: 2, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 12, color: "var(--ds-secondary-label)", marginTop: 2, lineHeight: 1.4 }}>
             Hold on <strong>{notification.taskTitle}</strong>
           </div>
-          <div style={{ fontSize: 12, color: "#9C8573", marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: "var(--ds-secondary-label)", marginTop: 2 }}>
             {formatHoldDate(req.requestedStartDate)} – {formatHoldDate(req.requestedEndDate)}
           </div>
           {req.reason && (
-            <div style={{ fontSize: 12, color: "#6B5744", marginTop: 4, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 12, color: "var(--ds-secondary-label)", marginTop: 4, lineHeight: 1.4 }}>
               {req.reason}
             </div>
           )}
@@ -93,7 +93,7 @@ export function HoldRequestToast({
           type="button"
           onClick={onClose}
           aria-label="Dismiss"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#9C8573", padding: 2, flexShrink: 0 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ds-secondary-label)", padding: 2, flexShrink: 0 }}
         >
           <X size={14} />
         </button>
@@ -101,7 +101,7 @@ export function HoldRequestToast({
 
       {mode === "adjust" && (
         <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-          <label style={{ flex: 1, fontSize: 11, color: "#9C8573" }}>
+          <label style={{ flex: 1, fontSize: 11, color: "var(--ds-secondary-label)" }}>
             Start
             <input
               type="date"
@@ -113,15 +113,15 @@ export function HoldRequestToast({
                 height: 30,
                 borderRadius: 8,
                 border: "1px solid rgba(90,60,30,0.18)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 padding: "0 8px",
                 fontSize: 12,
-                color: "#1A1410",
+                color: "var(--ds-label)",
                 outline: "none",
               }}
             />
           </label>
-          <label style={{ flex: 1, fontSize: 11, color: "#9C8573" }}>
+          <label style={{ flex: 1, fontSize: 11, color: "var(--ds-secondary-label)" }}>
             End
             <input
               type="date"
@@ -133,10 +133,10 @@ export function HoldRequestToast({
                 height: 30,
                 borderRadius: 8,
                 border: "1px solid rgba(90,60,30,0.18)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 padding: "0 8px",
                 fontSize: 12,
-                color: "#1A1410",
+                color: "var(--ds-label)",
                 outline: "none",
               }}
             />
@@ -145,7 +145,7 @@ export function HoldRequestToast({
       )}
 
       {err && (
-        <div style={{ marginTop: 8, fontSize: 11, color: "#9B1C1C" }}>{err}</div>
+        <div style={{ marginTop: 8, fontSize: 11, color: "var(--ds-destructive)" }}>{err}</div>
       )}
 
       <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -260,7 +260,7 @@ const ghostBtn: React.CSSProperties = {
   borderRadius: 8,
   border: "1px solid rgba(90,60,30,0.18)",
   background: "transparent",
-  color: "#6B5744",
+  color: "var(--ds-secondary-label)",
   fontSize: 12,
   fontWeight: 500,
   cursor: "pointer",
@@ -270,7 +270,7 @@ const linkBtn: React.CSSProperties = {
   marginLeft: "auto",
   background: "none",
   border: "none",
-  color: "#C9894A",
+  color: "var(--ds-accent-hover)",
   fontSize: 12,
   fontWeight: 500,
   cursor: "pointer",

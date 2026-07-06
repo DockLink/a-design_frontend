@@ -206,11 +206,11 @@ export function TaskDetailSheet({
             <SheetTitle>{task.title}</SheetTitle>
           </SheetHeader>
           <SheetBody className="space-y-5">
-            {task.description && <p className="text-sm text-[#9C8573]">{task.description}</p>}
+            {task.description && <p className="text-sm text-[var(--ds-secondary-label)]">{task.description}</p>}
 
             {task.stageName && task.milestoneName && (
-              <div className="text-sm text-[#6B5744]">
-                <span className="text-[#9C8573]">Path · </span>
+              <div className="text-sm text-[var(--ds-secondary-label)]">
+                <span className="text-[var(--ds-secondary-label)]">Path · </span>
                 {task.stageName} → {task.milestoneName}
               </div>
             )}
@@ -226,11 +226,11 @@ export function TaskDetailSheet({
             </div>
 
             {canManage && effectiveStatus === "done" && onReopen && (
-              <div className="rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/60 p-3">
+              <div className="rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/60 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-[#1A1410]">This task is completed</p>
-                    <p className="text-xs text-[#9C8573]">
+                    <p className="text-sm font-medium text-[var(--ds-label)]">This task is completed</p>
+                    <p className="text-xs text-[var(--ds-secondary-label)]">
                       Reopen it to let assignees redo their work. Parent milestone/stage will reopen too.
                     </p>
                   </div>
@@ -240,7 +240,7 @@ export function TaskDetailSheet({
                     variant="outline"
                     disabled={isReopening}
                     onClick={() => void handleReopen()}
-                    className="h-8 shrink-0 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[#6B5744]"
+                    className="h-8 shrink-0 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[var(--ds-secondary-label)]"
                   >
                     <RotateCcw className="size-3.5" />
                     {isReopening ? "Reopening…" : "Reopen task"}
@@ -251,10 +251,10 @@ export function TaskDetailSheet({
 
             {canChangeStatus && (
               <div>
-                <span className="mb-2 block text-xs font-medium tracking-wide text-[#9C8573] uppercase">
+                <span className="mb-2 block text-xs font-medium tracking-wide text-[var(--ds-secondary-label)] uppercase">
                   Status
                 </span>
-                <div className="inline-flex rounded-lg bg-[#F5EFE6] p-0.5">
+                <div className="inline-flex rounded-lg bg-[var(--ds-bg)] p-0.5">
                   {BOARD_COLUMNS.map((c) => {
                     const active = effectiveStatus === c.id;
                     return (
@@ -264,7 +264,7 @@ export function TaskDetailSheet({
                         disabled={isUpdatingStatus}
                         onClick={() => void handleStatusChange(c.id)}
                         className={`h-8 rounded-md px-3 text-[13px] transition-all disabled:opacity-60 ${
-                          active ? "bg-[#FDFAF6] font-medium" : "text-[#9C8573]"
+                          active ? "bg-[var(--ds-surface-elevated)] font-medium" : "text-[var(--ds-secondary-label)]"
                         }`}
                         style={active ? { color: c.accent, border: "1px solid rgba(90,60,30,0.14)" } : undefined}
                       >
@@ -279,7 +279,7 @@ export function TaskDetailSheet({
             {/* Individual progress section */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium tracking-wide text-[#9C8573] uppercase">
+                <span className="text-xs font-medium tracking-wide text-[var(--ds-secondary-label)] uppercase">
                   Assignees · {completedCount}/{totalCount} done
                 </span>
                 {isAssigned && effectiveStatus !== "done" && onMarkMyCompletion && (
@@ -307,7 +307,7 @@ export function TaskDetailSheet({
                     className="h-full rounded-full transition-all"
                     style={{
                       width: `${progressPct}%`,
-                      background: progressPct === 100 ? "#3D8B5E" : "#D4A96A",
+                      background: progressPct === 100 ? "#3D8B5E" : "var(--ds-accent)",
                     }}
                   />
                 </div>
@@ -325,7 +325,7 @@ export function TaskDetailSheet({
                       disabled={!canManage || isSaving}
                       onClick={() => void toggleAssignee(m.id)}
                       className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left ${
-                        selected ? "border-[#D4A96A] bg-[#F5E6D0]/40" : "border-border"
+                        selected ? "border-[var(--ds-accent)] bg-[#F5E6D0]/40" : "border-border"
                       }`}
                     >
                       <TaskUserAvatar initials={`${m.first_name?.[0] ?? ""}${m.last_name?.[0] ?? ""}`} size={24} />
@@ -350,13 +350,13 @@ export function TaskDetailSheet({
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium tracking-wide text-[#9C8573] uppercase">Hold requests</span>
+                <span className="text-xs font-medium tracking-wide text-[var(--ds-secondary-label)] uppercase">Hold requests</span>
                 {canRequestHold && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-7 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[#6B5744]"
+                    className="h-7 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[var(--ds-secondary-label)]"
                     onClick={() => setShowHoldDialog(true)}
                   >
                     <PauseCircle className="size-3.5" />
@@ -366,11 +366,11 @@ export function TaskDetailSheet({
               </div>
 
               {holdsLoading && (
-                <p className="text-xs text-[#9C8573]">Loading hold requests…</p>
+                <p className="text-xs text-[var(--ds-secondary-label)]">Loading hold requests…</p>
               )}
 
               {!holdsLoading && pendingHold && (
-                <div className="rounded-lg border border-[#D4A96A]/30 bg-[#F5E6D0]/30 px-3 py-2.5">
+                <div className="rounded-lg border border-[var(--ds-accent)]/30 bg-[#F5E6D0]/30 px-3 py-2.5">
                   <div className="mb-1 flex items-center gap-2">
                     <Badge
                       variant="secondary"
@@ -383,8 +383,8 @@ export function TaskDetailSheet({
                       {holdRequestStatusLabel(pendingHold.status)}
                     </Badge>
                   </div>
-                  <p className="text-sm text-[#1A1410]">{pendingHold.reason}</p>
-                  <p className="mt-1 text-xs text-[#9C8573]">
+                  <p className="text-sm text-[var(--ds-label)]">{pendingHold.reason}</p>
+                  <p className="mt-1 text-xs text-[var(--ds-secondary-label)]">
                     {formatHoldDate(pendingHold.requestedStartDate)} –{" "}
                     {formatHoldDate(pendingHold.requestedEndDate)}
                   </p>
@@ -392,7 +392,7 @@ export function TaskDetailSheet({
               )}
 
               {!holdsLoading && !pendingHold && holds.length === 0 && (
-                <p className="text-xs text-[#9C8573]">
+                <p className="text-xs text-[var(--ds-secondary-label)]">
                   {isAssigned
                     ? "No hold requests for this task yet."
                     : "Hold requests can be submitted by assigned members."}
@@ -408,7 +408,7 @@ export function TaskDetailSheet({
                       return (
                         <div
                           key={hold.id}
-                          className="rounded-lg border border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]/60 px-3 py-2"
+                          className="rounded-lg border border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]/60 px-3 py-2"
                         >
                           <div className="mb-1 flex items-center gap-2">
                             <Badge
@@ -419,8 +419,8 @@ export function TaskDetailSheet({
                               {holdRequestStatusLabel(hold.status)}
                             </Badge>
                           </div>
-                          <p className="text-sm text-[#6B5744]">{hold.reason}</p>
-                          <p className="mt-1 text-xs text-[#9C8573]">
+                          <p className="text-sm text-[var(--ds-secondary-label)]">{hold.reason}</p>
+                          <p className="mt-1 text-xs text-[var(--ds-secondary-label)]">
                             {formatHoldDate(hold.requestedStartDate)} –{" "}
                             {formatHoldDate(hold.requestedEndDate)}
                           </p>
@@ -433,16 +433,16 @@ export function TaskDetailSheet({
 
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-medium tracking-wide text-[#9C8573] uppercase">
+                <span className="text-xs font-medium tracking-wide text-[var(--ds-secondary-label)] uppercase">
                   Subtasks {subtasks.length > 0 ? `· ${subtaskDoneCount}/${subtasks.length} done` : "(optional)"}
                 </span>
               </div>
-              <p className="mb-2 text-[11px] text-[#9C8573]">
+              <p className="mb-2 text-[11px] text-[var(--ds-secondary-label)]">
                 Subtasks are optional and can have their own assignees. When every subtask is
                 completed, this task completes automatically.
               </p>
 
-              {subtasksLoading && <p className="text-xs text-[#9C8573]">Loading subtasks…</p>}
+              {subtasksLoading && <p className="text-xs text-[var(--ds-secondary-label)]">Loading subtasks…</p>}
 
               {!subtasksLoading && subtasks.length > 0 && (
                 <div className="mb-3 space-y-2">
@@ -455,7 +455,7 @@ export function TaskDetailSheet({
                     return (
                       <div
                         key={st.id}
-                        className={`rounded-lg border px-3 py-2 ${done ? "border-[#3D8B5E]/30 bg-[#3D8B5E]/5" : "border-border bg-[#F5EFE6]"}`}
+                        className={`rounded-lg border px-3 py-2 ${done ? "border-[#3D8B5E]/30 bg-[#3D8B5E]/5" : "border-border bg-[var(--ds-bg)]"}`}
                       >
                         <div className="flex items-center gap-2">
                           <span
@@ -463,11 +463,11 @@ export function TaskDetailSheet({
                           >
                             <Check className={`size-2.5 ${done ? "text-white" : "text-[#C4B5A5]"}`} />
                           </span>
-                          <span className={`flex-1 text-sm ${done ? "text-[#6C6C70] line-through" : "text-[#1A1410]"}`}>
+                          <span className={`flex-1 text-sm ${done ? "text-[#6C6C70] line-through" : "text-[var(--ds-label)]"}`}>
                             {st.title}
                           </span>
                           {st.assignees.length > 0 && (
-                            <span className="text-[11px] text-[#9C8573]">
+                            <span className="text-[11px] text-[var(--ds-secondary-label)]">
                               {doneAssignees}/{st.assignees.length}
                             </span>
                           )}
@@ -507,7 +507,7 @@ export function TaskDetailSheet({
                     value={newSubtaskTitle}
                     onChange={(e) => setNewSubtaskTitle(e.target.value)}
                     placeholder="New subtask title"
-                    className="h-8 w-full rounded-md border border-input bg-[#F5EFE6] px-2.5 text-sm outline-none"
+                    className="h-8 w-full rounded-md border border-input bg-[var(--ds-bg)] px-2.5 text-sm outline-none"
                   />
                   <div className="flex flex-wrap gap-1.5">
                     {members.map((m) => {
@@ -517,7 +517,7 @@ export function TaskDetailSheet({
                           key={m.id}
                           type="button"
                           onClick={() => toggleNewSubtaskAssignee(m.id)}
-                          className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] ${selected ? "border-[#D4A96A] bg-[#F5E6D0]" : "border-border bg-[#F5EFE6]"}`}
+                          className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] ${selected ? "border-[var(--ds-accent)] bg-[#F5E6D0]" : "border-border bg-[var(--ds-bg)]"}`}
                         >
                           <TaskUserAvatar initials={`${m.first_name?.[0] ?? ""}${m.last_name?.[0] ?? ""}`} size={14} />
                           {m.first_name || m.email}
@@ -531,7 +531,7 @@ export function TaskDetailSheet({
                     variant="outline"
                     disabled={!newSubtaskTitle.trim() || isAddingSubtask}
                     onClick={() => void handleAddSubtask()}
-                    className="h-7 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[#6B5744]"
+                    className="h-7 gap-1 border-[rgba(90,60,30,0.22)] text-xs text-[var(--ds-secondary-label)]"
                   >
                     <Plus className="size-3" />
                     {isAddingSubtask ? "Adding…" : "Add subtask"}

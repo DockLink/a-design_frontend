@@ -152,7 +152,7 @@ export function MemberDashboard({
             gap: "10px",
           }}
         >
-          <span style={{ fontSize: "var(--ds-text-callout)", color: "#FF3B30", fontWeight: 500 }}>
+          <span style={{ fontSize: "var(--ds-text-callout)", color: "var(--ds-destructive)", fontWeight: 500 }}>
             {overdueCount} overdue {overdueCount === 1 ? "task" : "tasks"} need your attention
           </span>
         </div>
@@ -163,11 +163,11 @@ export function MemberDashboard({
           onClick={goToTasks}
           style={{
             ...dsActionBtn,
-            background: "#D4A96A",
+            background: "var(--ds-accent)",
             color: "white",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#C4956A")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#D4A96A")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--ds-accent)")}
         >
           View all tasks
         </button>
@@ -175,8 +175,8 @@ export function MemberDashboard({
           onClick={goToProjects}
           style={{
             ...dsActionBtn,
-            background: "rgba(212,169,106,0.12)",
-            color: "#C9894A",
+            background: "var(--ds-accent-muted)",
+            color: "var(--ds-accent-hover)",
           }}
         >
           Browse projects
@@ -197,7 +197,7 @@ export function MemberDashboard({
             <div style={dsCallout}>Loading tasks…</div>
           )}
           {tasksError && (
-            <div style={{ ...dsCallout, color: "#FF3B30" }}>{tasksError}</div>
+            <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{tasksError}</div>
           )}
           <div style={dsCard}>
             {tasks.length === 0 && !tasksLoading && (
@@ -230,8 +230,8 @@ export function MemberDashboard({
                       width: 20,
                       height: 20,
                       borderRadius: "50%",
-                      border: `1.5px solid ${done ? "#D4A96A" : "rgba(60,60,67,0.25)"}`,
-                      background: done ? "#D4A96A" : "transparent",
+                      border: `1.5px solid ${done ? "var(--ds-accent)" : "rgba(60,60,67,0.25)"}`,
+                      background: done ? "var(--ds-accent)" : "transparent",
                       cursor: "pointer",
                       flexShrink: 0,
                       padding: 0,
@@ -295,7 +295,7 @@ export function MemberDashboard({
             <div style={dsFootnote}>Loading projects…</div>
           )}
           {projectsError && (
-            <div style={{ ...dsFootnote, color: "#FF3B30" }}>{projectsError}</div>
+            <div style={{ ...dsFootnote, color: "var(--ds-destructive)" }}>{projectsError}</div>
           )}
           <div style={dsCard}>
             {memberProjects.length === 0 && !projectsLoading && (
@@ -363,7 +363,7 @@ export function MemberDashboard({
                         style={{
                           height: "100%",
                           width: `${project.progress}%`,
-                          background: "#D4A96A",
+                          background: "var(--ds-accent)",
                           borderRadius: "9999px",
                         }}
                       />
@@ -385,7 +385,7 @@ export function MemberDashboard({
                 border: "none",
                 cursor: "pointer",
                 fontSize: "var(--ds-text-callout)",
-                color: "#D4A96A",
+                color: "var(--ds-accent)",
                 padding: 0,
                 fontWeight: 500,
               }}

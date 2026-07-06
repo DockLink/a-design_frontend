@@ -60,7 +60,7 @@ function AssigneePicker({
           if (e.target.value) onChange([...selectedIds, e.target.value]);
         }}
         disabled={available.length === 0}
-        className="h-9 w-full rounded-lg border border-input bg-[#F5EFE6] px-3 text-sm disabled:opacity-50"
+        className="h-9 w-full rounded-lg border border-input bg-[var(--ds-bg)] px-3 text-sm disabled:opacity-50"
       >
         <option value="">
           {available.length === 0 ? "All members added" : placeholder}
@@ -76,14 +76,14 @@ function AssigneePicker({
           {selected.map((m) => (
             <span
               key={m.id}
-              className="flex items-center gap-1.5 rounded-md border border-[#D4A96A] bg-[#F5E6D0] px-2 py-1 text-xs"
+              className="flex items-center gap-1.5 rounded-md border border-[var(--ds-accent)] bg-[#F5E6D0] px-2 py-1 text-xs"
             >
               <TaskUserAvatar initials={memberInitials(m)} size={16} />
               {memberLabel(m)}
               <button
                 type="button"
                 onClick={() => onChange(selectedIds.filter((id) => id !== m.id))}
-                className="text-[#9C8573] hover:text-[#6B5744]"
+                className="text-[var(--ds-secondary-label)] hover:text-[var(--ds-secondary-label)]"
               >
                 <X className="size-3" />
               </button>
@@ -234,11 +234,11 @@ export function TaskCreateDialog({
         <DialogBody className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="task-title">Title</Label>
-            <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-[#F5EFE6]" />
+            <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-[var(--ds-bg)]" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="task-desc">Description</Label>
-            <Textarea id="task-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-[#F5EFE6]" />
+            <Textarea id="task-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-[var(--ds-bg)]" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -249,7 +249,7 @@ export function TaskCreateDialog({
                   setStageId(e.target.value);
                   setMilestoneId("");
                 }}
-                className="h-9 w-full rounded-lg border border-input bg-[#F5EFE6] px-3 text-sm"
+                className="h-9 w-full rounded-lg border border-input bg-[var(--ds-bg)] px-3 text-sm"
               >
                 {stages.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -263,7 +263,7 @@ export function TaskCreateDialog({
               <select
                 value={milestoneId}
                 onChange={(e) => setMilestoneId(e.target.value)}
-                className="h-9 w-full rounded-lg border border-input bg-[#F5EFE6] px-3 text-sm"
+                className="h-9 w-full rounded-lg border border-input bg-[var(--ds-bg)] px-3 text-sm"
                 disabled={stageMilestones.length === 0}
               >
                 <option value="">{stageMilestones.length === 0 ? "None — attach to stage" : "Optional"}</option>
@@ -274,7 +274,7 @@ export function TaskCreateDialog({
                 ))}
               </select>
               {stageMilestones.length === 0 && (
-                <p className="text-[11px] text-[#9C8573]">
+                <p className="text-[11px] text-[var(--ds-secondary-label)]">
                   No milestones in this stage. Add them in Manage Milestones or the Timeline tab.
                 </p>
               )}
@@ -289,10 +289,10 @@ export function TaskCreateDialog({
                 min={rangeStart}
                 max={rangeEnd}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="bg-[#F5EFE6]"
+                className="bg-[var(--ds-bg)]"
               />
               {rangeStart && rangeEnd && (
-                <p className="text-[11px] text-[#9C8573]">
+                <p className="text-[11px] text-[var(--ds-secondary-label)]">
                   Within {rangeLabel}: {formatBoardDate(rangeStart)} – {formatBoardDate(rangeEnd)}
                 </p>
               )}
@@ -302,7 +302,7 @@ export function TaskCreateDialog({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as BoardColumnId)}
-                className="h-9 w-full rounded-lg border border-input bg-[#F5EFE6] px-3 text-sm"
+                className="h-9 w-full rounded-lg border border-input bg-[var(--ds-bg)] px-3 text-sm"
               >
                 {BOARD_COLUMNS.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -341,14 +341,14 @@ export function TaskCreateDialog({
               </Button>
             </div>
             {subtasks.length === 0 ? (
-              <p className="text-[11px] text-[#9C8573]">
+              <p className="text-[11px] text-[var(--ds-secondary-label)]">
                 Break this task into subtasks. Each can have its own assignees; the task completes
                 when all subtasks are done.
               </p>
             ) : (
               <div className="space-y-3">
                 {subtasks.map((st, i) => (
-                  <div key={i} className="space-y-1.5 rounded-md bg-[#F5EFE6]/60 p-2">
+                  <div key={i} className="space-y-1.5 rounded-md bg-[var(--ds-bg)]/60 p-2">
                     <div className="flex items-center gap-2">
                       <Input
                         value={st.title}
@@ -359,7 +359,7 @@ export function TaskCreateDialog({
                       <button
                         type="button"
                         onClick={() => removeSubtask(i)}
-                        className="text-[#9C8573] hover:text-red-600"
+                        className="text-[var(--ds-secondary-label)] hover:text-red-600"
                         aria-label="Remove subtask"
                       >
                         <X className="size-4" />

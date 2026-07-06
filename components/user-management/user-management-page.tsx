@@ -170,7 +170,7 @@ export function UserManagementPage() {
                 style={{
                   fontSize: "14px",
                   fontWeight: 500,
-                  color: "#1A1410",
+                  color: "var(--ds-label)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -181,7 +181,7 @@ export function UserManagementPage() {
               <div
                 style={{
                   fontSize: "12px",
-                  color: "#9C8573",
+                  color: "var(--ds-secondary-label)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -192,7 +192,7 @@ export function UserManagementPage() {
             </div>
           </div>
 
-          <div style={{ fontSize: "13px", color: "#6B5744", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: "13px", color: "var(--ds-secondary-label)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {user.email}
           </div>
 
@@ -208,7 +208,7 @@ export function UserManagementPage() {
             </UserPill>
           </div>
 
-          <div style={{ fontSize: "13px", color: "#9C8573" }}>{formatLastActive(user)}</div>
+          <div style={{ fontSize: "13px", color: "var(--ds-secondary-label)" }}>{formatLastActive(user)}</div>
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <UserActionMenu
@@ -232,7 +232,7 @@ export function UserManagementPage() {
               gap: "12px",
             }}
           >
-            <span style={{ fontSize: "13px", color: "#9B1C1C", flex: 1 }}>
+            <span style={{ fontSize: "13px", color: "var(--ds-destructive)", flex: 1 }}>
               <strong>{[user.first_name, user.last_name].filter(Boolean).join(" ")}</strong> will no longer be able to sign in. Continue?
             </span>
             <Button variant="outline" onClick={() => setDeactivateTarget(null)} className="h-8" disabled={isMutating}>
@@ -240,7 +240,7 @@ export function UserManagementPage() {
             </Button>
             <Button
               onClick={() => void confirmDeactivate(user.id)}
-              className="h-8 bg-[#9B1C1C] text-white hover:bg-[#7f1919]"
+              className="h-8 bg-[var(--ds-destructive)] text-white hover:bg-[#7f1919]"
               disabled={isMutating}
             >
               {isMutating ? "Deactivating…" : "Deactivate"}
@@ -255,9 +255,9 @@ export function UserManagementPage() {
     return (
       <div
         style={{
-          background: "#FDFAF6",
+          background: "var(--ds-surface-elevated)",
           borderRadius: "12px",
-          border: "1px solid rgba(90,60,30,0.12)",
+          border: "1px solid var(--ds-separator)",
           overflow: "hidden",
         }}
       >
@@ -265,14 +265,14 @@ export function UserManagementPage() {
           style={{
             minWidth: "900px",
             height: "40px",
-            background: "#F5EFE6",
+            background: "var(--ds-bg)",
             borderBottom: "1px solid rgba(90,60,30,0.10)",
             padding: "0 16px",
             display: "grid",
             gridTemplateColumns: "1fr 220px 130px 110px 130px 40px",
             alignItems: "center",
             fontSize: "12px",
-            color: "#9C8573",
+            color: "var(--ds-secondary-label)",
             fontWeight: 500,
           }}
         >
@@ -306,10 +306,10 @@ export function UserManagementPage() {
         }}
       >
         <div>
-          <div style={{ fontSize: "28px", fontWeight: 500, color: "#1A1410" }}>
+          <div style={{ fontSize: "28px", fontWeight: 500, color: "var(--ds-label)" }}>
             User management
           </div>
-          <div style={{ fontSize: "13px", color: "#9C8573", marginTop: "2px" }}>
+          <div style={{ fontSize: "13px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
             {meta?.total ?? users.length} users
           </div>
         </div>
@@ -317,19 +317,19 @@ export function UserManagementPage() {
           <div style={{ position: "relative" }}>
             <Search
               size={14}
-              color="#9C8573"
+              color="var(--ds-secondary-label)"
               style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }}
             />
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search users..."
-              className="h-8 w-[220px] bg-[#F5EFE6] pl-8"
+              className="h-8 w-[220px] bg-[var(--ds-bg)] pl-8"
             />
           </div>
           <Button
             onClick={() => setShowCreateSheet(true)}
-            className="h-8 rounded-lg bg-[#D4A96A] px-3 text-sm font-medium text-white hover:bg-[#C4956A]"
+            className="h-8 rounded-lg bg-[var(--ds-accent)] px-3 text-sm font-medium text-white hover:bg-[#C4956A]"
           >
             + Create user
           </Button>
@@ -358,7 +358,7 @@ export function UserManagementPage() {
             padding: "10px 12px",
             borderRadius: "8px",
             background: "#FEE2E2",
-            color: "#9B1C1C",
+            color: "var(--ds-destructive)",
             fontSize: "13px",
           }}
         >
@@ -384,13 +384,13 @@ export function UserManagementPage() {
               style={{
                 background: "none",
                 border: "none",
-                borderBottom: active ? "2px solid #D4A96A" : "2px solid transparent",
+                borderBottom: active ? "2px solid var(--ds-accent)" : "2px solid transparent",
                 marginBottom: "-1px",
                 padding: "8px 14px",
                 cursor: "pointer",
                 fontSize: "13px",
                 fontWeight: active ? 500 : 400,
-                color: active ? "#D4A96A" : "#9C8573",
+                color: active ? "var(--ds-accent)" : "var(--ds-secondary-label)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -403,12 +403,12 @@ export function UserManagementPage() {
       {isLoading ? (
         <div
           style={{
-            background: "#FDFAF6",
+            background: "var(--ds-surface-elevated)",
             borderRadius: "12px",
-            border: "1px solid rgba(90,60,30,0.12)",
+            border: "1px solid var(--ds-separator)",
             padding: "24px",
             fontSize: "13px",
-            color: "#9C8573",
+            color: "var(--ds-secondary-label)",
           }}
         >
           Loading users...
@@ -416,12 +416,12 @@ export function UserManagementPage() {
       ) : visibleUsers.length === 0 ? (
         <div
           style={{
-            background: "#FDFAF6",
+            background: "var(--ds-surface-elevated)",
             borderRadius: "12px",
-            border: "1px solid rgba(90,60,30,0.12)",
+            border: "1px solid var(--ds-separator)",
             padding: "24px",
             fontSize: "13px",
-            color: "#9C8573",
+            color: "var(--ds-secondary-label)",
           }}
         >
           No users match your filters.
@@ -440,10 +440,10 @@ export function UserManagementPage() {
                   marginBottom: "10px",
                 }}
               >
-                <span style={{ fontSize: "14px", fontWeight: 600, color: "#1A1410" }}>
+                <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
                   Deactivated accounts
                 </span>
-                <span style={{ fontSize: "12px", color: "#9C8573" }}>
+                <span style={{ fontSize: "12px", color: "var(--ds-secondary-label)" }}>
                   ({inactiveUsers.length})
                 </span>
               </div>
@@ -494,7 +494,7 @@ export function UserManagementPage() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              background: "#FDFAF6",
+              background: "var(--ds-surface-elevated)",
               borderRadius: "16px",
               padding: "28px",
               maxWidth: "440px",
@@ -503,11 +503,11 @@ export function UserManagementPage() {
               boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
             }}
           >
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#FF3B30", marginBottom: "8px" }}>
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-destructive)", marginBottom: "8px" }}>
               Delete account permanently?
             </div>
-            <p style={{ fontSize: "14px", color: "#6B5744", margin: "0 0 20px", lineHeight: 1.5 }}>
-              <strong style={{ color: "#1A1410" }}>
+            <p style={{ fontSize: "14px", color: "var(--ds-secondary-label)", margin: "0 0 20px", lineHeight: 1.5 }}>
+              <strong style={{ color: "var(--ds-label)" }}>
                 {[deleteTarget.first_name, deleteTarget.last_name].filter(Boolean).join(" ") || deleteTarget.email}
               </strong>{" "}
               will be permanently removed from the database and the authentication provider. Their project
@@ -518,7 +518,7 @@ export function UserManagementPage() {
               <Button
                 onClick={() => void confirmDelete(deleteTarget)}
                 disabled={isMutating}
-                className="h-10 flex-1 bg-[#FF3B30] text-white hover:bg-[#e0352b]"
+                className="h-10 flex-1 bg-[var(--ds-destructive)] text-white hover:bg-[#e0352b]"
               >
                 {isMutating ? "Deleting…" : "Delete permanently"}
               </Button>

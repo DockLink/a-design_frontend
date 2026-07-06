@@ -21,12 +21,12 @@ function fileExt(name: string): string {
 
 function FileIcon({ ext }: { ext: string }) {
   if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) {
-    return <ImageIcon size={14} color="#8E8E93" />;
+    return <ImageIcon size={14} color="var(--ds-tertiary-label)" />;
   }
   if (["pdf", "doc", "docx"].includes(ext)) {
     return <FileText size={14} color="#0071E3" />;
   }
-  return <File size={14} color="#8E8E93" />;
+  return <File size={14} color="var(--ds-tertiary-label)" />;
 }
 
 export function ProjectRecentFiles({
@@ -43,10 +43,10 @@ export function ProjectRecentFiles({
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>Recent files</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent files</div>
         <Link
           href={projectTabRoute(projectId, "files")}
-          style={{ fontSize: "13px", color: "#D4A96A", fontWeight: 500, textDecoration: "none" }}
+          style={{ fontSize: "13px", color: "var(--ds-accent)", fontWeight: 500, textDecoration: "none" }}
         >
           View all
         </Link>
@@ -60,7 +60,7 @@ export function ProjectRecentFiles({
         }}
       >
         {items.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "#8E8E93" }}>No files uploaded yet.</div>
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No files uploaded yet.</div>
         ) : (
           items.map((file, i) => {
             const name = fileNameFromUrl(file.url, file.id);
@@ -82,7 +82,7 @@ export function ProjectRecentFiles({
                   style={{
                     flex: 1,
                     fontSize: "13px",
-                    color: "#1C1C1E",
+                    color: "var(--ds-label)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -90,7 +90,7 @@ export function ProjectRecentFiles({
                 >
                   {name}
                 </div>
-                <span style={{ fontSize: "11px", color: "#8E8E93" }}>Image</span>
+                <span style={{ fontSize: "11px", color: "var(--ds-tertiary-label)" }}>Image</span>
               </div>
             );
           })

@@ -10,7 +10,7 @@ type Props = {
 export default async function ProjectDetailLayout({ children, params }: Props) {
   const { projectId } = await params;
   return (
-    <Suspense fallback={<div style={{ padding: "24px", color: "#8E8E93" }}>Loading project…</div>}>
+    <Suspense fallback={<div style={{ padding: "24px", color: "var(--ds-tertiary-label)" }}>Loading project…</div>}>
       <ProjectLayoutClient projectId={projectId}>{children}</ProjectLayoutClient>
     </Suspense>
   );

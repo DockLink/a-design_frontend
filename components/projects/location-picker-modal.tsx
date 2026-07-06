@@ -232,7 +232,7 @@ export function LocationPickerModal({
           maxHeight: "92vh",
           overflow: "hidden",
           borderRadius: "16px",
-          background: "#FDFAF6",
+          background: "var(--ds-surface-elevated)",
           boxShadow: "0 24px 70px rgba(60,40,20,0.28)",
           display: "flex",
           flexDirection: "column",
@@ -241,14 +241,14 @@ export function LocationPickerModal({
         <div
           style={{
             padding: "18px 22px",
-            borderBottom: "1px solid rgba(90,60,30,0.12)",
+            borderBottom: "1px solid var(--ds-separator)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
-            <MapPin size={18} color="#C9894A" />
+            <MapPin size={18} color="var(--ds-accent-hover)" />
             Pick project location
           </div>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
@@ -272,7 +272,7 @@ export function LocationPickerModal({
                   }
                 }}
                 placeholder="Type an address or place name…"
-                className="bg-[#F5EFE6] h-10 flex-1"
+                className="bg-[var(--ds-bg)] h-10 flex-1"
               />
               <Button
                 type="button"
@@ -285,7 +285,7 @@ export function LocationPickerModal({
                 Search
               </Button>
             </div>
-            <p style={{ fontSize: "12px", color: "#8E8E93", lineHeight: 1.4 }}>
+            <p style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", lineHeight: 1.4 }}>
               Search above, click on the map, or drag the pin to set the exact location.
             </p>
           </div>
@@ -298,7 +298,7 @@ export function LocationPickerModal({
                 height: "400px",
                 borderRadius: "12px",
                 overflow: "hidden",
-                border: "1px solid rgba(90,60,30,0.12)",
+                border: "1px solid var(--ds-separator)",
                 background: "#E8DFD3",
               }}
             />
@@ -313,7 +313,7 @@ export function LocationPickerModal({
                   background: "rgba(253,250,246,0.85)",
                   borderRadius: "12px",
                   fontSize: "13px",
-                  color: "#8E8E93",
+                  color: "var(--ds-tertiary-label)",
                   gap: "8px",
                 }}
               >
@@ -328,7 +328,7 @@ export function LocationPickerModal({
           ) : null}
 
           {mapReady ? (
-            <div style={{ fontSize: "12px", color: "#8E8E93" }}>
+            <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)" }}>
               Pin: {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </div>
           ) : null}
@@ -337,7 +337,7 @@ export function LocationPickerModal({
         <div
           style={{
             padding: "16px 22px",
-            borderTop: "1px solid rgba(90,60,30,0.12)",
+            borderTop: "1px solid var(--ds-separator)",
             display: "flex",
             gap: "10px",
             justifyContent: "flex-end",
@@ -348,7 +348,7 @@ export function LocationPickerModal({
           </Button>
           <Button
             type="button"
-            className="bg-[#D4A96A] hover:bg-[#C4956A]"
+            className="bg-[var(--ds-accent)] hover:bg-[#C4956A]"
             disabled={!address.trim() || loading}
             onClick={() => {
               onConfirm({

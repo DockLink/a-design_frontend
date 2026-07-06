@@ -92,7 +92,7 @@ export function AppHeader() {
                 height: "16px",
                 padding: "0 4px",
                 borderRadius: "9999px",
-                background: "#FF3B30",
+                background: "var(--ds-destructive)",
                 color: "white",
                 fontSize: "10px",
                 fontWeight: 700,
@@ -120,7 +120,7 @@ export function AppHeader() {
               justifyContent: "center",
               fontSize: "var(--ds-text-caption-2)",
               fontWeight: 600,
-              color: "#C9894A",
+              color: "var(--ds-accent-hover)",
               cursor: "default",
               flexShrink: 0,
             }}

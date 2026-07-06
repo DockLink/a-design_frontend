@@ -102,14 +102,14 @@ export function EditProjectBriefSheet({
           top: "52px",
           width: "min(420px, 100vw)",
           height: "calc(100vh - 52px)",
-          background: "#FDFAF6",
-          borderLeft: "1px solid rgba(90,60,30,0.12)",
+          background: "var(--ds-surface-elevated)",
+          borderLeft: "1px solid var(--ds-separator)",
           zIndex: 30,
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(90,60,30,0.12)", display: "flex", justifyContent: "space-between" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--ds-separator)", display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: "17px", fontWeight: 500 }}>Edit brief</span>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <X size={18} />
@@ -130,7 +130,7 @@ export function EditProjectBriefSheet({
                 minHeight: "160px",
                 borderRadius: "8px",
                 border: "1px solid rgba(90,60,30,0.15)",
-                background: "#F5EFE6",
+                background: "var(--ds-bg)",
                 padding: "10px",
                 fontSize: "13px",
                 lineHeight: 1.6,
@@ -159,7 +159,7 @@ export function EditProjectBriefSheet({
             <ProjectBriefAttachmentsList attachments={items} canEdit onRemove={handleRemove} />
           </div>
 
-          <Button type="submit" disabled={isSaving || isUploading} className="mt-auto h-9 w-full bg-[#D4A96A] hover:bg-[#C4956A]">
+          <Button type="submit" disabled={isSaving || isUploading} className="mt-auto h-9 w-full bg-[var(--ds-accent)] hover:bg-[#C4956A]">
             {isSaving ? "Saving…" : "Save"}
           </Button>
         </form>

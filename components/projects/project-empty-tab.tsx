@@ -9,10 +9,10 @@ export function ProjectEmptyTab({ title, message }: { title: string; message: st
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: "18px", fontWeight: 600, color: "#1C1C1E", marginBottom: "8px" }}>
+      <div style={{ fontSize: "18px", fontWeight: 600, color: "var(--ds-label)", marginBottom: "8px" }}>
         {title}
       </div>
-      <div style={{ fontSize: "14px", color: "#8E8E93", lineHeight: 1.6 }}>{message}</div>
+      <div style={{ fontSize: "14px", color: "var(--ds-tertiary-label)", lineHeight: 1.6 }}>{message}</div>
     </div>
   );
 }

@@ -42,27 +42,27 @@ export function RequestAccessDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <DialogTitle>Request access</DialogTitle>
           <DialogCloseButton onClick={() => onOpenChange(false)} />
         </DialogHeader>
         <DialogBody className="space-y-3">
-          <p className="text-sm text-[#6B5744]">
+          <p className="text-sm text-[var(--ds-secondary-label)]">
             Ask the project team for access to <strong>{projectName}</strong>. A team lead or admin
             will review your request.
           </p>
           <div>
-            <Label className="mb-1.5 text-xs text-[#6B5744]">Note (optional)</Label>
+            <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Note (optional)</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Why do you need access to this project?"
-              className="min-h-[72px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+              className="min-h-[72px] resize-none border-[var(--ds-separator)] bg-[var(--ds-bg)]"
             />
           </div>
         </DialogBody>
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -70,7 +70,7 @@ export function RequestAccessDialog({
             type="button"
             disabled={isSaving}
             onClick={() => void handleSubmit()}
-            className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+            className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
           >
             {isSaving ? "Submitting…" : "Submit request"}
           </Button>

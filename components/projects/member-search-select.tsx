@@ -81,7 +81,7 @@ export function MemberSearchSelect({
           minHeight: "40px",
           borderRadius: "10px",
           border: "1px solid rgba(90,60,30,0.15)",
-          background: "#F5EFE6",
+          background: "var(--ds-bg)",
           padding: "8px 36px 8px 12px",
           textAlign: "left",
           cursor: disabled || loading ? "not-allowed" : "pointer",
@@ -89,17 +89,17 @@ export function MemberSearchSelect({
           position: "relative",
         }}
       >
-        <span style={{ display: "block", fontSize: "var(--ds-text-footnote)", color: selected ? "#1C1C1E" : "#8E8E93" }}>
+        <span style={{ display: "block", fontSize: "var(--ds-text-footnote)", color: selected ? "var(--ds-label)" : "var(--ds-tertiary-label)" }}>
           {triggerPrimary}
         </span>
         {triggerSecondary && (
-          <span style={{ display: "block", fontSize: "var(--ds-text-caption-2)", color: "#8E8E93", marginTop: "1px" }}>
+          <span style={{ display: "block", fontSize: "var(--ds-text-caption-2)", color: "var(--ds-tertiary-label)", marginTop: "1px" }}>
             {triggerSecondary}
           </span>
         )}
         <ChevronDown
           size={16}
-          color="#8E8E93"
+          color="var(--ds-tertiary-label)"
           style={{
             position: "absolute",
             right: 12,
@@ -128,7 +128,7 @@ export function MemberSearchSelect({
           <div style={{ position: "relative", borderBottom: "1px solid rgba(90,60,30,0.10)" }}>
             <Search
               size={14}
-              color="#8E8E93"
+              color="var(--ds-tertiary-label)"
               style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}
             />
             <input
@@ -164,12 +164,12 @@ export function MemberSearchSelect({
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: "var(--ds-text-footnote)", color: "#8E8E93" }}>No project lead</span>
-              {!value && <Check size={14} color="#D4A96A" style={{ marginLeft: "auto" }} />}
+              <span style={{ fontSize: "var(--ds-text-footnote)", color: "var(--ds-tertiary-label)" }}>No project lead</span>
+              {!value && <Check size={14} color="var(--ds-accent)" style={{ marginLeft: "auto" }} />}
             </button>
 
             {filtered.length === 0 ? (
-              <div style={{ padding: "14px 12px", fontSize: "var(--ds-text-caption-1)", color: "#8E8E93" }}>
+              <div style={{ padding: "14px 12px", fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)" }}>
                 No members match your search.
               </div>
             ) : (
@@ -200,7 +200,7 @@ export function MemberSearchSelect({
                         height: 32,
                         borderRadius: "50%",
                         background: "#E8DDD0",
-                        color: "#5A3C1E",
+                        color: "var(--ds-secondary-label)",
                         fontSize: "11px",
                         fontWeight: 600,
                         display: "flex",
@@ -212,14 +212,14 @@ export function MemberSearchSelect({
                       {initials}
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: "block", fontSize: "var(--ds-text-footnote)", fontWeight: 500, color: "#1C1C1E" }}>
+                      <span style={{ display: "block", fontSize: "var(--ds-text-footnote)", fontWeight: 500, color: "var(--ds-label)" }}>
                         {getUserListPrimaryLabel(user)}
                       </span>
-                      <span style={{ display: "block", fontSize: "var(--ds-text-caption-2)", color: "#8E8E93", marginTop: "1px" }}>
+                      <span style={{ display: "block", fontSize: "var(--ds-text-caption-2)", color: "var(--ds-tertiary-label)", marginTop: "1px" }}>
                         {user.email}
                       </span>
                     </span>
-                    {isSelected && <Check size={14} color="#D4A96A" />}
+                    {isSelected && <Check size={14} color="var(--ds-accent)" />}
                   </button>
                 );
               })

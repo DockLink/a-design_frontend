@@ -30,7 +30,7 @@ export function UserPagination({
         flexWrap: "wrap",
       }}
     >
-      <span style={{ fontSize: "13px", color: "#9C8573" }}>
+      <span style={{ fontSize: "13px", color: "var(--ds-secondary-label)" }}>
         Showing {start}–{end} of {meta.total}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -45,7 +45,7 @@ export function UserPagination({
           <ChevronLeft size={14} />
           Previous
         </Button>
-        <span style={{ fontSize: "13px", color: "#6B5744", minWidth: "80px", textAlign: "center" }}>
+        <span style={{ fontSize: "13px", color: "var(--ds-secondary-label)", minWidth: "80px", textAlign: "center" }}>
           Page {page} of {meta.totalPages}
         </span>
         <Button

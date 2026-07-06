@@ -127,8 +127,8 @@ export function ManageTeamSheet({
           }}
         >
           <div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#1C1C1E" }}>Manage team</div>
-            <div style={{ fontSize: "12px", color: "#8E8E93", marginTop: "2px" }}>{projectName}</div>
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ds-label)" }}>Manage team</div>
+            <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", marginTop: "2px" }}>{projectName}</div>
           </div>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <X size={18} color="#6C6C70" />
@@ -151,12 +151,12 @@ export function ManageTeamSheet({
             <em>this project only</em>. Everyone else is a regular member.
           </div>
 
-          <div style={{ fontSize: "12px", fontWeight: 500, color: "#8E8E93", marginBottom: "8px", textTransform: "uppercase" }}>
+          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--ds-tertiary-label)", marginBottom: "8px", textTransform: "uppercase" }}>
             Project members · {memberUsers.length}
           </div>
           <div style={{ border: "0.5px solid rgba(60,60,67,0.12)", borderRadius: "12px", marginBottom: "20px" }}>
             {memberUsers.length === 0 && (
-              <div style={{ padding: "14px", fontSize: "13px", color: "#8E8E93" }}>No members yet.</div>
+              <div style={{ padding: "14px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No members yet.</div>
             )}
             {memberUsers.map((user, i) => {
               const isLead = draftLeadIds.includes(user.id);
@@ -181,13 +181,13 @@ export function ManageTeamSheet({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "13px", fontWeight: 500 }}>{getUserDisplayName(user)}</div>
                     {isLead && (
-                      <div style={{ fontSize: "11px", color: "#C9894A", marginTop: "2px" }}>Project lead</div>
+                      <div style={{ fontSize: "11px", color: "var(--ds-accent-hover)", marginTop: "2px" }}>Project lead</div>
                     )}
                   </div>
                   <button
                     type="button"
                     onClick={() => removeMember(user.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#8E8E93" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ds-tertiary-label)" }}
                   >
                     <X size={13} />
                   </button>
@@ -196,11 +196,11 @@ export function ManageTeamSheet({
             })}
           </div>
 
-          <div style={{ fontSize: "12px", fontWeight: 500, color: "#8E8E93", marginBottom: "8px", textTransform: "uppercase" }}>
+          <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--ds-tertiary-label)", marginBottom: "8px", textTransform: "uppercase" }}>
             Add from organisation
           </div>
           <div style={{ position: "relative", marginBottom: "10px" }}>
-            <Search size={14} color="#8E8E93" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+            <Search size={14} color="var(--ds-tertiary-label)" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -218,9 +218,9 @@ export function ManageTeamSheet({
           </div>
 
           {isLoading ? (
-            <div style={{ fontSize: "13px", color: "#8E8E93" }}>Loading users…</div>
+            <div style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>Loading users…</div>
           ) : available.length === 0 ? (
-            <div style={{ fontSize: "13px", color: "#8E8E93", textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: "13px", color: "var(--ds-tertiary-label)", textAlign: "center", padding: "20px 0" }}>
               {search ? "No members found." : "All organisation members are in this project."}
             </div>
           ) : (
@@ -246,12 +246,12 @@ export function ManageTeamSheet({
                     style={{
                       height: "28px",
                       padding: "0 12px",
-                      background: "rgba(212,169,106,0.12)",
+                      background: "var(--ds-accent-muted)",
                       border: "none",
                       borderRadius: "8px",
                       cursor: "pointer",
                       fontSize: "12px",
-                      color: "#C9894A",
+                      color: "var(--ds-accent-hover)",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
@@ -274,7 +274,7 @@ export function ManageTeamSheet({
             style={{
               width: "100%",
               height: "40px",
-              background: "#D4A96A",
+              background: "var(--ds-accent)",
               border: "none",
               borderRadius: "10px",
               fontSize: "14px",

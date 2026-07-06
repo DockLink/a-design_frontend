@@ -204,7 +204,7 @@ export default function MyTasksPage() {
                   fontSize: "13px",
                   fontWeight: 500,
                   background: active ? "#FFFFFF" : "transparent",
-                  color: active ? "#1A1410" : "#9C8573",
+                  color: active ? "var(--ds-label)" : "var(--ds-secondary-label)",
                   boxShadow: active ? "0 1px 3px rgba(60,40,20,0.12)" : "none",
                   transition: "all 0.12s",
                 }}
@@ -229,7 +229,7 @@ export default function MyTasksPage() {
             flex: "0 1 280px",
           }}
         >
-          <Search size={15} color="#9C8573" />
+          <Search size={15} color="var(--ds-secondary-label)" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -239,14 +239,14 @@ export default function MyTasksPage() {
               outline: "none",
               background: "transparent",
               fontSize: "13px",
-              color: "#1A1410",
+              color: "var(--ds-label)",
               width: "100%",
             }}
           />
         </div>
       </div>
 
-      {error && <div style={{ ...dsCallout, color: "#FF3B30" }}>{error}</div>}
+      {error && <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{error}</div>}
 
       {isLoading ? (
         <div style={dsCallout}>Loading your tasks…</div>
@@ -261,14 +261,14 @@ export default function MyTasksPage() {
           }}
         >
           <ListTodo size={26} color="#C4B5A5" style={{ margin: "0 auto 10px" }} />
-          <div style={{ fontSize: "14px", fontWeight: 500, color: "#6B5744" }}>
+          <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--ds-secondary-label)" }}>
             {filter === "completed"
               ? "No completed tasks yet"
               : query
                 ? "No tasks match your search"
                 : "You're all caught up"}
           </div>
-          <div style={{ fontSize: "12.5px", color: "#9C8573", marginTop: "2px" }}>
+          <div style={{ fontSize: "12.5px", color: "var(--ds-secondary-label)", marginTop: "2px" }}>
             {filter === "open"
               ? "No open tasks assigned to you right now."
               : "Tasks assigned to you will appear here."}
@@ -291,8 +291,8 @@ export default function MyTasksPage() {
                   marginBottom: "10px",
                 }}
               >
-                <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "#D4A96A" }} />
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#6B5744" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "var(--ds-accent)" }} />
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ds-secondary-label)" }}>
                   {group.projectName}
                 </span>
                 <span style={{ fontSize: "12px", color: "#C4B5A5" }}>
@@ -351,7 +351,7 @@ export default function MyTasksPage() {
                           style={{
                             fontSize: "14px",
                             fontWeight: 500,
-                            color: done ? "#C4B5A5" : "#1A1410",
+                            color: done ? "#C4B5A5" : "var(--ds-label)",
                             textDecoration: done ? "line-through" : "none",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -441,10 +441,10 @@ function StatCard({
       >
         {icon}
       </span>
-      <span style={{ fontSize: "24px", fontWeight: 600, color: "#1A1410", lineHeight: 1.1 }}>
+      <span style={{ fontSize: "24px", fontWeight: 600, color: "var(--ds-label)", lineHeight: 1.1 }}>
         {value}
       </span>
-      <span style={{ fontSize: "12.5px", color: "#9C8573" }}>{label}</span>
+      <span style={{ fontSize: "12.5px", color: "var(--ds-secondary-label)" }}>{label}</span>
     </div>
   );
 }

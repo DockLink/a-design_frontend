@@ -37,19 +37,19 @@ export function TaskTeamView({
         const isCurrentUser = member.userId === currentUserId;
 
         return (
-          <div key={member.userId} className="overflow-hidden rounded-[14px] border bg-[#FDFAF6]">
-            <div className="flex items-center gap-3 border-b bg-[#F5EFE6] px-4 py-3.5">
+          <div key={member.userId} className="overflow-hidden rounded-[14px] border bg-[var(--ds-surface-elevated)]">
+            <div className="flex items-center gap-3 border-b bg-[var(--ds-bg)] px-4 py-3.5">
               <TaskUserAvatar initials={member.initials} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-[15px] font-medium">{member.name}</span>
                   {isCurrentUser && (
-                    <Badge variant="secondary" className="bg-[#EDE3D4] text-[#9C8573]">
+                    <Badge variant="secondary" className="bg-[#EDE3D4] text-[var(--ds-secondary-label)]">
                       You
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs text-[#9C8573]">
+                <div className="text-xs text-[var(--ds-secondary-label)]">
                   {doneCount} of {total} done
                 </div>
               </div>
@@ -60,7 +60,7 @@ export function TaskTeamView({
                     style={{ width: `${pct}%`, background: "#3D8B5E" }}
                   />
                 </div>
-                <span className="w-9 text-right text-xs font-medium text-[#6B5744]">{pct}%</span>
+                <span className="w-9 text-right text-xs font-medium text-[var(--ds-secondary-label)]">{pct}%</span>
               </div>
             </div>
             {memberTasks.length === 0 ? (
@@ -75,7 +75,7 @@ export function TaskTeamView({
                     type="button"
                     onClick={() => onTaskClick(task)}
                     className={cn(
-                      "flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#F5EFE6]",
+                      "flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--ds-bg)]",
                       i < memberTasks.length - 1 && "border-b"
                     )}
                   >

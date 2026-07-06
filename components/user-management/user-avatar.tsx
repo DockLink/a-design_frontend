@@ -49,7 +49,7 @@ export function UserAvatar({
         justifyContent: "center",
         fontSize: size * 0.34,
         fontWeight: 500,
-        color: "#D4A96A",
+        color: "var(--ds-accent)",
         flexShrink: 0,
       }}
     >

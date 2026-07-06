@@ -61,8 +61,8 @@ export function ProjectVimeoSection({
       }}
     >
       <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#1C1C1E" }}>
-          <Video size={16} color="#C9894A" />
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
+          <Video size={16} color="var(--ds-accent-hover)" />
           Project video
         </div>
         {canEdit && !isEditing ? (
@@ -78,13 +78,13 @@ export function ProjectVimeoSection({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="https://vimeo.com/123456789 or https://vimeo.com/123456789/abc123"
-            className="bg-[#F5EFE6] h-10"
+            className="bg-[var(--ds-bg)] h-10"
           />
           {!draftValid ? (
             <div style={{ fontSize: "12px", color: "#C62828" }}>Enter a valid Vimeo URL</div>
           ) : null}
           <div style={{ display: "flex", gap: "8px" }}>
-            <Button type="button" className="bg-[#D4A96A] hover:bg-[#C4956A]" disabled={isSaving || !draftValid} onClick={() => void handleSave()}>
+            <Button type="button" className="bg-[var(--ds-accent)] hover:bg-[#C4956A]" disabled={isSaving || !draftValid} onClick={() => void handleSave()}>
               {isSaving ? "Saving…" : "Save"}
             </Button>
             <Button
@@ -105,7 +105,7 @@ export function ProjectVimeoSection({
           <VimeoEmbed url={vimeoUrl!} />
         </div>
       ) : (
-        <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "#8E8E93" }}>
+        <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
           No project video added yet.
         </div>
       )}

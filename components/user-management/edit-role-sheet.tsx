@@ -78,8 +78,8 @@ export function EditRoleSheet({
           top: "52px",
           width: "360px",
           height: "calc(100vh - 52px)",
-          background: "#FDFAF6",
-          borderLeft: "1px solid rgba(90,60,30,0.12)",
+          background: "var(--ds-surface-elevated)",
+          borderLeft: "1px solid var(--ds-separator)",
           boxShadow: "-8px 0 32px rgba(0,0,0,0.10)",
           zIndex: 30,
           display: "flex",
@@ -89,7 +89,7 @@ export function EditRoleSheet({
         <div
           style={{
             height: "52px",
-            borderBottom: "1px solid rgba(90,60,30,0.12)",
+            borderBottom: "1px solid var(--ds-separator)",
             padding: "0 20px",
             display: "flex",
             alignItems: "center",
@@ -97,7 +97,7 @@ export function EditRoleSheet({
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: "17px", fontWeight: 500, color: "#1A1410" }}>
+          <span style={{ fontSize: "17px", fontWeight: 500, color: "var(--ds-label)" }}>
             Edit role
           </span>
           <button
@@ -107,7 +107,7 @@ export function EditRoleSheet({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#9C8573",
+              color: "var(--ds-secondary-label)",
               display: "flex",
               padding: 0,
             }}
@@ -126,12 +126,12 @@ export function EditRoleSheet({
             gap: "16px",
           }}
         >
-          <p style={{ fontSize: "14px", color: "#6B5744", margin: 0 }}>
-            Update role for <strong style={{ color: "#1A1410" }}>{displayName}</strong>
+          <p style={{ fontSize: "14px", color: "var(--ds-secondary-label)", margin: 0 }}>
+            Update role for <strong style={{ color: "var(--ds-label)" }}>{displayName}</strong>
           </p>
 
           {isSuperAdminTarget ? (
-            <p style={{ fontSize: "13px", color: "#9C8573", margin: 0 }}>
+            <p style={{ fontSize: "13px", color: "var(--ds-secondary-label)", margin: 0 }}>
               Super admin roles cannot be changed from this panel.
             </p>
           ) : (
@@ -146,10 +146,10 @@ export function EditRoleSheet({
                   height: "36px",
                   borderRadius: "8px",
                   border: "1px solid rgba(90,60,30,0.15)",
-                  background: "#F5EFE6",
+                  background: "var(--ds-bg)",
                   padding: "0 10px",
                   fontSize: "13px",
-                  color: "#1A1410",
+                  color: "var(--ds-label)",
                 }}
               >
                 {roleOptions.map((r) => (
@@ -162,7 +162,7 @@ export function EditRoleSheet({
           )}
 
           {error && (
-            <p style={{ fontSize: "13px", color: "#9B1C1C", margin: 0 }}>{error}</p>
+            <p style={{ fontSize: "13px", color: "var(--ds-destructive)", margin: 0 }}>{error}</p>
           )}
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -170,7 +170,7 @@ export function EditRoleSheet({
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="h-9 w-full rounded-lg bg-[#D4A96A] hover:bg-[#C4956A]"
+                className="h-9 w-full rounded-lg bg-[var(--ds-accent)] hover:bg-[#C4956A]"
               >
                 {isSaving ? "Saving…" : "Save role"}
               </Button>

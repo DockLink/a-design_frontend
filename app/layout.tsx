@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { AuthHydration } from "@/components/auth/auth-hydration";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { APP_NAME } from "@/lib/constants";
+import { aktivGrotesk } from "@/lib/fonts/aktiv-grotesk";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full font-sans">
+    <html lang="en" className={`${aktivGrotesk.variable} h-full antialiased`}>
+      <body className={`${aktivGrotesk.className} min-h-full font-sans`}>
         <QueryProvider>
           <AuthHydration />
           {children}

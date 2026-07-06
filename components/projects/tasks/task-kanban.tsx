@@ -47,13 +47,13 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[#FDFAF6] p-3 shadow-sm active:cursor-grabbing select-none transition-opacity",
+        "mb-2 cursor-grab rounded-[10px] border border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)] p-3 shadow-sm active:cursor-grabbing select-none transition-opacity",
         isDragging && "opacity-20 pointer-events-none border-dashed"
       )}
     >
       <div className="mb-2.5 flex items-start gap-2">
         <span className="mt-1.5 size-1.5 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[task.priority] }} />
-        <span className={cn("text-[13px] leading-snug font-medium", isDone ? "text-[#9C8573] line-through" : "text-[#1A1410]")}>
+        <span className={cn("text-[13px] leading-snug font-medium", isDone ? "text-[var(--ds-secondary-label)] line-through" : "text-[var(--ds-label)]")}>
           {task.title}
         </span>
       </div>
@@ -65,13 +65,13 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({
             {visibleAssignees.map((a) => (
               <div key={a.userId} className="flex items-center gap-1.5 min-w-0">
                 <TaskUserAvatar initials={a.initials} size={16} />
-                <span className="truncate text-[11px] text-[#6B5744] font-medium leading-none">
+                <span className="truncate text-[11px] text-[var(--ds-secondary-label)] font-medium leading-none">
                   {a.name}
                 </span>
               </div>
             ))}
             {overflow > 0 && (
-              <span className="text-[10px] text-[#9C8573] pl-5">+{overflow} more</span>
+              <span className="text-[10px] text-[var(--ds-secondary-label)] pl-5">+{overflow} more</span>
             )}
           </div>
         ) : (
@@ -82,7 +82,7 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({
               </div>
             ))}
             {overflow > 0 && (
-              <span className="flex size-[18px] items-center justify-center rounded-full bg-[#F5E6D0] text-[9px] font-semibold text-[#D4A96A]">
+              <span className="flex size-[18px] items-center justify-center rounded-full bg-[#F5E6D0] text-[9px] font-semibold text-[var(--ds-accent)]">
                 +{overflow}
               </span>
             )}
@@ -156,7 +156,7 @@ export const TaskKanbanColumn = memo(function TaskKanbanColumn({
         }}
         className={cn(
           "min-h-[480px] flex-1 rounded-xl p-2",
-          isOver ? "border border-dashed border-[#D4A96A]/60 bg-[#D4A96A]/5" : "bg-[#F5EFE6]/45"
+          isOver ? "border border-dashed border-[var(--ds-accent)]/60 bg-[var(--ds-accent)]/5" : "bg-[var(--ds-bg)]/45"
         )}
       >
         {tasks.map((task) => (

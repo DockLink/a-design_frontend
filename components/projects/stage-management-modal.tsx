@@ -99,16 +99,16 @@ export function StageManagementModal({
         onClick={onClose}
         className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px]"
       />
-      <div className="fixed left-1/2 top-1/2 z-[201] flex max-h-[88vh] w-[min(580px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-[#FDFAF6] shadow-[0_24px_70px_rgba(60,40,20,0.28)]">
+      <div className="fixed left-1/2 top-1/2 z-[201] flex max-h-[88vh] w-[min(580px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-[var(--ds-surface-elevated)] shadow-[0_24px_70px_rgba(60,40,20,0.28)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[rgba(90,60,30,0.10)] bg-white px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#F5E6D0] text-[#C9894A]">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[#F5E6D0] text-[var(--ds-accent-hover)]">
               <Layers size={17} />
             </span>
             <div>
-              <h2 className="text-[16px] font-semibold leading-tight text-[#1A1410]">Manage stages</h2>
-              <p className="text-[12px] text-[#9C8573]">
+              <h2 className="text-[16px] font-semibold leading-tight text-[var(--ds-label)]">Manage stages</h2>
+              <p className="text-[12px] text-[var(--ds-secondary-label)]">
                 {stageViews.length} stage{stageViews.length === 1 ? "" : "s"}
                 {completedCount > 0 ? ` · ${completedCount} complete` : ""}
               </p>
@@ -117,7 +117,7 @@ export function StageManagementModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-lg text-[#9C8573] transition-colors hover:bg-[#F5EFE6] hover:text-[#6B5744]"
+            className="flex size-8 items-center justify-center rounded-lg text-[var(--ds-secondary-label)] transition-colors hover:bg-[var(--ds-bg)] hover:text-[var(--ds-secondary-label)]"
           >
             <X size={18} />
           </button>
@@ -125,16 +125,16 @@ export function StageManagementModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          <p className="mb-3 text-[12px] leading-relaxed text-[#9C8573]">
+          <p className="mb-3 text-[12px] leading-relaxed text-[var(--ds-secondary-label)]">
             Stages are the top-level phases of the project. Add milestones under each stage from the
             &ldquo;Manage milestones&rdquo; window.
           </p>
 
           {stageViews.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[rgba(90,60,30,0.20)] bg-[#F5EFE6]/40 px-4 py-8 text-center">
+            <div className="rounded-xl border border-dashed border-[rgba(90,60,30,0.20)] bg-[var(--ds-bg)]/40 px-4 py-8 text-center">
               <Layers size={22} className="mx-auto mb-2 text-[#C4B5A5]" />
-              <p className="text-[13px] font-medium text-[#6B5744]">No stages yet</p>
-              <p className="text-[12px] text-[#9C8573]">Create your first stage below.</p>
+              <p className="text-[13px] font-medium text-[var(--ds-secondary-label)]">No stages yet</p>
+              <p className="text-[12px] text-[var(--ds-secondary-label)]">Create your first stage below.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -148,7 +148,7 @@ export function StageManagementModal({
                       className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
                         s.isCompleted
                           ? "bg-[#3D8B5E] text-white"
-                          : "bg-[#F5E6D0] text-[#C9894A]"
+                          : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
                       }`}
                     >
                       {s.isCompleted ? <Check size={14} /> : i + 1}
@@ -156,12 +156,12 @@ export function StageManagementModal({
                     <div className="min-w-0">
                       <div
                         className={`truncate text-[13.5px] font-medium ${
-                          s.isCompleted ? "text-[#248A3D]" : "text-[#1A1410]"
+                          s.isCompleted ? "text-[#248A3D]" : "text-[var(--ds-label)]"
                         }`}
                       >
                         {s.name}
                       </div>
-                      <div className="text-[11.5px] text-[#9C8573]">
+                      <div className="text-[11.5px] text-[var(--ds-secondary-label)]">
                         {new Date(s.startDate).toLocaleDateString()} –{" "}
                         {new Date(s.endDate).toLocaleDateString()}
                       </div>
@@ -173,7 +173,7 @@ export function StageManagementModal({
                       onClick={() => void handleReopen(s.id)}
                       disabled={busyId === s.id}
                       title="Reopen stage"
-                      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(90,60,30,0.22)] bg-white px-2.5 py-1.5 text-[11.5px] font-medium text-[#6B5744] transition-colors hover:bg-[#F5EFE6] disabled:opacity-50"
+                      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[rgba(90,60,30,0.22)] bg-white px-2.5 py-1.5 text-[11.5px] font-medium text-[var(--ds-secondary-label)] transition-colors hover:bg-[var(--ds-bg)] disabled:opacity-50"
                     >
                       <RotateCcw size={12} /> Reopen
                     </button>
@@ -199,40 +199,40 @@ export function StageManagementModal({
           onSubmit={(e) => void handleCreateStage(e)}
           className="border-t border-[rgba(90,60,30,0.10)] bg-white px-5 py-4"
         >
-          <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[#9C8573]">
+          <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[var(--ds-secondary-label)]">
             Add stage
           </div>
           <input
             placeholder="Stage name"
             value={newStageName}
             onChange={(e) => setNewStageName(e.target.value)}
-            className="mb-2.5 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none placeholder:text-[#C4B5A5] focus:border-[#D4A96A] focus:bg-white"
+            className="mb-2.5 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none placeholder:text-[#C4B5A5] focus:border-[var(--ds-accent)] focus:bg-white"
           />
           <div className="mb-3 flex gap-2.5">
             <label className="flex-1">
-              <span className="mb-1 block text-[11px] text-[#9C8573]">Start date</span>
+              <span className="mb-1 block text-[11px] text-[var(--ds-secondary-label)]">Start date</span>
               <input
                 type="date"
                 value={newStageStart}
                 onChange={(e) => setNewStageStart(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A] focus:bg-white"
+                className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)] focus:bg-white"
               />
             </label>
             <label className="flex-1">
-              <span className="mb-1 block text-[11px] text-[#9C8573]">End date</span>
+              <span className="mb-1 block text-[11px] text-[var(--ds-secondary-label)]">End date</span>
               <input
                 type="date"
                 value={newStageEnd}
                 min={newStageStart || undefined}
                 onChange={(e) => setNewStageEnd(e.target.value)}
-                className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[#F5EFE6]/50 px-3 text-[13px] text-[#1A1410] outline-none focus:border-[#D4A96A] focus:bg-white"
+                className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-[var(--ds-bg)]/50 px-3 text-[13px] text-[var(--ds-label)] outline-none focus:border-[var(--ds-accent)] focus:bg-white"
               />
             </label>
           </div>
           <button
             type="submit"
             disabled={!canSubmit}
-            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#D4A96A] text-[13px] font-semibold text-white transition-colors hover:bg-[#C9894A] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--ds-accent)] text-[13px] font-semibold text-white transition-colors hover:bg-[var(--ds-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={15} />
             {isSaving ? "Creating…" : "Add stage"}

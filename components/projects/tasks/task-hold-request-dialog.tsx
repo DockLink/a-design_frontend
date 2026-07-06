@@ -119,65 +119,65 @@ export function TaskHoldRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <DialogTitle>Request task hold</DialogTitle>
           <DialogCloseButton onClick={() => onOpenChange(false)} />
         </DialogHeader>
 
         <DialogBody className="space-y-3.5">
-          <p className="text-sm text-[#9C8573]">
-            Request a pause on <span className="font-medium text-[#1A1410]">{task.title}</span>. The hold
+          <p className="text-sm text-[var(--ds-secondary-label)]">
+            Request a pause on <span className="font-medium text-[var(--ds-label)]">{task.title}</span>. The hold
             period must fall within the {windowLabel} window ({formatBoardDate(taskStart)} – {formatBoardDate(taskEnd)}).
           </p>
 
           <div>
-            <Label className="mb-1.5 text-xs text-[#6B5744]">Reason</Label>
+            <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Reason</Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why does this task need to be on hold?"
-              className="min-h-[72px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+              className="min-h-[72px] resize-none border-[var(--ds-separator)] bg-[var(--ds-bg)]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="mb-1.5 text-xs text-[#6B5744]">Hold starts</Label>
+              <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Hold starts</Label>
               <Input
                 type="date"
                 min={taskStart}
                 max={taskEnd}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                className="h-9 border-[var(--ds-separator)] bg-[var(--ds-bg)]"
               />
             </div>
             <div>
-              <Label className="mb-1.5 text-xs text-[#6B5744]">Hold ends</Label>
+              <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Hold ends</Label>
               <Input
                 type="date"
                 min={startDate || taskStart}
                 max={taskEnd}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-9 border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+                className="h-9 border-[var(--ds-separator)] bg-[var(--ds-bg)]"
               />
             </div>
           </div>
 
           <div>
-            <Label className="mb-1.5 text-xs text-[#6B5744]">Additional note (optional)</Label>
+            <Label className="mb-1.5 text-xs text-[var(--ds-secondary-label)]">Additional note (optional)</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any extra context for the reviewer…"
-              className="min-h-[56px] resize-none border-[rgba(90,60,30,0.12)] bg-[#F5EFE6]"
+              className="min-h-[56px] resize-none border-[var(--ds-separator)] bg-[var(--ds-bg)]"
             />
           </div>
         </DialogBody>
 
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -185,7 +185,7 @@ export function TaskHoldRequestDialog({
             type="button"
             disabled={!canSubmit || isSaving}
             onClick={() => void handleSubmit()}
-            className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+            className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
           >
             {isSaving ? "Submitting…" : "Submit request"}
           </Button>

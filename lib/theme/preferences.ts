@@ -6,8 +6,12 @@ import type {
   ThemePreset,
   UserPreferences,
 } from "@/types/users";
+import type { AppAppearanceSettings, CustomColorOverrides } from "@/types/app-settings";
+import { DEFAULT_APP_APPEARANCE } from "@/types/app-settings";
 
 export type { ThemePreset, DensityPreference, FontSizePreference, SidebarModePreference, UserPreferences };
+export type { AppAppearanceSettings };
+export { DEFAULT_APP_APPEARANCE };
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme_preset: "default",
@@ -15,14 +19,28 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   density: "comfortable",
   font_size: "medium",
   sidebar_mode: "expanded",
+  custom_colors: {},
   avatar_file_id: null,
   default_home_route: null,
 };
 
-const THEME_PRESETS = new Set<ThemePreset>(["default", "dark", "high_contrast"]);
+const THEME_PRESETS = new Set<ThemePreset>(["default", "light", "dark", "high_contrast"]);
 const DENSITIES = new Set<DensityPreference>(["compact", "comfortable"]);
 const FONT_SIZES = new Set<FontSizePreference>(["small", "medium", "large"]);
 const SIDEBAR_MODES = new Set<SidebarModePreference>(["expanded", "collapsed"]);
+const CUSTOM_COLOR_KEYS: (keyof CustomColorOverrides)[] = [
+  "bg",
+  "surface",
+  "surface_elevated",
+  "sidebar_bg",
+  "label",
+  "secondary_label",
+  "accent",
+  "accent_hover",
+  "separator",
+  "destructive",
+  "success",
+];
 const HOME_ROUTES = new Set<string>([
   "/dashboard/super-admin",
   "/dashboard/admin",
@@ -55,6 +73,7 @@ export function mergeUserPreferences(stored?: Partial<UserPreferences> | null): 
   if (stored.sidebar_mode && SIDEBAR_MODES.has(stored.sidebar_mode)) {
     base.sidebar_mode = stored.sidebar_mode;
   }
+  base.custom_colors = sanitizeCustomColors(stored.custom_colors);
   if (stored.avatar_file_id === null) {
     base.avatar_file_id = null;
   } else if (
@@ -75,6 +94,60 @@ export function mergeUserPreferences(stored?: Partial<UserPreferences> | null): 
   return base;
 }
 
+function sanitizeCustomColors(
+  input?: Partial<CustomColorOverrides> | null,
+): CustomColorOverrides {
+  const out: CustomColorOverrides = {};
+  if (!input) return out;
+  for (const key of CUSTOM_COLOR_KEYS) {
+    const value = input[key];
+    if (value === null) {
+      out[key] = null;
+    } else if (typeof value === "string" && HEX_COLOR.test(value)) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+export function mergeAppAppearance(
+  stored?: Partial<AppAppearanceSettings> | null,
+): AppAppearanceSettings {
+  const base = { ...DEFAULT_APP_APPEARANCE, custom_colors: {} };
+  if (!stored) return base;
+
+  if (stored.theme_preset && THEME_PRESETS.has(stored.theme_preset)) {
+    base.theme_preset = stored.theme_preset;
+  }
+  if (stored.accent_color === null || (stored.accent_color && HEX_COLOR.test(stored.accent_color))) {
+    base.accent_color = stored.accent_color ?? null;
+  }
+  if (stored.density && DENSITIES.has(stored.density)) {
+    base.density = stored.density;
+  }
+  if (stored.font_size && FONT_SIZES.has(stored.font_size)) {
+    base.font_size = stored.font_size;
+  }
+  if (stored.sidebar_mode && SIDEBAR_MODES.has(stored.sidebar_mode)) {
+    base.sidebar_mode = stored.sidebar_mode;
+  }
+  base.custom_colors = sanitizeCustomColors(stored.custom_colors);
+
+  return base;
+}
+
+export function mergeEffectivePreferences(
+  appAppearance: AppAppearanceSettings,
+  stored?: Partial<UserPreferences> | null,
+): UserPreferences {
+  const personal = mergeUserPreferences(stored);
+  return {
+    ...appAppearance,
+    avatar_file_id: personal.avatar_file_id,
+    default_home_route: personal.default_home_route,
+  };
+}
+
 const PRESET_TOKENS: Record<
   ThemePreset,
   Partial<Record<string, string>>
@@ -87,11 +160,35 @@ const PRESET_TOKENS: Record<
     "--ds-secondary-label": "#6c6c70",
     "--ds-tertiary-label": "#8e8e93",
     "--ds-separator": "rgba(60, 60, 67, 0.12)",
+    "--ds-sidebar-bg": "#f7f1eb",
+    "--ds-destructive": "#ff3b30",
+    "--ds-destructive-muted": "rgba(255, 59, 48, 0.08)",
+    "--ds-success": "#34c759",
+    "--ds-warning": "#c85000",
     "--background": "#fcf8f4",
     "--foreground": "#1c1c1e",
     "--card": "#ffffff",
     "--muted": "#f5efe6",
     "--border": "rgba(90, 60, 30, 0.12)",
+  },
+  light: {
+    "--ds-bg": "#ffffff",
+    "--ds-surface": "#ffffff",
+    "--ds-surface-elevated": "#ffffff",
+    "--ds-label": "#111318",
+    "--ds-secondary-label": "#5b6270",
+    "--ds-tertiary-label": "#848c99",
+    "--ds-separator": "rgba(17, 19, 24, 0.1)",
+    "--ds-sidebar-bg": "#f4f5f7",
+    "--ds-destructive": "#e5342b",
+    "--ds-destructive-muted": "rgba(229, 52, 43, 0.08)",
+    "--ds-success": "#1f9d55",
+    "--ds-warning": "#b5620a",
+    "--background": "#ffffff",
+    "--foreground": "#111318",
+    "--card": "#ffffff",
+    "--muted": "#f2f3f5",
+    "--border": "rgba(17, 19, 24, 0.1)",
   },
   dark: {
     "--ds-bg": "#121214",
@@ -101,6 +198,11 @@ const PRESET_TOKENS: Record<
     "--ds-secondary-label": "#aeaeb2",
     "--ds-tertiary-label": "#8e8e93",
     "--ds-separator": "rgba(255, 255, 255, 0.12)",
+    "--ds-sidebar-bg": "#1c1c1e",
+    "--ds-destructive": "#ff453a",
+    "--ds-destructive-muted": "rgba(255, 69, 58, 0.15)",
+    "--ds-success": "#30d158",
+    "--ds-warning": "#ff9f0a",
     "--background": "#121214",
     "--foreground": "#f2f2f7",
     "--card": "#1c1c1e",
@@ -115,6 +217,11 @@ const PRESET_TOKENS: Record<
     "--ds-secondary-label": "#1a1a1a",
     "--ds-tertiary-label": "#333333",
     "--ds-separator": "rgba(0, 0, 0, 0.28)",
+    "--ds-sidebar-bg": "#f5f5f5",
+    "--ds-destructive": "#d70015",
+    "--ds-destructive-muted": "rgba(215, 0, 21, 0.1)",
+    "--ds-success": "#248a3d",
+    "--ds-warning": "#a05a00",
     "--background": "#ffffff",
     "--foreground": "#000000",
     "--card": "#ffffff",
@@ -162,6 +269,57 @@ const SIDEBAR_WIDTH: Record<SidebarModePreference, string> = {
   collapsed: "68px",
 };
 
+const CUSTOM_COLOR_CSS_VARS: Record<keyof CustomColorOverrides, string> = {
+  bg: "--ds-bg",
+  surface: "--ds-surface",
+  surface_elevated: "--ds-surface-elevated",
+  sidebar_bg: "--ds-sidebar-bg",
+  label: "--ds-label",
+  secondary_label: "--ds-secondary-label",
+  accent: "--ds-accent",
+  accent_hover: "--ds-accent-hover",
+  separator: "--ds-separator",
+  destructive: "--ds-destructive",
+  success: "--ds-success",
+};
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!HEX_COLOR.test(hex)) return null;
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
+}
+
+export const CUSTOM_COLOR_FIELDS: {
+  key: keyof CustomColorOverrides;
+  label: string;
+  group: "Backgrounds" | "Text" | "Accents" | "Borders" | "Status";
+}[] = [
+  { key: "bg", label: "Page background", group: "Backgrounds" },
+  { key: "surface", label: "Surface / cards", group: "Backgrounds" },
+  { key: "surface_elevated", label: "Elevated surface (dialogs)", group: "Backgrounds" },
+  { key: "sidebar_bg", label: "Sidebar background", group: "Backgrounds" },
+  { key: "label", label: "Primary text", group: "Text" },
+  { key: "secondary_label", label: "Secondary text", group: "Text" },
+  { key: "accent", label: "Accent", group: "Accents" },
+  { key: "accent_hover", label: "Accent hover", group: "Accents" },
+  { key: "separator", label: "Border / separator", group: "Borders" },
+  { key: "destructive", label: "Destructive", group: "Status" },
+  { key: "success", label: "Success", group: "Status" },
+];
+
+export function getPresetColorValue(preset: ThemePreset, key: keyof CustomColorOverrides): string {
+  const cssVar = CUSTOM_COLOR_CSS_VARS[key];
+  const tokens = PRESET_TOKENS[preset];
+  const value = tokens[cssVar];
+  if (value && HEX_COLOR.test(value)) return value;
+  if (key === "accent") return preset === "dark" ? "#E0B07A" : "#D4A96A";
+  if (key === "accent_hover") return getPresetColorValue(preset, "accent");
+  return "#000000";
+}
+
 export const ACCENT_SWATCHES = [
   { id: "gold", label: "Gold", color: "#D4A96A" },
   { id: "teal", label: "Teal", color: "#2A9D8F" },
@@ -191,10 +349,33 @@ export function applyUserPreferences(prefs: UserPreferences): void {
   });
 
   root.style.setProperty("--ds-sidebar-width", SIDEBAR_WIDTH[prefs.sidebar_mode]);
-  root.style.setProperty(
-    "--ds-accent",
-    prefs.accent_color ?? (prefs.theme_preset === "dark" ? "#E0B07A" : "#d4a96a"),
-  );
+  const accentHex =
+    prefs.custom_colors?.accent ??
+    prefs.accent_color ??
+    (prefs.theme_preset === "dark" ? "#E0B07A" : "#d4a96a");
+  root.style.setProperty("--ds-accent", accentHex);
+  const accentRgb = hexToRgb(accentHex);
+  if (accentRgb) {
+    root.style.setProperty(
+      "--ds-accent-muted",
+      `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.12)`,
+    );
+  }
+  root.style.setProperty("--ds-accent-hover", prefs.custom_colors?.accent_hover ?? accentHex);
+
+  const customColors = prefs.custom_colors ?? {};
+  for (const key of CUSTOM_COLOR_KEYS) {
+    if (key === "accent" || key === "accent_hover") continue;
+    const value = customColors[key];
+    if (value) {
+      root.style.setProperty(CUSTOM_COLOR_CSS_VARS[key], value);
+    }
+  }
+
+  root.style.setProperty("--background", customColors.bg ?? presetTokens["--background"] ?? presetTokens["--ds-bg"] ?? "");
+  root.style.setProperty("--foreground", customColors.label ?? presetTokens["--foreground"] ?? presetTokens["--ds-label"] ?? "");
+  root.style.setProperty("--card", customColors.surface_elevated ?? customColors.surface ?? presetTokens["--card"] ?? "");
+  root.style.setProperty("--border", customColors.separator ?? presetTokens["--border"] ?? "");
 
   root.dataset.themePreset = prefs.theme_preset;
   root.dataset.sidebarMode = prefs.sidebar_mode;
@@ -215,8 +396,11 @@ export function clearAppliedUserPreferences(): void {
     ...Object.keys(PRESET_TOKENS.default),
     ...Object.keys(DENSITY_TOKENS.comfortable),
     ...Object.keys(BASE_FONT_SIZES),
+    ...Object.values(CUSTOM_COLOR_CSS_VARS),
     "--ds-sidebar-width",
     "--ds-accent",
+    "--ds-accent-muted",
+    "--ds-accent-hover",
   ];
   keys.forEach((key) => root.style.removeProperty(key));
   delete root.dataset.themePreset;

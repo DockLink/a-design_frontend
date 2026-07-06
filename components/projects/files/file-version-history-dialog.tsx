@@ -61,21 +61,21 @@ export function FileVersionHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[480px] border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="w-[480px] border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <DialogTitle>Version history</DialogTitle>
           <DialogCloseButton onClick={() => onOpenChange(false)} />
         </DialogHeader>
 
         <DialogBody>
-          <p className="mb-3 truncate text-[13px] font-medium text-[#1A1410]">{fileName}</p>
+          <p className="mb-3 truncate text-[13px] font-medium text-[var(--ds-label)]">{fileName}</p>
 
           {loading && (
-            <p className="py-6 text-center text-sm text-[#9C8573]">Loading…</p>
+            <p className="py-6 text-center text-sm text-[var(--ds-secondary-label)]">Loading…</p>
           )}
 
           {!loading && versions.length === 0 && (
-            <p className="py-6 text-center text-sm text-[#9C8573]">No version history found.</p>
+            <p className="py-6 text-center text-sm text-[var(--ds-secondary-label)]">No version history found.</p>
           )}
 
           {!loading && versions.length > 0 && (
@@ -84,27 +84,27 @@ export function FileVersionHistoryDialog({
                 <div
                   key={v.id}
                   className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                  style={{ background: i === 0 ? "#F5E6D0" : "#F5EFE6" }}
+                  style={{ background: i === 0 ? "#F5E6D0" : "var(--ds-bg)" }}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span
                         className="rounded-[3px] px-1.5 py-0.5 text-[10px] font-bold"
                         style={{
-                          background: i === 0 ? "#D4A96A" : "#EDE3D4",
-                          color: i === 0 ? "white" : "#9C8573",
+                          background: i === 0 ? "var(--ds-accent)" : "#EDE3D4",
+                          color: i === 0 ? "white" : "var(--ds-secondary-label)",
                         }}
                       >
                         v{v.version}
                       </span>
                       {i === 0 && (
-                        <span className="text-[11px] font-medium text-[#D4A96A]">Current</span>
+                        <span className="text-[11px] font-medium text-[var(--ds-accent)]">Current</span>
                       )}
                       {v.isSuperseded && (
-                        <span className="text-[11px] text-[#9C8573]">Superseded</span>
+                        <span className="text-[11px] text-[var(--ds-secondary-label)]">Superseded</span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-[12px] text-[#6B5744]">
+                    <p className="mt-0.5 text-[12px] text-[var(--ds-secondary-label)]">
                       {formatFileDate(v.created_at)} · {formatFileSize(v.fileSize)}
                     </p>
                   </div>
@@ -112,7 +112,7 @@ export function FileVersionHistoryDialog({
                     type="button"
                     disabled={downloadingId === v.id}
                     onClick={() => void download(v.id)}
-                    className="ml-3 shrink-0 text-[#9C8573] hover:text-[#D4A96A]"
+                    className="ml-3 shrink-0 text-[var(--ds-secondary-label)] hover:text-[var(--ds-accent)]"
                     title="Download this version"
                   >
                     <Download size={14} />
@@ -123,7 +123,7 @@ export function FileVersionHistoryDialog({
           )}
         </DialogBody>
 
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>

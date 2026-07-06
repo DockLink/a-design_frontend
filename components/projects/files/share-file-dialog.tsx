@@ -114,10 +114,10 @@ export function ShareFileDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="w-[440px] border-[rgba(90,60,30,0.10)] bg-[#FDFAF6]">
+      <DialogContent className="w-[440px] border-[rgba(90,60,30,0.10)] bg-[var(--ds-surface-elevated)]">
         <DialogHeader className="relative border-[rgba(90,60,30,0.10)]">
           <div className="flex items-center gap-2">
-            <Link2 size={15} style={{ color: "#D4A96A" }} />
+            <Link2 size={15} style={{ color: "var(--ds-accent)" }} />
             <DialogTitle>Share file</DialogTitle>
           </div>
           <DialogCloseButton onClick={handleClose} />
@@ -125,7 +125,7 @@ export function ShareFileDialog({
 
         <DialogBody className="space-y-5">
           {/* File name */}
-          <p className="truncate text-[13px] font-medium text-[#1A1410]">
+          <p className="truncate text-[13px] font-medium text-[var(--ds-label)]">
             {file?.fileName ?? ""}
           </p>
 
@@ -133,7 +133,7 @@ export function ShareFileDialog({
             <>
               {/* Expiry */}
               <div>
-                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-[#9C8573]">
+                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--ds-secondary-label)]">
                   <Clock size={11} />
                   Link expiry
                 </div>
@@ -147,10 +147,10 @@ export function ShareFileDialog({
                         onClick={() => setSelectedHours(opt.hours)}
                         className="rounded-md px-2.5 py-1 text-[12px] transition-colors"
                         style={{
-                          background: active ? "#D4A96A" : "#F5EFE6",
-                          color: active ? "white" : "#6B5744",
+                          background: active ? "var(--ds-accent)" : "var(--ds-bg)",
+                          color: active ? "white" : "var(--ds-secondary-label)",
                           fontWeight: active ? 600 : 400,
-                          border: `1px solid ${active ? "#D4A96A" : "rgba(90,60,30,0.15)"}`,
+                          border: `1px solid ${active ? "var(--ds-accent)" : "rgba(90,60,30,0.15)"}`,
                         }}
                       >
                         {opt.label}
@@ -159,7 +159,7 @@ export function ShareFileDialog({
                   })}
                 </div>
                 {selectedHours !== null && (
-                  <p className="mt-1.5 text-[11px] text-[#9C8573]">
+                  <p className="mt-1.5 text-[11px] text-[var(--ds-secondary-label)]">
                     Expires{" "}
                     {new Date(Date.now() + selectedHours * 3600 * 1000).toLocaleString("en-US", {
                       dateStyle: "medium",
@@ -171,7 +171,7 @@ export function ShareFileDialog({
 
               {/* Download permission */}
               <div>
-                <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[#9C8573]">
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-[var(--ds-secondary-label)]">
                   Recipient can
                 </div>
                 <div className="flex gap-2">
@@ -203,17 +203,17 @@ export function ShareFileDialog({
 
               {/* URL */}
               <div>
-                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-[#9C8573]">
+                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--ds-secondary-label)]">
                   Link
                 </p>
-                <div className="flex items-center gap-2 rounded-lg border border-[rgba(90,60,30,0.12)] bg-[#F5EFE6] p-2.5">
-                  <span className="flex-1 truncate text-[12px] text-[#1A1410]">
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--ds-separator)] bg-[var(--ds-bg)] p-2.5">
+                  <span className="flex-1 truncate text-[12px] text-[var(--ds-label)]">
                     {shareUrl}
                   </span>
                   <button
                     type="button"
                     onClick={() => void handleCopy()}
-                    className="shrink-0 rounded-md bg-[#D4A96A] px-2.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#C9894A]"
+                    className="shrink-0 rounded-md bg-[var(--ds-accent)] px-2.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[var(--ds-accent-hover)]"
                   >
                     {copied ? <Check size={12} /> : <Copy size={12} />}
                   </button>
@@ -221,14 +221,14 @@ export function ShareFileDialog({
               </div>
 
               {/* Summary badges */}
-              <div className="flex items-center gap-2 text-[12px] text-[#6B5744]">
-                <span className="flex items-center gap-1 rounded-full bg-[#F5EFE6] px-2.5 py-1">
+              <div className="flex items-center gap-2 text-[12px] text-[var(--ds-secondary-label)]">
+                <span className="flex items-center gap-1 rounded-full bg-[var(--ds-bg)] px-2.5 py-1">
                   <Clock size={11} />
                   {result.expiresAt
                     ? `Expires ${new Date(result.expiresAt).toLocaleDateString("en-US", { dateStyle: "medium" })}`
                     : "Never expires"}
                 </span>
-                <span className="flex items-center gap-1 rounded-full bg-[#F5EFE6] px-2.5 py-1">
+                <span className="flex items-center gap-1 rounded-full bg-[var(--ds-bg)] px-2.5 py-1">
                   {result.allowDownload ? <Download size={11} /> : <EyeOff size={11} />}
                   {result.allowDownload ? "Download allowed" : "View only"}
                 </span>
@@ -237,7 +237,7 @@ export function ShareFileDialog({
           )}
         </DialogBody>
 
-        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[#F5EFE6]">
+        <DialogFooter className="border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)]">
           {result ? (
             <>
               <button
@@ -254,7 +254,7 @@ export function ShareFileDialog({
                 Close
               </Button>
               <Button
-                className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+                className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
                 onClick={() => void handleCopy()}
               >
                 {copied ? "Copied!" : "Copy link"}
@@ -267,7 +267,7 @@ export function ShareFileDialog({
               </Button>
               <Button
                 disabled={loading}
-                className="bg-[#D4A96A] text-white hover:bg-[#C9894A]"
+                className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
                 onClick={() => void handleCreate()}
               >
                 {loading ? "Creating…" : "Create link"}
@@ -299,18 +299,18 @@ function PermissionToggle({
       onClick={onClick}
       className="flex flex-1 flex-col items-start gap-1 rounded-xl p-3 text-left transition-all"
       style={{
-        border: `2px solid ${active ? "#D4A96A" : "rgba(90,60,30,0.12)"}`,
-        background: active ? "#FDF4E7" : "#F5EFE6",
+        border: `2px solid ${active ? "var(--ds-accent)" : "var(--ds-separator)"}`,
+        background: active ? "#FDF4E7" : "var(--ds-bg)",
       }}
     >
       <div
         className="flex items-center gap-1.5 text-[13px] font-medium"
-        style={{ color: active ? "#D4A96A" : "#1A1410" }}
+        style={{ color: active ? "var(--ds-accent)" : "var(--ds-label)" }}
       >
         {icon}
         {label}
       </div>
-      <p className="text-[11px] text-[#9C8573]">{description}</p>
+      <p className="text-[11px] text-[var(--ds-secondary-label)]">{description}</p>
     </button>
   );
 }

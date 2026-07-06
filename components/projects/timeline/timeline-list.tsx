@@ -38,8 +38,8 @@ export function TimelineList({
 
   if (items.length === 0) {
     return (
-      <div className="overflow-hidden rounded-xl border border-[rgba(90,60,30,0.12)] bg-[#FDFAF6]">
-        <div className="px-6 py-16 text-center text-sm text-[#9C8573]">
+      <div className="overflow-hidden rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)]">
+        <div className="px-6 py-16 text-center text-sm text-[var(--ds-secondary-label)]">
           No milestones yet.
           {canManage && (
             <>
@@ -47,7 +47,7 @@ export function TimelineList({
               <button
                 type="button"
                 onClick={onAddClick}
-                className="font-medium text-[#D4A96A] underline-offset-2 hover:underline"
+                className="font-medium text-[var(--ds-accent)] underline-offset-2 hover:underline"
               >
                 Add a milestone
               </button>
@@ -59,8 +59,8 @@ export function TimelineList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[rgba(90,60,30,0.12)] bg-[#FDFAF6]">
-      <div className="grid h-10 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[#F5EFE6] px-4 text-xs text-[#9C8573]">
+    <div className="overflow-hidden rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)]">
+      <div className="grid h-10 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-xs text-[var(--ds-secondary-label)]">
         <span />
         <span>Title</span>
         <span>Stage</span>
@@ -76,12 +76,12 @@ export function TimelineList({
             key={ms.id}
             onMouseEnter={() => setHoveredId(ms.id)}
             onMouseLeave={() => setHoveredId(null)}
-            className={`grid h-11 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors ${hovered ? "bg-[#F5EFE6]" : ""}`}
+            className={`grid h-11 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors ${hovered ? "bg-[var(--ds-bg)]" : ""}`}
           >
             <div className="flex items-center">
               <TimelineStatusIcon status={ms.status} />
             </div>
-            <span className="truncate text-sm font-medium text-[#1A1410]">{ms.title}</span>
+            <span className="truncate text-sm font-medium text-[var(--ds-label)]">{ms.title}</span>
             <Badge
               variant="secondary"
               className="w-fit border-0 text-[11px] font-medium"
@@ -89,7 +89,7 @@ export function TimelineList({
             >
               {ms.stageName}
             </Badge>
-            <span className="text-[13px] text-[#9C8573]">{formatTimelineDate(ms.endDate)}</span>
+            <span className="text-[13px] text-[var(--ds-secondary-label)]">{formatTimelineDate(ms.endDate)}</span>
             <span className="text-[13px] font-medium" style={{ color: rem.color }}>
               {rem.text}
             </span>
@@ -101,7 +101,7 @@ export function TimelineList({
         <button
           type="button"
           onClick={onAddClick}
-          className="flex h-11 w-full cursor-pointer items-center gap-2 border-t border-dashed border-[rgba(90,60,30,0.18)] px-4 text-[13px] text-[#D4A96A]"
+          className="flex h-11 w-full cursor-pointer items-center gap-2 border-t border-dashed border-[rgba(90,60,30,0.18)] px-4 text-[13px] text-[var(--ds-accent)]"
         >
           <Plus className="size-3.5" />
           Add milestone

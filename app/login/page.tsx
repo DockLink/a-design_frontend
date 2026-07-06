@@ -32,7 +32,7 @@ export default function LoginPage() {
   if (!isHydrated || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F9F5F1]">
-        <div className="size-8 animate-spin rounded-full border-2 border-[#D4A96A] border-t-transparent" />
+        <div className="size-8 animate-spin rounded-full border-2 border-[var(--ds-accent)] border-t-transparent" />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function LoginPage() {
       <div className="flex w-full items-center justify-center bg-[#F9F5F1] px-8 py-12 lg:w-1/2">
         <div className="w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-500">
           <div className="mb-8">
-            <h1 className="text-[28px] font-semibold tracking-tight text-[#1C1C1E]">
+            <h1 className="text-[28px] font-semibold tracking-tight text-[var(--ds-label)]">
               Sign in
             </h1>
             <p className="mt-1.5 text-[15px] text-muted-foreground">

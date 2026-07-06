@@ -18,7 +18,7 @@ export function ProjectBriefAttachmentsList({
 }) {
   if (attachments.length === 0) {
     return (
-      <div style={{ fontSize: "12px", color: "#8E8E93", marginTop: "10px" }}>
+      <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", marginTop: "10px" }}>
         No files attached yet.
       </div>
     );
@@ -51,7 +51,7 @@ export function ProjectBriefAttachmentsList({
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                color: "#C9894A",
+                color: "var(--ds-accent-hover)",
               }}
             >
               <Icon size={16} />
@@ -61,7 +61,7 @@ export function ProjectBriefAttachmentsList({
                 style={{
                   fontSize: "13px",
                   fontWeight: 500,
-                  color: "#1C1C1E",
+                  color: "var(--ds-label)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -70,7 +70,7 @@ export function ProjectBriefAttachmentsList({
                 {attachmentDisplayName(file)}
               </div>
               {file.mime_type ? (
-                <div style={{ fontSize: "11px", color: "#8E8E93", marginTop: "2px" }}>{file.mime_type}</div>
+                <div style={{ fontSize: "11px", color: "var(--ds-tertiary-label)", marginTop: "2px" }}>{file.mime_type}</div>
               ) : null}
             </div>
             <a
@@ -153,7 +153,7 @@ export function ProjectBriefAttachmentsEmptyHint() {
         border: "1px dashed rgba(90,60,30,0.18)",
         background: "rgba(247,241,235,0.5)",
         fontSize: "12px",
-        color: "#8E8E93",
+        color: "var(--ds-tertiary-label)",
         display: "flex",
         alignItems: "center",
         gap: "8px",

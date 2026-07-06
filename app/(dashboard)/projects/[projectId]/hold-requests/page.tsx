@@ -73,7 +73,7 @@ function HoldRequestCard({
   }
 
   return (
-    <div className="rounded-xl border border-[rgba(90,60,30,0.12)] bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-[var(--ds-separator)] bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
@@ -84,17 +84,17 @@ function HoldRequestCard({
             >
               {holdRequestStatusLabel(req.status)}
             </Badge>
-            <span className="text-xs text-[#9C8573]">
+            <span className="text-xs text-[var(--ds-secondary-label)]">
               {req.requestedBy?.firstName ?? ""} {req.requestedBy?.lastName ?? ""}
               {req.requestedBy?.email ? ` · ${req.requestedBy.email}` : ""}
             </span>
           </div>
-          <p className="text-sm font-medium text-[#1A1410]">{req.reason}</p>
+          <p className="text-sm font-medium text-[var(--ds-label)]">{req.reason}</p>
           {req.requestedNote && (
-            <p className="mt-0.5 text-xs text-[#9C8573]">{req.requestedNote}</p>
+            <p className="mt-0.5 text-xs text-[var(--ds-secondary-label)]">{req.requestedNote}</p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1 text-xs text-[#9C8573]">
+        <div className="flex shrink-0 items-center gap-1 text-xs text-[var(--ds-secondary-label)]">
           <Clock className="size-3" />
           <span>
             {formatHoldDate(req.requestedStartDate)} – {formatHoldDate(req.requestedEndDate)}
@@ -103,14 +103,14 @@ function HoldRequestCard({
       </div>
 
       {req.adminNote && (
-        <p className="mb-3 rounded-lg bg-[#F5EFE6] px-3 py-2 text-xs text-[#6B5744]">
+        <p className="mb-3 rounded-lg bg-[var(--ds-bg)] px-3 py-2 text-xs text-[var(--ds-secondary-label)]">
           <span className="font-medium">Admin note: </span>
           {req.adminNote}
         </p>
       )}
 
       {req.reviewedAt && (
-        <p className="mb-2 text-xs text-[#9C8573]">
+        <p className="mb-2 text-xs text-[var(--ds-secondary-label)]">
           Reviewed {formatHoldDate(req.reviewedAt)}
           {req.appliedAt ? ` · Applied ${formatHoldDate(req.appliedAt)}` : ""}
           {req.resumedAt ? ` · Resumed ${formatHoldDate(req.resumedAt)}` : ""}
@@ -124,12 +124,12 @@ function HoldRequestCard({
             placeholder="Optional remark…"
             value={remark}
             onChange={(e) => setRemark(e.target.value)}
-            className="mb-2 w-full rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-3 py-1.5 text-xs placeholder-[#C4B5A5] outline-none"
+            className="mb-2 w-full rounded-lg border border-[rgba(90,60,30,0.15)] bg-[var(--ds-bg)] px-3 py-1.5 text-xs placeholder-[#C4B5A5] outline-none"
           />
 
           {canApproveReject && (
             <div className="mb-2">
-              <label className="flex items-center gap-2 text-xs text-[#6B5744]">
+              <label className="flex items-center gap-2 text-xs text-[var(--ds-secondary-label)]">
                 <input
                   type="checkbox"
                   checked={adjustDates}
@@ -144,17 +144,17 @@ function HoldRequestCard({
                       type="date"
                       value={adjStart}
                       onChange={(e) => setAdjStart(e.target.value)}
-                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-2 py-1.5 text-xs outline-none"
+                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[var(--ds-bg)] px-2 py-1.5 text-xs outline-none"
                     />
                     <input
                       type="date"
                       value={adjEnd}
                       min={adjStart}
                       onChange={(e) => setAdjEnd(e.target.value)}
-                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[#F5EFE6] px-2 py-1.5 text-xs outline-none"
+                      className="flex-1 rounded-lg border border-[rgba(90,60,30,0.15)] bg-[var(--ds-bg)] px-2 py-1.5 text-xs outline-none"
                     />
                   </div>
-                  <p className="mt-1 text-[11px] text-[#9C8573]">
+                  <p className="mt-1 text-[11px] text-[var(--ds-secondary-label)]">
                     The task end date extends by this hold. If it runs past the milestone or
                     stage, those are extended automatically.
                   </p>
@@ -190,7 +190,7 @@ function HoldRequestCard({
                 size="sm"
                 disabled={isProcessing}
                 onClick={() => void handle("resume")}
-                className="h-7 gap-1 bg-[#D4A96A] text-xs text-white hover:bg-[#C4956A]"
+                className="h-7 gap-1 bg-[var(--ds-accent)] text-xs text-white hover:bg-[#C4956A]"
               >
                 <Play className="size-3" /> Resume task
               </Button>
@@ -221,15 +221,15 @@ export default function ProjectHoldRequestsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-[#1A1410]">Hold Requests</h2>
-        <p className="text-xs text-[#9C8573]">
+        <h2 className="text-base font-semibold text-[var(--ds-label)]">Hold Requests</h2>
+        <p className="text-xs text-[var(--ds-secondary-label)]">
           {canProcess
             ? "Review and process hold requests submitted by team members."
             : "Hold requests submitted for tasks in this project."}
         </p>
       </div>
 
-      <div className="flex gap-1 rounded-lg bg-[#F5EFE6] p-1 w-fit">
+      <div className="flex gap-1 rounded-lg bg-[var(--ds-bg)] p-1 w-fit">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -237,8 +237,8 @@ export default function ProjectHoldRequestsPage() {
             onClick={() => setFilter(tab.id)}
             className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
               filter === tab.id
-                ? "bg-white text-[#D4A96A] shadow-sm"
-                : "text-[#9C8573] hover:text-[#6B5744]"
+                ? "bg-white text-[var(--ds-accent)] shadow-sm"
+                : "text-[var(--ds-secondary-label)] hover:text-[var(--ds-secondary-label)]"
             }`}
           >
             {tab.label}
@@ -246,11 +246,11 @@ export default function ProjectHoldRequestsPage() {
         ))}
       </div>
 
-      {isLoading && <p className="text-sm text-[#9C8573]">Loading hold requests…</p>}
+      {isLoading && <p className="text-sm text-[var(--ds-secondary-label)]">Loading hold requests…</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!isLoading && requests.length === 0 && (
-        <div className="rounded-xl border border-[rgba(90,60,30,0.12)] bg-[#FDFAF6] px-6 py-12 text-center text-sm text-[#9C8573]">
+        <div className="rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)] px-6 py-12 text-center text-sm text-[var(--ds-secondary-label)]">
           No{filter === "PENDING" ? " pending" : filter === "APPROVED" ? " approved" : ""} hold
           requests.
         </div>
