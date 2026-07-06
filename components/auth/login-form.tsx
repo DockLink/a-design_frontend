@@ -14,6 +14,8 @@ import { ApiError } from "@/types/api";
 import { NAV_ROUTES } from "@/types/navigation";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
+// Login Form
+
 export function LoginForm() {
   const router = useRouter();
   const { login, isLoading } = useAuth();
