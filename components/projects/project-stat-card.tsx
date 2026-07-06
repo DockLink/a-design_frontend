@@ -1,28 +1,29 @@
+import Link from "next/link";
+
 export function ProjectStatCard({
   label,
   value,
   subtitle,
   icon,
   trend,
+  href,
+  onClick,
 }: {
   label: string;
   value: string;
   subtitle?: string;
   icon?: React.ReactNode;
   trend?: "up" | "down" | "neutral";
+  href?: string;
+  onClick?: () => void;
 }) {
   const trendColor =
     trend === "up" ? "#248A3D" : trend === "down" ? "#FF3B30" : "#8E8E93";
 
-  return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-        padding: "16px",
-      }}
-    >
+  const interactive = Boolean(href || onClick);
+
+  const content = (
+    <>
       <div
         style={{
           display: "flex",
@@ -60,6 +61,45 @@ export function ProjectStatCard({
           {subtitle}
         </div>
       )}
-    </div>
+    </>
   );
+
+  const style = {
+    background: "#FFFFFF",
+    borderRadius: "12px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
+    padding: "16px",
+    display: "block" as const,
+    textDecoration: "none" as const,
+    color: "inherit" as const,
+    cursor: interactive ? "pointer" : "default",
+    transition: interactive ? "box-shadow 0.12s, transform 0.12s" : undefined,
+  };
+
+  if (href) {
+    return (
+      <Link href={href} style={style}>
+        {content}
+      </Link>
+    );
+  }
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          ...style,
+          border: "none",
+          width: "100%",
+          textAlign: "left" as const,
+        }}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div style={style}>{content}</div>;
 }

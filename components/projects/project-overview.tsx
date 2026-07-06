@@ -13,6 +13,7 @@ import {
 
 import { useProjectContext } from "@/components/projects/project-context";
 import { EditProjectBriefSheet } from "@/components/projects/edit-project-brief-sheet";
+import { EditProjectSheet } from "@/components/projects/edit-project-sheet";
 import { ProjectBriefAttachmentsList } from "@/components/projects/project-brief-attachments";
 import { ManageTeamSheet } from "@/components/projects/manage-team-sheet";
 import { ManageGuestsSheet } from "@/components/projects/manage-guests-sheet";
@@ -26,10 +27,15 @@ import { ProjectStatCard } from "@/components/projects/project-stat-card";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { StageManagementModal } from "@/components/projects/stage-management-modal";
 import { MilestoneManagementModal } from "@/components/projects/milestone-management-modal";
+import { useAuth } from "@/hooks/use-auth";
 import { useProjectMembers } from "@/hooks/use-project-members";
+import { useProjectFileCount } from "@/hooks/use-project-file-count";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
+import { getPrimaryRole } from "@/lib/auth/rbac";
+import { toSidebarRole } from "@/lib/navigation/sidebar-role";
 import { formatProjectStatus } from "@/lib/projects/duration";
 import {
+  canEditProjectDetails,
   canManageProject,
   canViewAdminInsights,
 } from "@/lib/projects/permissions";
@@ -46,25 +52,30 @@ const STATUS_CFG: Record<string, { bg: string; color: string }> = {
 
 export function ProjectOverview() {
   const { project, refetch } = useProjectContext();
-  const { members, updateMembers, effectiveRole, projectLeadUserIds, isLoading: membersSaving, isViewer } = useProjectMembers();
+  const { user } = useAuth();
+  const orgSidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
+  const { members, updateMembers, refetchMembers, effectiveRole, projectLeadUserIds, isLoading: membersSaving, isViewer } = useProjectMembers();
   const canManage = canManageProject(effectiveRole, isViewer);
-  const showAdminInsights = canViewAdminInsights(effectiveRole);
+  const canEditDetails = canEditProjectDetails(orgSidebarRole);
+  const showAdminInsights = canViewAdminInsights(orgSidebarRole);
   const canManageGuests = showAdminInsights;
 
   const [showManageTeam, setShowManageTeam] = useState(false);
   const [showManageGuests, setShowManageGuests] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
   const [showEditBrief, setShowEditBrief] = useState(false);
 
   const projectId = project!.id;
+  const { fileCount } = useProjectFileCount(projectId);
   const { tasks: projectTasks } = useProjectTaskables(projectId, "TASK", { depth: 1, limit: 100 });
   const { tasks: stageTasks } = useProjectTaskables(projectId, "STAGE", { limit: 100 });
 
   const stages = useMemo(() => stageTasks.map((s) => mapStageToView(s)), [stageTasks]);
   const stats = useMemo(
-    () => computeProjectStats(projectTasks, members.filter((m) => m.status === "ACTIVE").length, project!.images.length),
-    [projectTasks, members, project]
+    () => computeProjectStats(projectTasks, members.filter((m) => m.status === "ACTIVE").length, fileCount),
+    [projectTasks, members, fileCount]
   );
 
   const statusLabel = formatProjectStatus(project!.status);
@@ -120,6 +131,25 @@ export function ProjectOverview() {
           <span style={{ fontSize: "12px", background: statusCfg.bg, color: statusCfg.color, borderRadius: "9999px", padding: "4px 12px", fontWeight: 500 }}>
             {statusLabel}
           </span>
+          {canEditDetails && (
+            <button
+              type="button"
+              onClick={() => setShowEditProject(true)}
+              style={{
+                height: "30px",
+                padding: "0 12px",
+                background: "var(--ds-accent)",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 500,
+                color: "white",
+              }}
+            >
+              Edit project
+            </button>
+          )}
           {canManage && (
             <>
               <button
@@ -156,7 +186,7 @@ export function ProjectOverview() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowEditBrief(true)}
+                onClick={() => (canEditDetails ? setShowEditProject(true) : setShowEditBrief(true))}
                 style={{
                   width: "30px",
                   height: "30px",
@@ -187,7 +217,12 @@ export function ProjectOverview() {
           trend={stats.overdueCount > 0 ? "down" : "neutral"}
         />
         <ProjectStatCard label="Team" value={String(stats.memberCount)} icon={<UsersIcon size={16} />} />
-        <ProjectStatCard label="Files" value={String(stats.fileCount)} icon={<FileText size={16} />} />
+        <ProjectStatCard
+          label="Files"
+          value={String(stats.fileCount)}
+          icon={<FileText size={16} />}
+          href={projectTabRoute(projectId, "files")}
+        />
         <ProjectStatCard
           label="Next due"
           value={stats.nextDue?.date ?? "—"}
@@ -338,7 +373,7 @@ export function ProjectOverview() {
               {canManage && (
                 <button
                   type="button"
-                  onClick={() => setShowEditBrief(true)}
+                  onClick={() => (canEditDetails ? setShowEditProject(true) : setShowEditBrief(true))}
                   style={{
                     height: "28px",
                     padding: "0 12px",
@@ -351,7 +386,7 @@ export function ProjectOverview() {
                     fontWeight: 500,
                   }}
                 >
-                  Edit
+                  {canEditDetails ? "Edit project" : "Edit"}
                 </button>
               )}
             </div>
@@ -370,7 +405,7 @@ export function ProjectOverview() {
       <ProjectImageGallery
         projectId={projectId}
         images={project!.images}
-        canEdit={canManage}
+        canEdit={canManage && !canEditDetails}
         onUpdated={refetch}
       />
 
@@ -380,13 +415,13 @@ export function ProjectOverview() {
           address={project!.location}
           latitude={project!.latitude}
           longitude={project!.longitude}
-          canEdit={canManage}
+          canEdit={canManage && !canEditDetails}
           onUpdated={refetch}
         />
         <ProjectVimeoSection
           projectId={projectId}
           vimeoUrl={project!.vimeo_url}
-          canEdit={canManage}
+          canEdit={canManage && !canEditDetails}
           onUpdated={refetch}
         />
       </div>
@@ -421,14 +456,29 @@ export function ProjectOverview() {
         <MilestoneManagementModal projectId={projectId} onClose={() => setShowMilestoneModal(false)} />
       )}
 
-      <EditProjectBriefSheet
-        projectId={projectId}
-        brief={project!.description ?? ""}
-        attachments={project!.brief_attachments ?? []}
-        open={showEditBrief}
-        onClose={() => setShowEditBrief(false)}
-        onSaved={() => void refetch()}
+      <EditProjectSheet
+        project={project!}
+        members={members}
+        projectLeadUserIds={projectLeadUserIds}
+        open={showEditProject}
+        onClose={() => setShowEditProject(false)}
+        onSaved={() => {
+          void refetch();
+          void refetchMembers();
+        }}
+        onUpdateMembers={updateMembers}
       />
+
+      {!canEditDetails && (
+        <EditProjectBriefSheet
+          projectId={projectId}
+          brief={project!.description ?? ""}
+          attachments={project!.brief_attachments ?? []}
+          open={showEditBrief}
+          onClose={() => setShowEditBrief(false)}
+          onSaved={() => void refetch()}
+        />
+      )}
     </>
   );
 }

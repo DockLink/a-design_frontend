@@ -32,6 +32,8 @@ export interface AuthSession {
   expiresIn?: number;
   source: "supabase";
   user: User;
+  /** Supabase auth.sessions row id (from JWT session_id claim). */
+  sessionId?: string;
 }
 
 export interface AuthState {

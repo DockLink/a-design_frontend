@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { backendFetch } from "@/lib/api/backend";
+import { clientForwardHeaders } from "@/lib/api/client-forward-headers";
 import { normalizeLoginResponse } from "@/lib/auth/normalize-login";
 import type { BackendLoginResponse } from "@/types/auth";
 
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
   const result = await backendFetch<BackendLoginResponse>("/auth/refresh", {
     method: "POST",
     body: JSON.stringify({ refresh_token: body.refresh_token }),
+    headers: clientForwardHeaders(req),
   });
 
   if (!result.ok) {

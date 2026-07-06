@@ -9,7 +9,6 @@ import { ShareLocationDialog } from "@/components/projects/share-location-dialog
 import { Button } from "@/components/ui/button";
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { buildGoogleMapsUrl, getLocationShareTitle } from "@/lib/maps/share-location";
-import { isGoogleMapsConfigured } from "@/lib/maps/google-maps-loader";
 
 export function ProjectLocationSection({
   projectId,
@@ -34,7 +33,16 @@ export function ProjectLocationSection({
   const mapsUrl = buildGoogleMapsUrl({ address, latitude, longitude });
   const shareTitle = getLocationShareTitle({ address, latitude, longitude });
   const hasLocation = Boolean(address?.trim() || (latitude != null && longitude != null));
-  const mapsConfigured = isGoogleMapsConfigured();
+
+  const mapEmbedSrc = (() => {
+    if (latitude != null && longitude != null) {
+      return `https://www.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
+    }
+    if (address?.trim()) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(address.trim())}&z=15&output=embed`;
+    }
+    return null;
+  })();
 
   async function handleSaveLocation(value: LocationPickerValue) {
     setIsSaving(true);
@@ -108,11 +116,11 @@ export function ProjectLocationSection({
             <div style={{ padding: "0 18px 14px", fontSize: "14px", color: "var(--ds-label)", lineHeight: 1.5 }}>
               {address || `${latitude}, ${longitude}`}
             </div>
-            {mapsConfigured && latitude != null && longitude != null ? (
+            {mapEmbedSrc ? (
               <div style={{ padding: "0 18px 18px" }}>
                 <iframe
                   title="Project location map"
-                  src={`https://www.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`}
+                  src={mapEmbedSrc}
                   style={{ width: "100%", height: "220px", border: 0, borderRadius: "10px" }}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

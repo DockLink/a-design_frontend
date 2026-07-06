@@ -127,11 +127,7 @@ export function AppSidebar() {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF5F57" }} />
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FEBC2E" }} />
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28C840" }} />
-        </div>
+        {/* Removed three-dot window controls per design request */}
         {!collapsed ? (
         <span
           style={{

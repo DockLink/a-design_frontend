@@ -43,7 +43,7 @@ export function ProjectRecentFiles({
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent files</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent photos</div>
         <Link
           href={projectTabRoute(projectId, "files")}
           style={{ fontSize: "13px", color: "var(--ds-accent)", fontWeight: 500, textDecoration: "none" }}
@@ -60,7 +60,7 @@ export function ProjectRecentFiles({
         }}
       >
         {items.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No files uploaded yet.</div>
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No photos yet.</div>
         ) : (
           items.map((file, i) => {
             const name = fileNameFromUrl(file.url, file.id);
@@ -90,7 +90,7 @@ export function ProjectRecentFiles({
                 >
                   {name}
                 </div>
-                <span style={{ fontSize: "11px", color: "var(--ds-tertiary-label)" }}>Image</span>
+                <span style={{ fontSize: "11px", color: "var(--ds-tertiary-label)" }}>Photo</span>
               </div>
             );
           })

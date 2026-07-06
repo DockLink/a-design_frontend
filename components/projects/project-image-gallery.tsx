@@ -67,6 +67,8 @@ export function ProjectImageGallery({
     }
   }
 
+  const galleryImages = images.slice(1);
+
   return (
     <section className="project-gallery-card">
       <div className="project-gallery-card__header">
@@ -98,14 +100,15 @@ export function ProjectImageGallery({
       </div>
 
       <div className="project-gallery-card__body">
-        {images.length === 0 ? (
-          <div className="project-gallery-empty">No project photos yet.</div>
+        {galleryImages.length === 0 ? (
+          <div className="project-gallery-empty">
+            {images.length === 0 ? "No project photos yet." : "No additional photos yet."}
+          </div>
         ) : (
           <div className="project-gallery-grid">
-            {images.map((image, index) => (
+            {galleryImages.map((image, index) => (
               <div key={image.id} className="project-gallery-item">
-                <img src={image.url} alt={`Project photo ${index + 1}`} />
-                {index === 0 ? <span className="project-gallery-cover-badge">Cover</span> : null}
+                <img src={image.url} alt={`Project photo ${index + 2}`} />
                 {canEdit ? (
                   <button
                     type="button"

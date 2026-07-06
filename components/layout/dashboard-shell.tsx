@@ -7,6 +7,7 @@ import { ActivityTracker } from "@/components/auth/activity-tracker";
 import { UserPreferencesProvider } from "@/components/providers/user-preferences-provider";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { CommandPaletteProvider } from "@/components/layout/command-palette";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { NotificationsProvider } from "@/hooks/use-notifications";
@@ -41,6 +42,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <NotificationsProvider>
       <UserPreferencesProvider>
+      <CommandPaletteProvider>
       <ActivityTracker />
       <div className="ds-app" style={{ minHeight: "100vh", background: "var(--ds-bg)" }}>
         <AppSidebar />
@@ -67,6 +69,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      </CommandPaletteProvider>
       </UserPreferencesProvider>
     </NotificationsProvider>
   );
