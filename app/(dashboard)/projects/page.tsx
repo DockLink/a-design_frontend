@@ -142,9 +142,10 @@ export default function ProjectsListPage() {
   const router = useRouter();
   const { user } = useAuth();
   const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
+  const isGuest = sidebarRole === "guest";
   const canCreateProject = sidebarRole === "admin" || sidebarRole === "superadmin";
   const isSuperAdmin = sidebarRole === "superadmin";
-  const showSplitView = !canCreateProject;
+  const showSplitView = !canCreateProject && !isGuest;
 
   const {
     projects: allProjects,
@@ -166,7 +167,7 @@ export default function ProjectsListPage() {
     fetchNextPage: memberFetchNext,
   } = useInfiniteProjects(
     { limit: PAGE_SIZE, status: "ACTIVE", as_member: true },
-    { enabled: showSplitView },
+    { enabled: showSplitView || isGuest },
   );
 
   const {
@@ -220,7 +221,7 @@ export default function ProjectsListPage() {
     [showSplitView, allProjects, myProjectIds],
   );
 
-  const myLoading = showSplitView && (memberLoading || ledLoading);
+  const myLoading = isGuest ? memberLoading : showSplitView && (memberLoading || ledLoading);
   const isLoading = allLoading || myLoading;
 
   async function handleDeleteProject() {
@@ -252,7 +253,9 @@ export default function ProjectsListPage() {
           <div style={{ ...dsSubtitle, marginTop: "8px" }}>
             {canCreateProject
               ? "All organisation projects"
-              : "Your assigned projects and others you can request access to"}
+              : isGuest
+                ? "Projects you have been assigned to"
+                : "Your assigned projects and others you can request access to"}
           </div>
         </div>
         {canCreateProject && (
@@ -278,6 +281,27 @@ export default function ProjectsListPage() {
 
       {isLoading ? (
         <div style={dsCallout}>Loading projects…</div>
+      ) : isGuest ? (
+        <>
+          {memberProjectsRaw.length === 0 ? (
+            <div style={dsCallout}>No projects assigned yet.</div>
+          ) : (
+            <>
+              <ProjectCardGrid
+                cards={memberProjectsRaw}
+                isSuperAdmin={false}
+                isDeleting={isDeleting}
+                onOpen={(id) => router.push(projectRoute(id))}
+                onDelete={() => undefined}
+              />
+              <ScrollSentinel
+                hasNextPage={memberHasNext}
+                isFetchingNextPage={memberFetchingNext}
+                fetchNextPage={handleMemberFetchNext}
+              />
+            </>
+          )}
+        </>
       ) : showSplitView ? (
         <>
           {leadProjects.length > 0 && (

@@ -95,12 +95,6 @@ export function useProjectFiles(projectId: string) {
       replaceFileId?: string,
       onProgress?: (pct: number) => void,
     ) => {
-      const token = (await import("@/stores/auth-store")).useAuthStore
-        .getState()
-        .session?.accessToken;
-
-      if (!token) throw new Error("Not authenticated");
-
       // Direct browser → S3 multipart upload: the file bytes never pass through
       // Next.js or NestJS, so there is no app-level size limit.
       const body = await uploadFileMultipart({
@@ -108,7 +102,6 @@ export function useProjectFiles(projectId: string) {
         folderPath,
         file,
         replaceFileId,
-        token,
         onProgress,
       });
 

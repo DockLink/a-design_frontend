@@ -10,6 +10,7 @@ import {
   Home,
   LogOut,
   Settings,
+  UserCheck,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -19,7 +20,7 @@ import { useUserPreferences } from "@/components/providers/user-preferences-prov
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
-import { APP_NAME } from "@/lib/constants";
+import { BRAND_WORDMARK } from "@/lib/constants";
 import {
   ROLE_LABEL,
   toSidebarRole,
@@ -79,14 +80,19 @@ export function AppSidebar() {
       >
         <TabBtn icon={<Home size={22} />} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
         <TabBtn icon={<Folder size={22} />} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
-        {sidebarRole !== "admin" && sidebarRole !== "superadmin" && (
+        {sidebarRole !== "admin" && sidebarRole !== "superadmin" && sidebarRole !== "guest" && (
           <TabBtn icon={<CheckSquare size={22} />} label="Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
         )}
-        <TabBtn icon={<Bell size={22} />} label="Inbox" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
-        {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
-          <TabBtn icon={<Users size={22} />} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
+        {sidebarRole !== "guest" && (
+          <TabBtn icon={<Bell size={22} />} label="Inbox" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
         )}
-        {sidebarRole !== "member" && (
+        {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
+          <>
+            <TabBtn icon={<Users size={22} />} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
+            <TabBtn icon={<UserCheck size={22} />} label="Guests" active={isActive(NAV_ROUTES.guestUsers)} onClick={() => go(NAV_ROUTES.guestUsers)} />
+          </>
+        )}
+        {sidebarRole !== "member" && sidebarRole !== "guest" && (
           <TabBtn icon={<ClipboardList size={22} />} label="Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
         )}
       </div>
@@ -130,15 +136,15 @@ export function AppSidebar() {
         <span
           style={{
             fontSize: "var(--ds-text-callout)",
-            fontWeight: 600,
+            fontWeight: 300,
             color: "var(--ds-accent)",
-            letterSpacing: "-0.02em",
+            letterSpacing: "0.02em",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {APP_NAME}
+          {BRAND_WORDMARK}
         </span>
         ) : null}
       </div>
@@ -147,17 +153,22 @@ export function AppSidebar() {
         <div style={{ marginBottom: "6px" }}>
           <SidebarItem collapsed={collapsed} icon={Home} label="Home" active={isActive(homePage)} onClick={() => go(homePage)} />
           <SidebarItem collapsed={collapsed} icon={Folder} label="Projects" active={isActive(PROJECT_ROUTES)} onClick={() => go(NAV_ROUTES.projects)} />
-          {sidebarRole !== "admin" && sidebarRole !== "superadmin" && (
+          {sidebarRole !== "admin" && sidebarRole !== "superadmin" && sidebarRole !== "guest" && (
             <SidebarItem collapsed={collapsed} icon={CheckSquare} label="My Tasks" active={isActive(NAV_ROUTES.myTasks)} onClick={() => go(NAV_ROUTES.myTasks)} />
           )}
-          <SidebarItem collapsed={collapsed} icon={Bell} label="Notifications" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
+          {sidebarRole !== "guest" && (
+            <SidebarItem collapsed={collapsed} icon={Bell} label="Notifications" active={isActive(NAV_ROUTES.notifications)} onClick={() => go(NAV_ROUTES.notifications)} badge={hasUnreadNotifications} />
+          )}
         </div>
 
-        {sidebarRole !== "member" && (
+        {sidebarRole !== "member" && sidebarRole !== "guest" && (
           <>
             <div style={{ height: "0.5px", background: "var(--ds-separator)", margin: "8px 6px" }} />
             {(sidebarRole === "admin" || sidebarRole === "superadmin") && (
-              <SidebarItem collapsed={collapsed} icon={Users} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
+              <>
+                <SidebarItem collapsed={collapsed} icon={Users} label="Team" active={isActive(NAV_ROUTES.userManagement)} onClick={() => go(NAV_ROUTES.userManagement)} />
+                <SidebarItem collapsed={collapsed} icon={UserCheck} label="Guest users" active={isActive(NAV_ROUTES.guestUsers)} onClick={() => go(NAV_ROUTES.guestUsers)} />
+              </>
             )}
             <SidebarItem collapsed={collapsed} icon={ClipboardList} label="Access Requests" active={isActive(NAV_ROUTES.accessRequests)} onClick={() => go(NAV_ROUTES.accessRequests)} />
           </>

@@ -15,6 +15,7 @@ import { useProjectContext } from "@/components/projects/project-context";
 import { EditProjectBriefSheet } from "@/components/projects/edit-project-brief-sheet";
 import { ProjectBriefAttachmentsList } from "@/components/projects/project-brief-attachments";
 import { ManageTeamSheet } from "@/components/projects/manage-team-sheet";
+import { ManageGuestsSheet } from "@/components/projects/manage-guests-sheet";
 import { ProjectPhaseBar } from "@/components/projects/project-phase-bar";
 import { ProjectImageGallery } from "@/components/projects/project-image-gallery";
 import { ProjectLocationSection } from "@/components/projects/project-location-section";
@@ -33,8 +34,10 @@ import {
   canViewAdminInsights,
 } from "@/lib/projects/permissions";
 import { computeProjectStats, mapStageToView } from "@/lib/projects/map-stages";
+import { isGuestProjectMember } from "@/lib/user/guest";
+import { getUserDisplayName } from "@/lib/user/display";
 import { projectTabRoute } from "@/types/navigation";
-import { PROJECT_LEAD_ROLE } from "@/types/projects";
+import { PROJECT_LEAD_ROLE, type ProjectMemberProjectRole } from "@/types/projects";
 
 const STATUS_CFG: Record<string, { bg: string; color: string }> = {
   Active: { bg: "rgba(52,199,89,0.12)", color: "#248A3D" },
@@ -43,11 +46,13 @@ const STATUS_CFG: Record<string, { bg: string; color: string }> = {
 
 export function ProjectOverview() {
   const { project, refetch } = useProjectContext();
-  const { members, updateMembers, effectiveRole, projectLeadUserIds, isLoading: membersSaving } = useProjectMembers();
-  const canManage = canManageProject(effectiveRole);
+  const { members, updateMembers, effectiveRole, projectLeadUserIds, isLoading: membersSaving, isViewer } = useProjectMembers();
+  const canManage = canManageProject(effectiveRole, isViewer);
   const showAdminInsights = canViewAdminInsights(effectiveRole);
+  const canManageGuests = showAdminInsights;
 
   const [showManageTeam, setShowManageTeam] = useState(false);
+  const [showManageGuests, setShowManageGuests] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showEditBrief, setShowEditBrief] = useState(false);
@@ -65,18 +70,40 @@ export function ProjectOverview() {
   const statusLabel = formatProjectStatus(project!.status);
   const statusCfg = STATUS_CFG[statusLabel] ?? STATUS_CFG.Inactive;
 
+  const guestMembers = useMemo(
+    () => members.filter((m) => m.status === "ACTIVE" && isGuestProjectMember(m)),
+    [members],
+  );
+
   async function handleSaveTeam(userIds: string[], leadUserIds: string[]) {
     const leadSet = new Set(leadUserIds);
-    await updateMembers(
-      {
-        members: userIds.map((user_id) => ({
-          user_id,
-          status: "ACTIVE" as const,
-          role: leadSet.has(user_id) ? PROJECT_LEAD_ROLE : "MEMBER",
-        })),
-      },
-      leadUserIds
-    );
+    const teamMembers = userIds.map((user_id) => ({
+      user_id,
+      status: "ACTIVE" as const,
+      role: (leadSet.has(user_id) ? PROJECT_LEAD_ROLE : "MEMBER") as ProjectMemberProjectRole,
+    }));
+    const guestRows = guestMembers.map((m) => ({
+      user_id: m.user_id,
+      status: "ACTIVE" as const,
+      role: "VIEWER" as const,
+    }));
+    await updateMembers({ members: [...teamMembers, ...guestRows] }, leadUserIds);
+  }
+
+  async function handleSaveGuests(guestUserIds: string[]) {
+    const teamRows = members
+      .filter((m) => m.status === "ACTIVE" && !isGuestProjectMember(m))
+      .map((m) => ({
+        user_id: m.user_id,
+        status: "ACTIVE" as const,
+        role: (m.role ?? "MEMBER") as ProjectMemberProjectRole,
+      }));
+    const guestRows = guestUserIds.map((user_id) => ({
+      user_id,
+      status: "ACTIVE" as const,
+      role: "VIEWER" as const,
+    }));
+    await updateMembers({ members: [...teamRows, ...guestRows] });
   }
 
   return (
@@ -224,10 +251,72 @@ export function ProjectOverview() {
         </div>
         <div>
           <ProjectTeamPanel
-            members={members}
+            members={members.filter((m) => !isGuestProjectMember(m))}
             canManage={canManage}
             onManage={() => setShowManageTeam(true)}
           />
+          {canManageGuests && (
+            <div
+              style={{
+                background: "#FFFFFF",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
+                overflow: "hidden",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "16px 18px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
+                    Guests
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--ds-tertiary-label)", marginTop: "2px" }}>
+                    {guestMembers.length} view-only
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowManageGuests(true)}
+                  style={{
+                    height: "28px",
+                    padding: "0 12px",
+                    background: "var(--ds-accent-muted)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "var(--ds-accent-hover)",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Manage guests
+                </button>
+              </div>
+              {guestMembers.length > 0 && (
+                <div style={{ padding: "0 18px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {guestMembers.map((m) => (
+                    <div key={m.user_id} style={{ fontSize: "13px", color: "var(--ds-secondary-label)" }}>
+                      {m.assignee
+                        ? getUserDisplayName({
+                            first_name: m.assignee.first_name ?? m.assignee.firstName,
+                            last_name: m.assignee.last_name ?? m.assignee.lastName,
+                            email: m.assignee.email ?? "",
+                          })
+                        : "Guest user"}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div
             style={{
               background: "#FFFFFF",
@@ -310,6 +399,16 @@ export function ProjectOverview() {
           projectLeadUserIds={projectLeadUserIds}
           onSave={handleSaveTeam}
           onClose={() => setShowManageTeam(false)}
+          isSaving={membersSaving}
+        />
+      )}
+
+      {showManageGuests && (
+        <ManageGuestsSheet
+          projectName={project!.name}
+          members={members}
+          onSave={handleSaveGuests}
+          onClose={() => setShowManageGuests(false)}
           isSaving={membersSaving}
         />
       )}

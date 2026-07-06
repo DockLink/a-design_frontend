@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNotifications } from "@/hooks/use-notifications";
 import { dsVibrancy } from "@/lib/styles/dashboard-tokens";
-import { APP_NAME } from "@/lib/constants";
+import { BRAND_WORDMARK } from "@/lib/constants";
 import { getUserDisplayName, getUserInitials } from "@/lib/user/display";
 import { NAV_ROUTES } from "@/types/navigation";
 
@@ -64,12 +64,12 @@ export function AppHeader() {
       <span
         style={{
           fontSize: "var(--ds-text-title-2)",
-          fontWeight: 600,
+          fontWeight: isMobile ? 300 : 600,
           color: "var(--ds-label)",
-          letterSpacing: "-0.02em",
+          letterSpacing: isMobile ? "0.02em" : "-0.02em",
         }}
       >
-        {isMobile ? APP_NAME : title}
+        {isMobile ? BRAND_WORDMARK : title}
       </span>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

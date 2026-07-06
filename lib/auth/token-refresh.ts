@@ -9,15 +9,26 @@ import { ApiError } from "@/types/api";
  * that occasionally surfaces with other status codes.
  */
 export function isAuthExpiryError(error: unknown): boolean {
-  if (!(error instanceof ApiError)) return false;
-  if (error.status === 401) return true;
-  const msg = error.message?.toLowerCase() ?? "";
-  return (
-    msg.includes("jwt expired") ||
-    msg.includes("token expired") ||
-    msg.includes("invalid jwt") ||
-    msg.includes("token is expired")
-  );
+  if (error instanceof ApiError) {
+    if (error.status === 401) return true;
+    const msg = error.message?.toLowerCase() ?? "";
+    return (
+      msg.includes("jwt expired") ||
+      msg.includes("token expired") ||
+      msg.includes("invalid jwt") ||
+      msg.includes("token is expired")
+    );
+  }
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("jwt expired") ||
+      msg.includes("token expired") ||
+      msg.includes("invalid jwt") ||
+      msg.includes("session expired")
+    );
+  }
+  return false;
 }
 
 /** Access tokens are proactively refreshed when they expire within this window. */

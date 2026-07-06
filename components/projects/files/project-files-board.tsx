@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useProjectMembers } from "@/hooks/use-project-members";
-import { canManageProject } from "@/lib/projects/permissions";
+import { canDownloadProjectFiles, canManageProject } from "@/lib/projects/permissions";
 import type { ProjectFile, ProjectFolderNode } from "@/types/files";
 
 import { FileList } from "./file-list";
@@ -42,8 +42,9 @@ function breadcrumbPath(
 }
 
 export function ProjectFilesBoard({ projectId }: { projectId: string }) {
-  const { effectiveRole } = useProjectMembers();
-  const canManage = canManageProject(effectiveRole);
+  const { effectiveRole, isViewer } = useProjectMembers();
+  const canManage = canManageProject(effectiveRole, isViewer);
+  const canDownload = canDownloadProjectFiles(effectiveRole, isViewer);
   const isAdmin = effectiveRole === "admin";
 
   const {
@@ -198,19 +199,19 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         {/* Right: file panel */}
         <div
           className="relative flex flex-1 flex-col overflow-hidden bg-[var(--ds-surface-elevated)]"
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={(e) => {
+          onDragOver={canManage ? (e) => { e.preventDefault(); setIsDragging(true); } : undefined}
+          onDragLeave={canManage ? (e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node))
               setIsDragging(false);
-          }}
-          onDrop={(e) => {
+          } : undefined}
+          onDrop={canManage ? (e) => {
             e.preventDefault();
             setIsDragging(false);
             if (currentFolderPath) setShowUpload(true);
-          }}
+          } : undefined}
         >
           {/* Drag overlay */}
-          {isDragging && currentFolderPath && (
+          {isDragging && canManage && currentFolderPath && (
             <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center border-[3px] border-dashed border-[var(--ds-accent)] bg-[rgba(212,169,106,0.06)]">
               <div className="rounded-xl bg-[var(--ds-surface-elevated)] px-10 py-5 text-[15px] font-medium text-[var(--ds-accent)] shadow-lg">
                 Drop to upload
@@ -243,7 +244,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
             </div>
 
             {/* Actions */}
-            {currentFolderPath && (
+            {currentFolderPath && canManage && (
               <div className="ml-3 flex shrink-0 items-center gap-2">
                 <span className="text-[11px] text-[var(--ds-secondary-label)]">Drop files here</span>
                 <Button
@@ -278,6 +279,9 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               isVersioned={isVersioned}
               canDelete={isAdmin || canManage}
               canRename={isAdmin || canManage}
+              canDownload={canDownload}
+              canShare={canManage}
+              canUploadVersion={canManage}
               onDownload={handleDownload}
               onShare={(f) => setShareTarget(f)}
               onDelete={handleDelete}

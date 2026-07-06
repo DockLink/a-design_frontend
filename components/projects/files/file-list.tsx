@@ -30,6 +30,9 @@ export function FileList({
   isVersioned,
   canDelete,
   canRename,
+  canDownload = true,
+  canShare = true,
+  canUploadVersion = true,
   onDownload,
   onShare,
   onDelete,
@@ -44,6 +47,9 @@ export function FileList({
   isVersioned: boolean;
   canDelete: boolean;
   canRename: boolean;
+  canDownload?: boolean;
+  canShare?: boolean;
+  canUploadVersion?: boolean;
   onDownload: (file: ProjectFile) => void;
   onShare: (file: ProjectFile) => void;
   onDelete: (file: ProjectFile) => void;
@@ -104,6 +110,9 @@ export function FileList({
           isVersioned={isVersioned}
           canDelete={canDelete}
           canRename={canRename}
+          canDownload={canDownload}
+          canShare={canShare}
+          canUploadVersion={canUploadVersion}
           hovered={hoveredId === file.id}
           onMouseEnter={() => setHoveredId(file.id)}
           onMouseLeave={() => setHoveredId(null)}
@@ -124,6 +133,9 @@ function FileRow({
   isVersioned,
   canDelete,
   canRename,
+  canDownload,
+  canShare,
+  canUploadVersion,
   hovered,
   onMouseEnter,
   onMouseLeave,
@@ -138,6 +150,9 @@ function FileRow({
   isVersioned: boolean;
   canDelete: boolean;
   canRename: boolean;
+  canDownload: boolean;
+  canShare: boolean;
+  canUploadVersion: boolean;
   hovered: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -214,24 +229,28 @@ function FileRow({
               hovered ? "opacity-100" : "opacity-0"
             )}
           >
-            <ActionButton
-              icon={<Download size={13} />}
-              title="Download"
-              onClick={() => onDownload(file)}
-            />
-            <ActionButton
-              icon={<Share2 size={13} />}
-              title="Share"
-              onClick={() => onShare(file)}
-            />
-            {isVersioned && (
+            {canDownload && (
+              <ActionButton
+                icon={<Download size={13} />}
+                title="Download"
+                onClick={() => onDownload(file)}
+              />
+            )}
+            {canShare && (
+              <ActionButton
+                icon={<Share2 size={13} />}
+                title="Share"
+                onClick={() => onShare(file)}
+              />
+            )}
+            {isVersioned && canUploadVersion && (
               <ActionButton
                 icon={<UploadCloud size={13} />}
                 title="Upload new version"
                 onClick={triggerVersionUpload}
               />
             )}
-            {isVersioned && (
+            {isVersioned && canUploadVersion && (
               <ActionButton
                 icon={<Clock size={13} />}
                 title="Version history"
@@ -258,14 +277,18 @@ function FileRow({
       </ContextMenuTrigger>
 
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onDownload(file)}>
-          <Download size={13} />
-          Download
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => onShare(file)}>
-          <Share2 size={13} />
-          Share
-        </ContextMenuItem>
+        {canDownload && (
+          <ContextMenuItem onSelect={() => onDownload(file)}>
+            <Download size={13} />
+            Download
+          </ContextMenuItem>
+        )}
+        {canShare && (
+          <ContextMenuItem onSelect={() => onShare(file)}>
+            <Share2 size={13} />
+            Share
+          </ContextMenuItem>
+        )}
 
         {canRename && (
           <ContextMenuItem onSelect={() => onRename(file)}>
@@ -274,7 +297,7 @@ function FileRow({
           </ContextMenuItem>
         )}
 
-        {isVersioned && (
+        {isVersioned && canUploadVersion && (
           <>
             <ContextMenuSeparator />
             <ContextMenuItem onSelect={triggerVersionUpload}>

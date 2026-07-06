@@ -64,7 +64,7 @@ function taskIdsKey(tasks: Task[]): string {
 
 export function useProjectTasksBoard(projectId: string) {
   const { user } = useAuth();
-  const { members, effectiveRole } = useProjectMembers();
+  const { members, effectiveRole, isViewer } = useProjectMembers();
 
   const {
     tasks: stageTasks,
@@ -150,7 +150,7 @@ export function useProjectTasksBoard(projectId: string) {
     return map;
   }, [memberUsers]);
 
-  const canManage = canManageProject(effectiveRole);
+  const canManage = canManageProject(effectiveRole, isViewer);
   const isAdmin = effectiveRole === "admin";
 
   useEffect(() => {

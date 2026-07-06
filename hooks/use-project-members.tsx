@@ -11,6 +11,7 @@ import type { SidebarRole } from "@/lib/navigation/sidebar-role";
 import {
   getEffectiveProjectRole,
   getProjectLeadUserIds,
+  isProjectViewer,
 } from "@/lib/projects/project-member-roles";
 import { queryKeys } from "@/lib/query/keys";
 import type { ProjectMember, ProjectMemberAssignRequest, ProjectWithMembers } from "@/types/projects";
@@ -21,6 +22,8 @@ interface ProjectMembersContextValue {
   projectLeadUserId: string | null;
   projectLeadUserIds: string[];
   effectiveRole: SidebarRole;
+  isViewer: boolean;
+  isOrgGuest: boolean;
   isLoading: boolean;
   error: string | null;
   isAssigned: (userId: string) => boolean;
@@ -80,7 +83,11 @@ export function ProjectMembersProvider({
         members: payload.members.map(({ user_id, status, role }) => ({
           user_id,
           status,
-          role: leadSet.has(user_id) ? PROJECT_LEAD_ROLE : role ?? "MEMBER",
+          role: leadSet.has(user_id)
+            ? PROJECT_LEAD_ROLE
+            : role === "VIEWER"
+              ? "VIEWER"
+              : role ?? "MEMBER",
         })),
       };
 
@@ -106,6 +113,11 @@ export function ProjectMembersProvider({
     () => getEffectiveProjectRole(user?.id, members, orgSidebarRole),
     [user?.id, members, orgSidebarRole]
   );
+  const isOrgGuest = orgSidebarRole === "guest";
+  const isViewer = useMemo(
+    () => isOrgGuest || isProjectViewer(members, user?.id),
+    [isOrgGuest, members, user?.id]
+  );
 
   const isAssigned = useCallback(
     (userId: string) => members.some((m) => m.user_id === userId && m.status === "ACTIVE"),
@@ -120,6 +132,8 @@ export function ProjectMembersProvider({
       projectLeadUserId,
       projectLeadUserIds,
       effectiveRole,
+      isViewer,
+      isOrgGuest,
       isLoading,
       error: error ? (error instanceof Error ? error.message : "Failed to load members") : null,
       isAssigned,
@@ -131,6 +145,8 @@ export function ProjectMembersProvider({
       projectLeadUserId,
       projectLeadUserIds,
       effectiveRole,
+      isViewer,
+      isOrgGuest,
       isLoading,
       error,
       isAssigned,

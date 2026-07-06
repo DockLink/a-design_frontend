@@ -14,14 +14,14 @@ import type {
 } from "@/types/meeting-minutes";
 
 export function useProjectMeetingMinutes(projectId: string) {
-  const { effectiveRole } = useProjectMembers();
+  const { effectiveRole, isViewer } = useProjectMembers();
   const { uploadFile } = useUploadFile();
 
   const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const canManage = canManageProject(effectiveRole);
+  const canManage = canManageProject(effectiveRole, isViewer);
 
   const fetchMinutes = useCallback(async () => {
     setIsLoading(true);
