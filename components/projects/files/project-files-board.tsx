@@ -270,7 +270,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           )}
 
           {/* File list */}
-          <div className="flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <FileList
               files={files.filter((f) => f.id !== deletingId)}
               loading={filesLoading || uploadingVersionId !== null}

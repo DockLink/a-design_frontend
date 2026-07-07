@@ -94,7 +94,7 @@ export function FileList({
   }
 
   return (
-    <div className="overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       {/* Column headers */}
       <div className="sticky top-0 z-10 grid h-9 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-[12px] text-[var(--ds-secondary-label)]">
         <span>Name</span>
