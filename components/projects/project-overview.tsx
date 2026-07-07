@@ -280,18 +280,11 @@ export function ProjectOverview() {
       )}
 
       <div className="project-overview-main-grid">
-        <div className="project-overview-main-left">
+        <div className="project-overview-col-left-top">
           <ProjectRecentFiles projectId={projectId} />
           <ProjectRecentTasks projectId={projectId} tasks={projectTasks} />
-          <ProjectImageGallery
-            projectId={projectId}
-            images={project!.images}
-            canEdit={canManage || canEditDetails}
-            onUpdated={refetch}
-            variant="sidebar"
-          />
         </div>
-        <div>
+        <div className="project-overview-col-right-top">
           <ProjectTeamPanel
             members={members.filter((m) => !isGuestProjectMember(m))}
             canManage={canManage}
@@ -359,12 +352,24 @@ export function ProjectOverview() {
               )}
             </div>
           )}
+        </div>
+        <div className="project-overview-gallery">
+          <ProjectImageGallery
+            projectId={projectId}
+            images={project!.images}
+            canEdit={canManage || canEditDetails}
+            onUpdated={refetch}
+            variant="sidebar"
+          />
+        </div>
+        <div className="project-overview-brief">
           <div
             style={{
               background: "#FFFFFF",
               borderRadius: "12px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
               overflow: "hidden",
+              height: "100%",
             }}
           >
             <div
