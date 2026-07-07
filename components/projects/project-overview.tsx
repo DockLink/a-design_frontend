@@ -353,15 +353,6 @@ export function ProjectOverview() {
             </div>
           )}
         </div>
-        <div className="project-overview-gallery">
-          <ProjectImageGallery
-            projectId={projectId}
-            images={project!.images}
-            canEdit={canManage || canEditDetails}
-            onUpdated={refetch}
-            variant="sidebar"
-          />
-        </div>
         <div className="project-overview-brief">
           <div
             style={{
@@ -410,6 +401,14 @@ export function ProjectOverview() {
               ) : null}
             </div>
           </div>
+        </div>
+        <div className="project-overview-gallery">
+          <ProjectImageGallery
+            projectId={projectId}
+            images={project!.images}
+            canEdit={canManage || canEditDetails}
+            onUpdated={refetch}
+          />
         </div>
       </div>
 
