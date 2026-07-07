@@ -133,7 +133,7 @@ export function AppSidebar() {
           style={{
             fontSize: "var(--ds-text-title-2)",
             fontWeight: 300,
-            color: "var(--ds-accent)",
+            color: "var(--ds-label)",
             letterSpacing: "0.02em",
             overflow: "hidden",
             textOverflow: "ellipsis",

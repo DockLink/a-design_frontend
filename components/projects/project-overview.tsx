@@ -280,9 +280,16 @@ export function ProjectOverview() {
       )}
 
       <div className="project-overview-main-grid">
-        <div>
-          <ProjectRecentFiles projectId={projectId} images={project!.images} />
+        <div className="project-overview-main-left">
+          <ProjectRecentFiles projectId={projectId} />
           <ProjectRecentTasks projectId={projectId} tasks={projectTasks} />
+          <ProjectImageGallery
+            projectId={projectId}
+            images={project!.images}
+            canEdit={canManage || canEditDetails}
+            onUpdated={refetch}
+            variant="sidebar"
+          />
         </div>
         <div>
           <ProjectTeamPanel
@@ -400,15 +407,6 @@ export function ProjectOverview() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div style={{ marginTop: "24px" }}>
-        <ProjectImageGallery
-          projectId={projectId}
-          images={project!.images}
-          canEdit={canManage && !canEditDetails}
-          onUpdated={refetch}
-        />
       </div>
 
       <div className="project-overview-bottom-grid">

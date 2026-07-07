@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { mapProjectToCard } from "@/lib/projects/map-projects";
+import { compareProjectsByNamePrefixDesc } from "@/lib/projects/sort-projects";
 import { queryKeys } from "@/lib/query/keys";
 import { toProjectsQueryString } from "@/lib/projects/query-string";
 import type {
@@ -33,7 +34,7 @@ export function useProjects(params: ProjectsQueryParams = { page: 1, limit: 100 
   const meta = data?.meta ?? null;
 
   const projects: ProjectCardView[] = useMemo(
-    () => rawProjects.map(mapProjectToCard),
+    () => [...rawProjects].map(mapProjectToCard).sort(compareProjectsByNamePrefixDesc),
     [rawProjects]
   );
 

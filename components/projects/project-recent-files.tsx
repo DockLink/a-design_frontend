@@ -1,18 +1,10 @@
+"use client";
+
 import { File, FileText, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 
+import { useProjectRecentFiles } from "@/hooks/use-project-recent-files";
 import { projectTabRoute } from "@/types/navigation";
-import type { ProjectImage } from "@/types/projects";
-
-function fileNameFromUrl(url: string, id: string): string {
-  try {
-    const parts = new URL(url).pathname.split("/");
-    const last = parts[parts.length - 1];
-    return last || `file-${id.slice(0, 8)}`;
-  } catch {
-    return `file-${id.slice(0, 8)}`;
-  }
-}
 
 function fileExt(name: string): string {
   const parts = name.split(".");
@@ -31,21 +23,20 @@ function FileIcon({ ext }: { ext: string }) {
 
 export function ProjectRecentFiles({
   projectId,
-  images,
   limit = 5,
 }: {
   projectId: string;
-  images: ProjectImage[];
   limit?: number;
 }) {
-  const items = images.slice(0, limit);
+  const { files, isLoading } = useProjectRecentFiles(projectId, limit);
+  const filesTabHref = projectTabRoute(projectId, "files");
 
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent photos</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>Recent files</div>
         <Link
-          href={projectTabRoute(projectId, "files")}
+          href={filesTabHref}
           style={{ fontSize: "13px", color: "var(--ds-accent)", fontWeight: 500, textDecoration: "none" }}
         >
           View all
@@ -59,22 +50,26 @@ export function ProjectRecentFiles({
           marginBottom: "20px",
         }}
       >
-        {items.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No photos yet.</div>
+        {isLoading ? (
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>Loading files…</div>
+        ) : files.length === 0 ? (
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>No files yet.</div>
         ) : (
-          items.map((file, i) => {
-            const name = fileNameFromUrl(file.url, file.id);
-            const ext = fileExt(name);
+          files.map((file, i) => {
+            const ext = fileExt(file.fileName);
             return (
-              <div
+              <Link
                 key={file.id}
+                href={filesTabHref}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   height: "42px",
                   padding: "0 14px",
                   gap: "10px",
-                  borderBottom: i < items.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
+                  borderBottom: i < files.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
+                  textDecoration: "none",
+                  color: "inherit",
                 }}
               >
                 <FileIcon ext={ext} />
@@ -88,10 +83,12 @@ export function ProjectRecentFiles({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {name}
+                  {file.fileName}
                 </div>
-                <span style={{ fontSize: "11px", color: "var(--ds-tertiary-label)" }}>Photo</span>
-              </div>
+                <span style={{ fontSize: "11px", color: "var(--ds-tertiary-label)", textTransform: "uppercase" }}>
+                  {ext}
+                </span>
+              </Link>
             );
           })
         )}

@@ -195,9 +195,8 @@
   :root {
     --ds-sidebar-width: 268px;
     --ds-header-height: 60px;
-    --ds-content-padding-x: 44px;
-    --ds-content-padding-y: 40px;
-    --ds-content-max-width: 1440px;
+    --ds-content-padding-x: 36px;
+    --ds-content-padding-y: 36px;
     --ds-action-btn-height: 42px;
 
     --ds-text-large-title: 38px;
@@ -215,25 +214,22 @@
 
 @media (min-width: 1920px) {
   :root {
-    --ds-content-padding-x: 48px;
-    --ds-content-padding-y: 44px;
-    --ds-content-max-width: 1720px;
+    --ds-content-padding-x: 36px;
+    --ds-content-padding-y: 36px;
   }
 }
 
 @media (min-width: 2560px) {
   :root {
-    --ds-content-padding-x: 56px;
-    --ds-content-padding-y: 48px;
-    --ds-content-max-width: 2100px;
+    --ds-content-padding-x: 36px;
+    --ds-content-padding-y: 36px;
   }
 }
 
 @media (min-width: 3000px) {
   :root {
-    --ds-content-padding-x: 64px;
-    --ds-content-padding-y: 52px;
-    --ds-content-max-width: 2560px;
+    --ds-content-padding-x: 36px;
+    --ds-content-padding-y: 36px;
   }
 }
 
@@ -274,7 +270,7 @@
 }
 
 .project-header-banner {
-  height: clamp(220px, 30vw, 380px);
+  height: clamp(240px, 38vh, 520px);
 }
 
 .project-shell-nav {
@@ -319,7 +315,34 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.project-overview-main-left {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  min-width: 0;
+}
+
+.project-overview-main-left .project-gallery-card--sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.project-overview-main-left .project-gallery-card--sidebar .project-gallery-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-overview-main-left .project-gallery-card--sidebar .project-gallery-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .project-overview-main-grid > * {
@@ -415,6 +438,14 @@
   display: grid;
   gap: 16px;
   grid-template-columns: 1fr;
+}
+
+.project-gallery-grid--sidebar {
+  grid-template-columns: 1fr;
+}
+
+.project-gallery-grid--sidebar .project-gallery-item {
+  min-height: 140px;
 }
 
 @media (min-width: 640px) {
