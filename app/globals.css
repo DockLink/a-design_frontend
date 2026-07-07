@@ -318,7 +318,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   grid-template-rows: auto auto;
   gap: 20px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .project-overview-col-left-top {
@@ -337,43 +337,16 @@
   grid-column: 1;
   grid-row: 2;
   min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-self: stretch;
 }
 
 .project-overview-brief {
   grid-column: 2;
   grid-row: 2;
   min-width: 0;
-  align-self: stretch;
 }
 
 .project-overview-gallery .project-gallery-card--sidebar {
-  flex: 1;
-  min-height: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.project-overview-gallery .project-gallery-card--sidebar .project-gallery-card__body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.project-overview-gallery .project-gallery-card--sidebar .project-gallery-empty {
-  flex: 1;
-  min-height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .project-overview-main-grid > * {
@@ -392,10 +365,6 @@
   .project-overview-brief {
     grid-column: 1;
     grid-row: auto;
-  }
-
-  .project-overview-gallery .project-gallery-card--sidebar {
-    min-height: auto;
   }
 
   .project-overview-gallery .project-gallery-card--sidebar .project-gallery-empty {
@@ -450,7 +419,7 @@
 }
 
 .project-gallery-card--sidebar {
-  height: 100%;
+  height: auto;
 }
 
 .project-gallery-card__header {
@@ -476,7 +445,12 @@
   padding: 0 18px 18px;
 }
 
+.project-gallery-card__body--mosaic {
+  padding: 0;
+}
+
 .project-gallery-empty {
+  margin: 0 18px 18px;
   padding: 28px 16px;
   font-size: 13px;
   color: #8e8e93;
@@ -492,19 +466,63 @@
   grid-template-columns: 1fr;
 }
 
-.project-gallery-grid--sidebar {
+/* Tight mosaic grid — square tiles, flush gaps, cover crop */
+.project-gallery-grid--mosaic {
+  gap: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-gallery-grid--sidebar:not(.project-gallery-grid--mosaic) {
   grid-template-columns: 1fr !important;
   gap: 12px;
 }
 
-.project-gallery-grid--sidebar .project-gallery-item {
+/* Sidebar uses mosaic overrides above when --mosaic is also set */
+.project-gallery-grid--mosaic.project-gallery-grid--sidebar {
+  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 1280px) {
+  .project-gallery-grid--mosaic.project-gallery-grid--sidebar {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+.project-gallery-grid--mosaic .project-gallery-item {
+  aspect-ratio: 1 / 1;
+  min-height: unset;
+  border-radius: 0;
+  box-shadow: none;
+  background: #e8dfd3;
+}
+
+.project-gallery-grid--mosaic .project-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.project-gallery-grid--mosaic .project-gallery-remove-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.project-gallery-grid--mosaic .project-gallery-item:hover .project-gallery-remove-btn,
+.project-gallery-grid--mosaic .project-gallery-item:focus-within .project-gallery-remove-btn {
+  opacity: 1;
+}
+
+
+.project-gallery-grid--sidebar:not(.project-gallery-grid--mosaic) .project-gallery-item {
   aspect-ratio: unset;
   min-height: unset;
   height: auto;
   overflow: hidden;
 }
 
-.project-gallery-grid--sidebar .project-gallery-item img {
+.project-gallery-grid--sidebar:not(.project-gallery-grid--mosaic) .project-gallery-item img {
   width: 100%;
   height: auto;
   max-height: 280px;
@@ -515,13 +533,13 @@
 }
 
 @media (min-width: 640px) {
-  .project-gallery-grid {
+  .project-gallery-grid:not(.project-gallery-grid--mosaic) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1536px) {
-  .project-gallery-grid {
+  .project-gallery-grid:not(.project-gallery-grid--mosaic) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

@@ -102,13 +102,21 @@ export function ProjectImageGallery({
         ) : null}
       </div>
 
-      <div className="project-gallery-card__body">
+      <div
+        className={`project-gallery-card__body${
+          galleryImages.length > 0 ? " project-gallery-card__body--mosaic" : ""
+        }`}
+      >
         {galleryImages.length === 0 ? (
           <div className="project-gallery-empty">
             {images.length === 0 ? "No project photos yet." : "No additional photos yet."}
           </div>
         ) : (
-          <div className={`project-gallery-grid${isSidebar ? " project-gallery-grid--sidebar" : ""}`}>
+          <div
+            className={`project-gallery-grid project-gallery-grid--mosaic${
+              isSidebar ? " project-gallery-grid--sidebar" : ""
+            }`}
+          >
             {galleryImages.map((image, index) => (
               <div key={image.id} className="project-gallery-item">
                 <img src={image.url} alt={`Project photo ${index + 2}`} />

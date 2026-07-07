@@ -8,6 +8,7 @@ import type {
   CreateShareLinkPayload,
   DownloadUrlResponse,
   ProjectFile,
+  ProjectFolderRecord,
   ProjectFolderTree,
   ShareLinkResponse,
 } from "@/types/files";
@@ -170,6 +171,58 @@ export function useProjectFiles(projectId: string) {
     await authApiClient(`/share/${token}`, { method: "DELETE" });
   }, []);
 
+  const createFolder = useCallback(
+    async (name: string, parentPath: string | null) => {
+      const res = await authApiClient<{ data: ProjectFolderRecord }>(
+        `/projects/${projectId}/folders/custom`,
+        {
+          method: "POST",
+          body: JSON.stringify({ name, parentPath }),
+        },
+      );
+      await loadTree();
+      return res.data;
+    },
+    [projectId, loadTree],
+  );
+
+  const renameFolder = useCallback(
+    async (path: string, newName: string) => {
+      const res = await authApiClient<{ data: ProjectFolderRecord }>(
+        `/projects/${projectId}/folders`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ path, newName }),
+        },
+      );
+      await loadTree();
+      if (currentFolderPath?.startsWith(path)) {
+        const suffix = currentFolderPath.slice(path.length);
+        const newPath =
+          path === currentFolderPath
+            ? res.data.path
+            : res.data.path + suffix;
+        setCurrentFolderPath(newPath);
+      }
+      return res.data;
+    },
+    [projectId, loadTree, currentFolderPath],
+  );
+
+  const deleteFolder = useCallback(
+    async (path: string) => {
+      const qs = new URLSearchParams({ path });
+      await authApiClient(`/projects/${projectId}/folders?${qs}`, {
+        method: "DELETE",
+      });
+      if (currentFolderPath === path || currentFolderPath?.startsWith(`${path}/`)) {
+        setCurrentFolderPath(null);
+      }
+      await loadTree();
+    },
+    [projectId, loadTree, currentFolderPath],
+  );
+
   return {
     folderTree,
     treeLoading,
@@ -188,6 +241,9 @@ export function useProjectFiles(projectId: string) {
     renameFile,
     createShareLink,
     revokeShareLink,
+    createFolder,
+    renameFolder,
+    deleteFolder,
     reloadFiles: () => currentFolderPath ? loadFiles(currentFolderPath) : Promise.resolve(),
     reloadTree: loadTree,
   };

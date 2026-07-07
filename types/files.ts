@@ -48,3 +48,12 @@ export interface CreateShareLinkPayload {
 export interface ProvisionFoldersResponse {
   s3RootPrefix: string;
 }
+
+export interface ProjectFolderRecord {
+  path: string;
+  name: string;
+  parentPath: string | null;
+  isSystem: boolean;
+  isVersioned: boolean;
+  archivePath: string | null;
+}
