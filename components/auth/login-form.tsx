@@ -12,6 +12,7 @@ import { getPrimaryRole } from "@/lib/auth/rbac";
 import { useAuthStore } from "@/stores/auth-store";
 import { ApiError } from "@/types/api";
 import { NAV_ROUTES } from "@/types/navigation";
+import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
 // Login Form
@@ -35,6 +36,13 @@ export function LoginForm() {
         ? getPrimaryRole(useAuthStore.getState().session!.user.roles)
         : null;
       const user = useAuthStore.getState().session?.user;
+
+      if (role === "GUEST") {
+        const route = await resolveGuestLandingRoute();
+        router.replace(route);
+        return;
+      }
+
       router.replace(
         role
           ? resolveHomeRoute(role, user?.preferences)

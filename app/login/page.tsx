@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { APP_NAME } from "@/lib/constants";
 import { NAV_ROUTES } from "@/types/navigation";
+import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
 
 const LOGIN_BG = "#F9F5F1";
@@ -24,6 +25,12 @@ export default function LoginPage() {
     const role = session?.user.roles
       ? getPrimaryRole(session.user.roles)
       : null;
+
+    if (role === "GUEST") {
+      void resolveGuestLandingRoute().then((route) => router.replace(route));
+      return;
+    }
+
     router.replace(
       role
         ? resolveHomeRoute(role, session?.user.preferences)

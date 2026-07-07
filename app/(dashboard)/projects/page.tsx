@@ -224,6 +224,11 @@ export default function ProjectsListPage() {
   const myLoading = isGuest ? memberLoading : showSplitView && (memberLoading || ledLoading);
   const isLoading = allLoading || myLoading;
 
+  useEffect(() => {
+    if (!isGuest || memberLoading || memberProjectsRaw.length !== 1) return;
+    router.replace(projectRoute(memberProjectsRaw[0].id));
+  }, [isGuest, memberLoading, memberProjectsRaw, router]);
+
   async function handleDeleteProject() {
     if (!deleteTarget) return;
     try {
