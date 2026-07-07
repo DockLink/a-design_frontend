@@ -15,5 +15,5 @@ export const ROLE_DEFAULT_ROUTE: Record<UserRole, string> = {
   ADMIN: "/dashboard/admin",
   TEAM_LEAD: "/dashboard/lead",
   MEMBER: "/dashboard/member",
-  GUEST: "/dashboard/guest",
+  GUEST: "/projects",
 };

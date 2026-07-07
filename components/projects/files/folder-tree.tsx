@@ -8,6 +8,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sortProjectFolderNodes } from "@/lib/files/sort-folders";
 import type { ProjectFolderNode } from "@/types/files";
 
 interface FolderItemProps {
@@ -122,8 +123,9 @@ export function FolderTree({
   fileCounts: Record<string, number>;
   onSelectPath: (path: string) => void;
 }) {
+  const sortedNodes = sortProjectFolderNodes(nodes);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
-    () => new Set(nodes.slice(0, 2).map((n) => n.path))
+    () => new Set(sortedNodes.slice(0, 2).map((n) => n.path))
   );
 
   function toggle(path: string) {
@@ -137,7 +139,7 @@ export function FolderTree({
 
   return (
     <div className="flex flex-col py-1">
-      {nodes.map((node) => (
+      {sortedNodes.map((node) => (
         <FolderItem
           key={node.path}
           node={node}
