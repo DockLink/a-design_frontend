@@ -5,6 +5,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { mapProjectToCard } from "@/lib/projects/map-projects";
+import { compareProjectsByNamePrefixDesc } from "@/lib/projects/sort-projects";
 import { queryKeys } from "@/lib/query/keys";
 import { toProjectsQueryString } from "@/lib/projects/query-string";
 import type {
@@ -50,7 +51,10 @@ export function useInfiniteProjects(
   });
 
   const projects: ProjectCardView[] = useMemo(
-    () => (data?.pages ?? []).flatMap((page) => page.data.map(mapProjectToCard)),
+    () =>
+      (data?.pages ?? [])
+        .flatMap((page) => page.data.map(mapProjectToCard))
+        .sort(compareProjectsByNamePrefixDesc),
     [data],
   );
 

@@ -13,11 +13,13 @@ export function ProjectImageGallery({
   images,
   canEdit,
   onUpdated,
+  variant = "default",
 }: {
   projectId: string;
   images: ProjectImage[];
   canEdit: boolean;
   onUpdated?: () => void | Promise<void>;
+  variant?: "default" | "sidebar";
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useUploadFile();
@@ -68,9 +70,10 @@ export function ProjectImageGallery({
   }
 
   const galleryImages = images.slice(1);
+  const isSidebar = variant === "sidebar";
 
   return (
-    <section className="project-gallery-card">
+    <section className={`project-gallery-card${isSidebar ? " project-gallery-card--sidebar" : ""}`}>
       <div className="project-gallery-card__header">
         <h3 className="project-gallery-card__title">
           <ImagePlus size={16} color="#C9894A" aria-hidden />
@@ -105,7 +108,7 @@ export function ProjectImageGallery({
             {images.length === 0 ? "No project photos yet." : "No additional photos yet."}
           </div>
         ) : (
-          <div className="project-gallery-grid">
+          <div className={`project-gallery-grid${isSidebar ? " project-gallery-grid--sidebar" : ""}`}>
             {galleryImages.map((image, index) => (
               <div key={image.id} className="project-gallery-item">
                 <img src={image.url} alt={`Project photo ${index + 2}`} />

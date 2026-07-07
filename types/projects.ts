@@ -76,6 +76,7 @@ export interface ProjectCardView {
   lead?: string;
   teamSize?: number;
   completion?: number;
+  created_at?: string;
 }
 export interface ProjectMember {
   project_id: string;

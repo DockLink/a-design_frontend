@@ -58,8 +58,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <div
             style={{
               padding: "var(--ds-content-padding-y) var(--ds-content-padding-x)",
-              maxWidth: "var(--ds-content-max-width)",
-              margin: "0 auto",
               width: "100%",
               minWidth: 0,
               boxSizing: "border-box",

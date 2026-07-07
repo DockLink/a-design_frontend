@@ -17,5 +17,6 @@ export function mapProjectToCard(project: Project): ProjectCardView {
     number: project.code,
     location: project.location,
     currentStage: project.current_stage ?? null,
+    created_at: project.created_at,
   };
 }
