@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Camera, ImagePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { useUploadFile } from "@/hooks/use-upload-file";
-import { FALLBACK_THUMBNAIL, projectThumbnailUrl } from "@/lib/projects/map-projects";
+import { projectThumbnailUrl } from "@/lib/projects/map-projects";
 import type { ProjectImage } from "@/types/projects";
 
 export function ProjectHeaderBanner({
@@ -22,27 +22,13 @@ export function ProjectHeaderBanner({
   canEdit?: boolean;
   onUpdated?: () => void | Promise<void>;
 }) {
-  const displayImages = images.length > 0 ? images : [{ id: "fallback", url: FALLBACK_THUMBNAIL }];
-  const [activeIndex, setActiveIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useUploadFile();
   const { updateProject } = useUpdateProject(projectId);
   const [isUploading, setIsUploading] = useState(false);
 
-  const src = displayImages[activeIndex]?.url ?? projectThumbnailUrl(images);
-
-  useEffect(() => {
-    if (activeIndex >= displayImages.length) setActiveIndex(0);
-  }, [activeIndex, displayImages.length]);
-
-  useEffect(() => {
-    if (displayImages.length <= 1) return;
-    const timer = window.setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % displayImages.length);
-    }, 6000);
-    return () => window.clearInterval(timer);
-  }, [displayImages.length]);
+  const src = projectThumbnailUrl(images);
 
   async function handleReplaceCover(file: File | null) {
     if (!file) return;
@@ -57,7 +43,6 @@ export function ProjectHeaderBanner({
       const rest = images.filter((_, i) => i !== 0).map((img) => ({ id: img.id }));
       await updateProject({ images: [{ id: token }, ...rest] });
       toast.success("Cover image updated");
-      setActiveIndex(0);
       await onUpdated?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update cover image");
@@ -106,7 +91,6 @@ export function ProjectHeaderBanner({
         backgroundPosition: "center",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
-        transition: "background-image 0.4s ease",
       }}
     >
       <div
@@ -129,26 +113,6 @@ export function ProjectHeaderBanner({
           {projectName}
         </div>
       </div>
-
-      {displayImages.length > 1 ? (
-        <div style={{ position: "absolute", bottom: "18px", right: "var(--ds-content-padding-x)", display: "flex", gap: "6px" }}>
-          {displayImages.map((img, index) => (
-            <button
-              key={img.id}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "9999px",
-                border: "none",
-                cursor: "pointer",
-                background: index === activeIndex ? "#FFFFFF" : "rgba(255,255,255,0.45)",
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
 
       {canEdit && (
         <>

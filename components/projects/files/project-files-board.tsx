@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Upload } from "lucide-react";
+import { AlertCircle, FolderPlus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
@@ -13,7 +13,14 @@ import { FileList } from "./file-list";
 import { FileUploadDialog } from "./file-upload-dialog";
 import { FileVersionHistoryDialog } from "./file-version-history-dialog";
 import { FolderTree } from "./folder-tree";
+import { FolderNameDialog } from "./folder-name-dialog";
 import { ShareFileDialog } from "./share-file-dialog";
+
+type FolderDialogMode =
+  | { type: "create-root" }
+  | { type: "create-sub"; parentPath: string }
+  | { type: "rename"; path: string; currentName: string }
+  | null;
 
 function findNode(
   nodes: ProjectFolderNode[],
@@ -45,6 +52,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const { effectiveRole, isViewer } = useProjectMembers();
   const canManage = canManageProject(effectiveRole, isViewer);
   const canDownload = canDownloadProjectFiles(effectiveRole, isViewer);
+  const canManageFolders = canDownload;
   const isAdmin = effectiveRole === "admin";
 
   const {
@@ -65,6 +73,9 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     renameFile,
     createShareLink,
     revokeShareLink,
+    createFolder,
+    renameFolder,
+    deleteFolder,
   } = useProjectFiles(projectId);
 
   const [showUpload, setShowUpload] = useState(false);
@@ -73,6 +84,8 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const [shareTarget, setShareTarget] = useState<ProjectFile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadingVersionId, setUploadingVersionId] = useState<string | null>(null);
+  const [folderDialog, setFolderDialog] = useState<FolderDialogMode>(null);
+  const [folderDialogSaving, setFolderDialogSaving] = useState(false);
 
   const tree = folderTree?.tree ?? [];
   const fileCounts = folderTree?.fileCounts ?? {};
@@ -117,6 +130,38 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
       toast.success("File renamed");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Rename failed");
+    }
+  }
+
+  async function handleDeleteFolder(path: string) {
+    if (!confirm("Delete this empty folder? This cannot be undone.")) return;
+    try {
+      await deleteFolder(path);
+      toast.success("Folder deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete folder");
+    }
+  }
+
+  async function handleFolderDialogSubmit(name: string) {
+    if (!folderDialog) return;
+    setFolderDialogSaving(true);
+    try {
+      if (folderDialog.type === "create-root") {
+        await createFolder(name, null);
+        toast.success("Folder created");
+      } else if (folderDialog.type === "create-sub") {
+        await createFolder(name, folderDialog.parentPath);
+        toast.success("Subfolder created");
+      } else if (folderDialog.type === "rename") {
+        await renameFolder(folderDialog.path, name);
+        toast.success("Folder renamed");
+      }
+      setFolderDialog(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Folder action failed");
+    } finally {
+      setFolderDialogSaving(false);
     }
   }
 
@@ -183,8 +228,18 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
       >
         {/* Left: folder panel */}
         <div className="flex w-60 shrink-0 flex-col overflow-hidden border-r border-[var(--ds-separator)] bg-[var(--ds-bg)]">
-          <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--ds-separator)] px-3.5">
+          <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[var(--ds-separator)] px-3.5">
             <span className="text-[15px] font-medium text-[var(--ds-label)]">Documents</span>
+            {canManageFolders && (
+              <button
+                type="button"
+                title="New root folder"
+                onClick={() => setFolderDialog({ type: "create-root" })}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--ds-accent)] hover:bg-[#EDE3D4]"
+              >
+                <FolderPlus size={15} />
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto">
             <FolderTree
@@ -192,6 +247,14 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               selectedPath={currentFolderPath}
               fileCounts={fileCounts}
               onSelectPath={selectFolder}
+              canManageFolders={canManageFolders}
+              onCreateSubfolder={(parentPath) =>
+                setFolderDialog({ type: "create-sub", parentPath })
+              }
+              onRenameFolder={(path, currentName) =>
+                setFolderDialog({ type: "rename", path, currentName })
+              }
+              onDeleteFolder={(path) => void handleDeleteFolder(path)}
             />
           </div>
         </div>
@@ -278,7 +341,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               folderPath={currentFolderPath}
               isVersioned={isVersioned}
               canDelete={isAdmin || canManage}
-              canRename={isAdmin || canManage}
+              canRename={canManageFolders}
               canDownload={canDownload}
               canShare={canManage}
               canUploadVersion={canManage}
@@ -324,6 +387,36 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         fileName={versionTarget?.fileName ?? ""}
         onGetVersions={getVersionHistory}
         onGetDownloadUrl={getDownloadUrl}
+      />
+
+      <FolderNameDialog
+        open={folderDialog !== null}
+        onOpenChange={(open) => !open && setFolderDialog(null)}
+        title={
+          folderDialog?.type === "create-root"
+            ? "New root folder"
+            : folderDialog?.type === "create-sub"
+              ? "New subfolder"
+              : "Rename folder"
+        }
+        description={
+          folderDialog?.type === "create-root"
+            ? 'Use the format "4.0 Folder Name" (number, dot, number, space, name).'
+            : folderDialog?.type === "create-sub"
+              ? "Enter a name for the new subfolder."
+              : undefined
+        }
+        initialName={
+          folderDialog?.type === "rename" ? folderDialog.currentName : ""
+        }
+        placeholder={
+          folderDialog?.type === "create-root" ? "4.0 Contracts" : "Folder name"
+        }
+        confirmLabel={
+          folderDialog?.type === "rename" ? "Rename" : "Create"
+        }
+        isSubmitting={folderDialogSaving}
+        onSubmit={handleFolderDialogSubmit}
       />
     </>
   );
