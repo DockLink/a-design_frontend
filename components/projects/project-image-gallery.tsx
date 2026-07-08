@@ -104,7 +104,7 @@ export function ProjectImageGallery({
 
       <div
         className={`project-gallery-card__body${
-          galleryImages.length > 0 ? " project-gallery-card__body--mosaic" : ""
+          galleryImages.length > 0 ? " project-gallery-card__body--masonry" : ""
         }`}
       >
         {galleryImages.length === 0 ? (
@@ -113,7 +113,7 @@ export function ProjectImageGallery({
           </div>
         ) : (
           <div
-            className={`project-gallery-grid project-gallery-grid--mosaic${
+            className={`project-gallery-grid project-gallery-grid--masonry${
               isSidebar ? " project-gallery-grid--sidebar" : ""
             }`}
           >
