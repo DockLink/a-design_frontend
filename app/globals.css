@@ -272,7 +272,7 @@
 }
 
 .project-header-banner {
-  height: clamp(240px, 38vh, 520px);
+  height: clamp(320px, 48vh, 640px);
 }
 
 .project-shell-nav {
