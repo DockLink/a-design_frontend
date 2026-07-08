@@ -437,8 +437,8 @@
   padding: 0 18px 18px;
 }
 
-.project-gallery-card__body--mosaic {
-  padding: 0;
+.project-gallery-card__body--masonry {
+  padding: 0 18px 18px;
 }
 
 .project-gallery-empty {
@@ -458,7 +458,57 @@
   grid-template-columns: 1fr;
 }
 
-/* Tight mosaic grid — square tiles, flush gaps, cover crop */
+/* Pinterest-style masonry — natural aspect ratios, 8 columns on wide screens */
+.project-gallery-grid--masonry {
+  column-count: 8;
+  column-gap: 16px;
+}
+
+@media (max-width: 1535px) {
+  .project-gallery-grid--masonry {
+    column-count: 6;
+  }
+}
+
+@media (max-width: 1279px) {
+  .project-gallery-grid--masonry {
+    column-count: 4;
+  }
+}
+
+@media (max-width: 767px) {
+  .project-gallery-grid--masonry {
+    column-count: 2;
+  }
+}
+
+.project-gallery-grid--masonry .project-gallery-item {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  aspect-ratio: unset;
+  min-height: unset;
+  border-radius: 16px;
+  box-shadow: none;
+  background: #e8dfd3;
+}
+
+.project-gallery-grid--masonry .project-gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.project-gallery-grid--masonry .project-gallery-remove-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.project-gallery-grid--masonry .project-gallery-item:hover .project-gallery-remove-btn,
+.project-gallery-grid--masonry .project-gallery-item:focus-within .project-gallery-remove-btn {
+  opacity: 1;
+}
+
+/* Legacy square mosaic (sidebar variant) */
 .project-gallery-grid--mosaic {
   gap: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
