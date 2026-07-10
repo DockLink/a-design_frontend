@@ -115,8 +115,8 @@ export function ProjectMembersProvider({
   );
   const isOrgGuest = orgSidebarRole === "guest";
   const isViewer = useMemo(
-    () => isOrgGuest || isProjectViewer(members, user?.id),
-    [isOrgGuest, members, user?.id]
+    () => isOrgGuest || isProjectViewer(members, user?.id, orgSidebarRole),
+    [isOrgGuest, members, user?.id, orgSidebarRole]
   );
 
   const isAssigned = useCallback(

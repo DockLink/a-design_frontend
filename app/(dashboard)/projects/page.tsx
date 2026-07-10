@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { RequestAccessDialog } from "@/components/access-requests/request-access-dialog";
 import { CreateProjectSheet } from "@/components/projects/create-project-sheet";
 import { ProjectCard } from "@/components/projects/project-card";
 import { useAuth } from "@/hooks/use-auth";
-import { useAccessRequests } from "@/hooks/use-access-requests";
 import { useInfiniteProjects } from "@/hooks/use-infinite-projects";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
@@ -180,21 +178,6 @@ export default function ProjectsListPage() {
 
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProjectCardView | null>(null);
-  const [requestTarget, setRequestTarget] = useState<ProjectCardView | null>(null);
-
-  const userId = user?.id;
-  const { requests: myAccessRequests, createRequest } = useAccessRequests(
-    { page: 1, limit: 100, requested_by_id: userId },
-    { enabled: showSplitView && !!userId },
-  );
-
-  const pendingByProjectId = useMemo(() => {
-    const map = new Set<string>();
-    for (const r of myAccessRequests) {
-      if (r.status === "PENDING") map.add(r.projectId);
-    }
-    return map;
-  }, [myAccessRequests]);
 
   const ledProjectIds = useMemo(
     () => new Set(ledProjectsRaw.map((p) => p.id)),
@@ -240,13 +223,6 @@ export default function ProjectsListPage() {
     }
   }
 
-  async function handleRequestAccess(note?: string) {
-    if (!requestTarget) return;
-    await createRequest({ project_id: requestTarget.id, request_note: note });
-    toast.success("Access request submitted");
-    setRequestTarget(null);
-  }
-
   const handleAllFetchNext = useCallback(() => allFetchNext(), [allFetchNext]);
   const handleMemberFetchNext = useCallback(() => memberFetchNext(), [memberFetchNext]);
 
@@ -260,7 +236,7 @@ export default function ProjectsListPage() {
               ? "All organisation projects"
               : isGuest
                 ? "Projects you have been assigned to"
-                : "Your assigned projects and others you can request access to"}
+                : "Projects you lead, projects you're on, and all others in view-only mode"}
           </div>
         </div>
         {canCreateProject && (
@@ -350,55 +326,35 @@ export default function ProjectsListPage() {
 
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)", marginBottom: 12 }}>
-              Other projects ({discoverProjects.length})
+              All other projects — view only ({discoverProjects.length})
             </div>
             {discoverProjects.length === 0 ? (
-              <div style={dsCallout}>No other projects to discover.</div>
+              <div style={dsCallout}>You can already access every active project from the sections above.</div>
             ) : (
               <>
                 <ProjectCardGrid
                   cards={discoverProjects}
                   isSuperAdmin={false}
                   isDeleting={isDeleting}
-                  onOpen={() => undefined}
+                  onOpen={(id) => router.push(projectRoute(id))}
                   onDelete={() => undefined}
-                  renderExtra={(p) => (
+                  renderExtra={() => (
                     <div style={{ marginTop: 12 }}>
-                      {pendingByProjectId.has(p.id) ? (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            height: 32,
-                            padding: "0 12px",
-                            borderRadius: 8,
-                            background: "rgba(212,169,106,0.14)",
-                            color: "var(--ds-accent-hover)",
-                            fontSize: 12,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Request pending
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setRequestTarget(p)}
-                          style={{
-                            height: 32,
-                            padding: "0 14px",
-                            borderRadius: 8,
-                            border: "none",
-                            background: "var(--ds-accent)",
-                            color: "white",
-                            fontSize: 12,
-                            fontWeight: 500,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Request access
-                        </button>
-                      )}
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          height: 32,
+                          padding: "0 12px",
+                          borderRadius: 8,
+                          background: "rgba(142,142,147,0.12)",
+                          color: "var(--ds-secondary-label)",
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
+                      >
+                        View only
+                      </span>
                     </div>
                   )}
                 />
@@ -512,13 +468,6 @@ export default function ProjectsListPage() {
           </div>
         </>
       )}
-
-      <RequestAccessDialog
-        open={!!requestTarget}
-        onOpenChange={(open) => !open && setRequestTarget(null)}
-        projectName={requestTarget?.name ?? ""}
-        onSubmit={handleRequestAccess}
-      />
 
       <CreateProjectSheet
         open={showCreateProject}

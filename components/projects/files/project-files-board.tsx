@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { canDownloadProjectFiles, canManageProject } from "@/lib/projects/permissions";
+import {
+  isArchiveFolderPath,
+  resolveUploadFolderPath,
+} from "@/lib/files/archive-path";
 import type { ProjectFile, ProjectFolderNode } from "@/types/files";
 
 import { FileList } from "./file-list";
@@ -89,13 +93,26 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
   const tree = folderTree?.tree ?? [];
   const fileCounts = folderTree?.fileCounts ?? {};
+  const sourceByArchivePath = folderTree?.sourceByArchivePath ?? {};
   const selectedNode = currentFolderPath
     ? findNode(tree, currentFolderPath)
     : null;
   const breadcrumb = currentFolderPath
     ? breadcrumbPath(tree, currentFolderPath) ?? []
     : [];
-  const isVersioned = selectedNode?.isVersioned ?? false;
+  const uploadFolderPath = currentFolderPath
+    ? resolveUploadFolderPath(currentFolderPath, sourceByArchivePath)
+    : null;
+  const uploadTargetNode = uploadFolderPath
+    ? findNode(tree, uploadFolderPath)
+    : null;
+  const uploadRedirectsFromArchive =
+    !!currentFolderPath && uploadFolderPath !== currentFolderPath;
+  const isVersioned = uploadTargetNode?.isVersioned ?? selectedNode?.isVersioned ?? false;
+  const canUploadHere =
+    !!uploadFolderPath &&
+    !!currentFolderPath &&
+    (!isArchiveFolderPath(currentFolderPath) || uploadRedirectsFromArchive);
 
   async function handleDownload(file: ProjectFile) {
     try {
@@ -270,11 +287,11 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           onDrop={canManage ? (e) => {
             e.preventDefault();
             setIsDragging(false);
-            if (currentFolderPath) setShowUpload(true);
+            if (currentFolderPath && canUploadHere) setShowUpload(true);
           } : undefined}
         >
           {/* Drag overlay */}
-          {isDragging && canManage && currentFolderPath && (
+          {isDragging && canManage && currentFolderPath && canUploadHere && (
             <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center border-[3px] border-dashed border-[var(--ds-accent)] bg-[rgba(212,169,106,0.06)]">
               <div className="rounded-xl bg-[var(--ds-surface-elevated)] px-10 py-5 text-[15px] font-medium text-[var(--ds-accent)] shadow-lg">
                 Drop to upload
@@ -309,15 +326,23 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
             {/* Actions */}
             {currentFolderPath && canManage && (
               <div className="ml-3 flex shrink-0 items-center gap-2">
-                <span className="text-[11px] text-[var(--ds-secondary-label)]">Drop files here</span>
-                <Button
-                  size="sm"
-                  className="h-7 gap-1 bg-[var(--ds-accent)] text-[12px] text-white hover:bg-[var(--ds-accent-hover)]"
-                  onClick={() => setShowUpload(true)}
-                >
-                  <Upload size={11} />
-                  Upload
-                </Button>
+                {canUploadHere ? (
+                  <>
+                    <span className="text-[11px] text-[var(--ds-secondary-label)]">Drop files here</span>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 bg-[var(--ds-accent)] text-[12px] text-white hover:bg-[var(--ds-accent-hover)]"
+                      onClick={() => setShowUpload(true)}
+                    >
+                      <Upload size={11} />
+                      Upload
+                    </Button>
+                  </>
+                ) : (
+                  <span className="text-[11px] text-[var(--ds-secondary-label)]">
+                    Select a live folder to upload
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -357,12 +382,16 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
       </div>
 
       {/* Upload dialog */}
-      {showUpload && currentFolderPath && (
+      {showUpload && uploadFolderPath && (
         <FileUploadDialog
           open={showUpload}
           onOpenChange={setShowUpload}
-          folderPath={currentFolderPath}
-          folderLabel={selectedNode?.name ?? currentFolderPath}
+          folderPath={uploadFolderPath}
+          folderLabel={
+            uploadRedirectsFromArchive
+              ? `${uploadTargetNode?.name ?? "Live folder"} (from archive view)`
+              : (selectedNode?.name ?? uploadFolderPath)
+          }
           isVersioned={isVersioned}
           onUpload={(folderPath, file, onProgress) =>
             uploadFile(folderPath, file, undefined, onProgress)

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { LocationPickerModal, type LocationPickerValue } from "@/components/projects/location-picker-modal";
 import { MemberSearchSelect } from "@/components/projects/member-search-select";
+import { ProjectMilestonesEditor } from "@/components/projects/project-milestones-editor";
+import { ProjectStagesEditor } from "@/components/projects/project-stages-editor";
 import {
   ProjectBriefAttachmentsList,
   ProjectBriefAttachmentsEmptyHint,
@@ -176,16 +178,15 @@ export function EditProjectSheet({
   }
 
   async function saveProjectLead(newLeadId: string) {
-    const currentLead = projectLeadUserIds[0] ?? "";
-    if (!newLeadId || newLeadId === currentLead) return;
+    if (!newLeadId) return;
+
+    const leadSet = new Set([...projectLeadUserIds, newLeadId]);
 
     const activeTeam = members.filter(
       (m) => m.status === "ACTIVE" && !isGuestProjectMember(m)
     );
     const teamUserIds = new Set(activeTeam.map((m) => m.user_id));
-    if (!teamUserIds.has(newLeadId)) {
-      teamUserIds.add(newLeadId);
-    }
+    teamUserIds.add(newLeadId);
 
     const guestRows = members
       .filter((m) => m.status === "ACTIVE" && isGuestProjectMember(m))
@@ -198,10 +199,10 @@ export function EditProjectSheet({
     const teamRows = [...teamUserIds].map((user_id) => ({
       user_id,
       status: "ACTIVE" as const,
-      role: (user_id === newLeadId ? PROJECT_LEAD_ROLE : "MEMBER") as ProjectMemberProjectRole,
+      role: (leadSet.has(user_id) ? PROJECT_LEAD_ROLE : "MEMBER") as ProjectMemberProjectRole,
     }));
 
-    await onUpdateMembers({ members: [...teamRows, ...guestRows] }, [newLeadId]);
+    await onUpdateMembers({ members: [...teamRows, ...guestRows] }, [...leadSet]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -292,7 +293,7 @@ export function EditProjectSheet({
           top: 0,
           right: 0,
           bottom: 0,
-          width: "min(520px, 100vw)",
+          width: "min(640px, 100vw)",
           background: "var(--ds-surface-elevated)",
           zIndex: 201,
           display: "flex",
@@ -589,10 +590,23 @@ export function EditProjectSheet({
             )}
           </div>
 
-          <p style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)", lineHeight: 1.45 }}>
-            To edit project stages or milestones, use <strong>Manage Stages</strong> and{" "}
-            <strong>Manage Milestones</strong> on the project overview.
-          </p>
+          <div
+            style={{
+              paddingTop: "4px",
+              borderTop: "1px solid var(--ds-separator)",
+            }}
+          >
+            <ProjectStagesEditor projectId={project.id} onUpdated={onSaved} />
+          </div>
+
+          <div
+            style={{
+              paddingTop: "4px",
+              borderTop: "1px solid var(--ds-separator)",
+            }}
+          >
+            <ProjectMilestonesEditor projectId={project.id} onUpdated={onSaved} />
+          </div>
         </form>
 
         <div
