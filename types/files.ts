@@ -8,6 +8,8 @@ export interface ProjectFolderNode {
 export interface ProjectFolderTree {
   tree: ProjectFolderNode[];
   fileCounts: Record<string, number>;
+  /** Live source folder path for each Superseded archive mirror path. */
+  sourceByArchivePath?: Record<string, string>;
 }
 
 export interface ProjectFile {

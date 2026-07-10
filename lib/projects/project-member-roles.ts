@@ -12,11 +12,24 @@ export function getProjectLeadUserIds(members: ProjectMember[]): string[] {
     .map((m) => m.user_id);
 }
 
-export function isProjectViewer(members: ProjectMember[], userId: string | undefined): boolean {
+export function isProjectViewer(
+  members: ProjectMember[],
+  userId: string | undefined,
+  orgSidebarRole?: SidebarRole,
+): boolean {
   if (!userId) return false;
+
   const membership = members.find((m) => m.user_id === userId && m.status === "ACTIVE");
-  if (!membership) return false;
-  return membership.role === "VIEWER" || isGuestProjectMember(membership);
+  if (membership && (membership.role === "VIEWER" || isGuestProjectMember(membership))) {
+    return true;
+  }
+
+  if (orgSidebarRole === "member" || orgSidebarRole === "lead") {
+    if (!membership) return true;
+    if (membership.role === "MEMBER" || membership.role === PROJECT_LEAD_ROLE) return false;
+  }
+
+  return false;
 }
 
 export function getEffectiveProjectRole(

@@ -20,6 +20,7 @@ export function canEditProjectDetails(orgRole: SidebarRole): boolean {
 
 export function canAccessProjectDetail(role: SidebarRole, isAssigned: boolean): boolean {
   if (role === "superadmin" || role === "admin") return true;
+  if (role === "member" || role === "lead") return true;
   return isAssigned;
 }
 

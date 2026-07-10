@@ -59,6 +59,7 @@ export function canAccessRoute(role: UserRole | null, pathname: string): boolean
 
 export function canOpenProjectDetail(sidebarRole: SidebarRole, isAssigned = false): boolean {
   if (sidebarRole === "superadmin" || sidebarRole === "admin") return true;
+  if (sidebarRole === "member" || sidebarRole === "lead") return true;
   return isAssigned;
 }
 

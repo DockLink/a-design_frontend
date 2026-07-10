@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortProjectFolderNodes } from "@/lib/files/sort-folders";
+import { isArchiveFolderPath } from "@/lib/files/archive-path";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,10 +21,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import type { ProjectFolderNode } from "@/types/files";
-
-function isArchiveFolderPath(path: string): boolean {
-  return path.split("/").some((seg) => seg.toLowerCase().includes("superseded"));
-}
 
 function folderIsEmpty(path: string, fileCounts: Record<string, number>): boolean {
   const direct = fileCounts[path] ?? 0;
