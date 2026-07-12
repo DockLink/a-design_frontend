@@ -282,6 +282,13 @@
   padding-right: var(--ds-content-padding-x);
 }
 
+.project-shell-nav-tab,
+.project-shell-nav-name {
+  font-family: var(--ds-font-sans);
+  font-weight: 700 !important;
+  -webkit-font-smoothing: antialiased;
+}
+
 .project-shell-content {
   padding: 0 0 56px;
   min-width: 0;
@@ -809,10 +816,10 @@
   html {
     @apply font-sans font-light;
   }
-  /* Collapse bold/medium classes and inline fontWeight to Light */
+  /* Collapse bold/medium classes and inline fontWeight to Light — except project tabs */
   :where(
     body,
-    body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(g):not(defs):not(use)
+    body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(g):not(defs):not(use):not(.project-shell-nav-tab):not(.project-shell-nav-name)
   ) {
     font-weight: var(--ds-font-weight) !important;
   }
@@ -854,4 +861,10 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Must come after the global light-weight lock so project tabs stay bold. */
+.project-shell-nav .project-shell-nav-tab,
+.project-shell-nav .project-shell-nav-name {
+  font-weight: 700 !important;
 }

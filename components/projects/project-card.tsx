@@ -24,14 +24,14 @@ export function ProjectCard({
   renderOverlay?: (project: ProjectCardView) => React.ReactNode;
 }) {
   const statusCfg = STATUS_COLORS[project.status] ?? STATUS_COLORS.Inactive;
-  const interactive = Boolean(onClick) && !renderExtra;
+  const interactive = Boolean(onClick);
 
   return (
     <div style={{ ...dsCard, position: "relative", overflow: "hidden" }}>
       <div
         role={interactive ? "button" : undefined}
         tabIndex={interactive ? 0 : undefined}
-        style={{ cursor: interactive ? "pointer" : renderExtra ? "default" : "pointer" }}
+        style={{ cursor: interactive ? "pointer" : "default" }}
         onClick={() => interactive && onClick?.()}
         onKeyDown={(e) => interactive && e.key === "Enter" && onClick?.()}
       >

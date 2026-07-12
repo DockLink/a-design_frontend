@@ -56,7 +56,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const { effectiveRole, isViewer } = useProjectMembers();
   const canManage = canManageProject(effectiveRole, isViewer);
   const canDownload = canDownloadProjectFiles(effectiveRole, isViewer);
-  const canManageFolders = canDownload;
+  const canManageFolders = canManage;
   const isAdmin = effectiveRole === "admin";
 
   const {

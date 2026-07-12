@@ -24,7 +24,8 @@ export function canAccessProjectDetail(role: SidebarRole, isAssigned: boolean): 
   return isAssigned;
 }
 
-export function canDownloadProjectFiles(role: SidebarRole, isViewer = false): boolean {
-  if (isViewer || role === "guest") return false;
+/** Guests cannot download; team members get complete view access (incl. downloads) on any project. */
+export function canDownloadProjectFiles(role: SidebarRole, _isViewer = false): boolean {
+  if (role === "guest") return false;
   return true;
 }
