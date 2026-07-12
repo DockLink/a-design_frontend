@@ -56,7 +56,7 @@ function ProjectCardGrid({
           >
             <ProjectCard
               project={p}
-              onClick={renderExtra ? undefined : () => onOpen(p.id)}
+              onClick={() => onOpen(p.id)}
               renderExtra={renderExtra}
               renderOverlay={
                 isSuperAdmin && isHovered
@@ -236,7 +236,7 @@ export default function ProjectsListPage() {
               ? "All organisation projects"
               : isGuest
                 ? "Projects you have been assigned to"
-                : "Projects you lead, projects you're on, and all others in view-only mode"}
+                : "Projects you lead, projects you're on, and all others with complete view access"}
           </div>
         </div>
         {canCreateProject && (
@@ -326,7 +326,7 @@ export default function ProjectsListPage() {
 
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-label)", marginBottom: 12 }}>
-              All other projects — view only ({discoverProjects.length})
+              All other projects — view access ({discoverProjects.length})
             </div>
             {discoverProjects.length === 0 ? (
               <div style={dsCallout}>You can already access every active project from the sections above.</div>
@@ -353,7 +353,7 @@ export default function ProjectsListPage() {
                           fontWeight: 500,
                         }}
                       >
-                        View only
+                        View access
                       </span>
                     </div>
                   )}
