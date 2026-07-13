@@ -52,15 +52,8 @@ export function ProjectVimeoSection({
   }
 
   return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+    <div className="project-overview-panel">
+      <div className="project-overview-panel__header">
         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
           <Video size={16} color="var(--ds-accent-hover)" />
           Project video
@@ -73,7 +66,7 @@ export function ProjectVimeoSection({
       </div>
 
       {isEditing ? (
-        <div style={{ padding: "0 18px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="project-overview-panel__body" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -101,11 +94,13 @@ export function ProjectVimeoSection({
           {draft.trim() && draftValid ? <VimeoEmbed url={draft} /> : null}
         </div>
       ) : hasVideo ? (
-        <div style={{ padding: "0 18px 18px" }}>
-          <VimeoEmbed url={vimeoUrl!} />
+        <div className="project-overview-panel__body project-overview-panel__body--fill">
+          <div className="project-overview-panel__media">
+            <VimeoEmbed url={vimeoUrl!} />
+          </div>
         </div>
       ) : (
-        <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
+        <div className="project-overview-panel__body" style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
           No project video added yet.
         </div>
       )}

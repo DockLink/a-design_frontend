@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { LocationPickerModal, type LocationPickerValue } from "@/components/projects/location-picker-modal";
 import { ShareLocationDialog } from "@/components/projects/share-location-dialog";
+import { TerrainMapPreview } from "@/components/projects/terrain-map-preview";
 import { Button } from "@/components/ui/button";
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { buildGoogleMapsUrl, getLocationShareTitle } from "@/lib/maps/share-location";
@@ -33,16 +34,7 @@ export function ProjectLocationSection({
   const mapsUrl = buildGoogleMapsUrl({ address, latitude, longitude });
   const shareTitle = getLocationShareTitle({ address, latitude, longitude });
   const hasLocation = Boolean(address?.trim() || (latitude != null && longitude != null));
-
-  const mapEmbedSrc = (() => {
-    if (latitude != null && longitude != null) {
-      return `https://www.google.com/maps?q=${latitude},${longitude}&z=15&t=p&output=embed`;
-    }
-    if (address?.trim()) {
-      return `https://www.google.com/maps?q=${encodeURIComponent(address.trim())}&z=15&t=p&output=embed`;
-    }
-    return null;
-  })();
+  const hasCoords = latitude != null && longitude != null;
 
   async function handleSaveLocation(value: LocationPickerValue) {
     setIsSaving(true);
@@ -61,22 +53,10 @@ export function ProjectLocationSection({
     }
   }
 
-  function handleShare() {
-    if (!mapsUrl) return;
-    setShowShareDialog(true);
-  }
-
   return (
     <>
-      <div
-        style={{
-          background: "#FFFFFF",
-          borderRadius: "12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.05)",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+      <div className="project-overview-panel">
+        <div className="project-overview-panel__header">
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--ds-label)" }}>
             <MapPin size={16} color="var(--ds-accent-hover)" />
             Project location
@@ -84,7 +64,7 @@ export function ProjectLocationSection({
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {hasLocation && mapsUrl ? (
               <>
-                <Button type="button" size="sm" variant="outline" onClick={handleShare}>
+                <Button type="button" size="sm" variant="outline" onClick={() => setShowShareDialog(true)}>
                   <Share2 size={14} />
                   Share
                 </Button>
@@ -108,26 +88,24 @@ export function ProjectLocationSection({
         </div>
 
         {!hasLocation ? (
-          <div style={{ padding: "0 18px 18px", fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
+          <div className="project-overview-panel__body" style={{ fontSize: "13px", color: "var(--ds-tertiary-label)" }}>
             No location set for this project.
           </div>
         ) : (
-          <>
-            <div style={{ padding: "0 18px 14px", fontSize: "14px", color: "var(--ds-label)", lineHeight: 1.5 }}>
+          <div className="project-overview-panel__body project-overview-panel__body--fill">
+            <div style={{ fontSize: "14px", color: "var(--ds-label)", lineHeight: 1.5, marginBottom: 12 }}>
               {address || `${latitude}, ${longitude}`}
             </div>
-            {mapEmbedSrc ? (
-              <div style={{ padding: "0 18px 18px" }}>
-                <iframe
-                  title="Project location map"
-                  src={mapEmbedSrc}
-                  style={{ width: "100%", height: "220px", border: 0, borderRadius: "10px" }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
+            {hasCoords || address?.trim() ? (
+              <div className="project-overview-panel__media">
+                <TerrainMapPreview
+                  latitude={latitude}
+                  longitude={longitude}
+                  address={address}
                 />
               </div>
             ) : null}
-          </>
+          </div>
         )}
       </div>
 

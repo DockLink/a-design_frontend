@@ -7,7 +7,7 @@ export function VimeoEmbed({ url }: { url: string }) {
   if (!embed) return null;
 
   return (
-    <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: "12px", overflow: "hidden", background: "#000" }}>
+    <div className="project-overview-panel__embed">
       <iframe
         src={buildVimeoEmbedSrc(embed)}
         title="Project video"
