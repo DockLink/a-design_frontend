@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { loadGoogleMaps } from "@/lib/maps/google-maps-loader";
 
+const TERRAIN = "terrain" as const;
+
+function forceTerrain(map: google.maps.Map) {
+  map.setMapTypeId(TERRAIN);
+}
+
 export function TerrainMapPreview({
   latitude,
   longitude,
@@ -16,43 +22,68 @@ export function TerrainMapPreview({
   className?: string;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let map: google.maps.Map | null = null;
+    const listeners: google.maps.MapsEventListener[] = [];
 
     async function init() {
+      setStatus("loading");
+      setErrorMessage(null);
+
       if (!mapRef.current) return;
-      if (latitude == null || longitude == null) {
-        setError(null);
-        return;
-      }
 
       try {
         const googleMaps = await loadGoogleMaps();
         if (cancelled || !mapRef.current) return;
 
-        const center = { lat: latitude, lng: longitude };
-        map = new googleMaps.maps.Map(mapRef.current, {
+        let center: google.maps.LatLngLiteral | null =
+          latitude != null && longitude != null
+            ? { lat: Number(latitude), lng: Number(longitude) }
+            : null;
+
+        // Address-only projects: geocode first so we never fall back to roadmap iframe.
+        if (!center && address?.trim()) {
+          const geocoder = new googleMaps.maps.Geocoder();
+          const result = await new Promise<google.maps.GeocoderResult | null>((resolve) => {
+            geocoder.geocode({ address: address.trim() }, (results, geocodeStatus) => {
+              if (geocodeStatus === "OK" && results?.[0]?.geometry?.location) {
+                resolve(results[0]);
+              } else {
+                resolve(null);
+              }
+            });
+          });
+          if (result?.geometry?.location) {
+            center = {
+              lat: result.geometry.location.lat(),
+              lng: result.geometry.location.lng(),
+            };
+          }
+        }
+
+        if (!center) {
+          throw new Error("No coordinates available for this location.");
+        }
+
+        const map = new googleMaps.maps.Map(mapRef.current, {
           center,
           zoom: 15,
-          mapTypeId: googleMaps.maps.MapTypeId.TERRAIN,
+          mapTypeId: TERRAIN,
           disableDefaultUI: true,
           zoomControl: true,
           fullscreenControl: true,
           mapTypeControl: true,
           mapTypeControlOptions: {
             style: googleMaps.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            mapTypeIds: [
-              googleMaps.maps.MapTypeId.TERRAIN,
-              googleMaps.maps.MapTypeId.ROADMAP,
-              googleMaps.maps.MapTypeId.SATELLITE,
-              googleMaps.maps.MapTypeId.HYBRID,
-            ],
+            mapTypeIds: ["terrain", "roadmap", "satellite", "hybrid"],
           },
           gestureHandling: "cooperative",
         });
+        mapInstanceRef.current = map;
 
         new googleMaps.maps.Marker({
           map,
@@ -60,17 +91,30 @@ export function TerrainMapPreview({
           title: address?.trim() || undefined,
         });
 
-        window.setTimeout(() => {
-          if (!map || cancelled) return;
-          googleMaps.maps.event.trigger(map, "resize");
-          map.setCenter(center);
-          map.setMapTypeId(googleMaps.maps.MapTypeId.TERRAIN);
-        }, 120);
+        forceTerrain(map);
 
-        if (!cancelled) setError(null);
+        listeners.push(
+          map.addListener("idle", () => forceTerrain(map)),
+          map.addListener("tilesloaded", () => forceTerrain(map)),
+        );
+
+        // After layout settles, re-assert terrain (resize often resets type).
+        window.setTimeout(() => {
+          if (cancelled || !mapInstanceRef.current) return;
+          googleMaps.maps.event.trigger(map, "resize");
+          map.setCenter(center!);
+          forceTerrain(map);
+        }, 50);
+        window.setTimeout(() => {
+          if (cancelled || !mapInstanceRef.current) return;
+          forceTerrain(map);
+        }, 400);
+
+        if (!cancelled) setStatus("ready");
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load map");
+          setStatus("error");
+          setErrorMessage(err instanceof Error ? err.message : "Failed to load terrain map");
         }
       }
     }
@@ -79,44 +123,61 @@ export function TerrainMapPreview({
 
     return () => {
       cancelled = true;
-      map = null;
+      for (const listener of listeners) listener.remove();
+      mapInstanceRef.current = null;
     };
   }, [latitude, longitude, address]);
 
-  if (latitude == null || longitude == null) {
-    if (address?.trim()) {
-      return (
-        <iframe
-          title="Project location map"
-          src={`https://www.google.com/maps?q=${encodeURIComponent(address.trim())}&z=15&t=p&output=embed`}
-          className={className}
-          style={{ width: "100%", height: "100%", minHeight: 220, border: 0, borderRadius: 10 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      );
-    }
-    return null;
-  }
-
-  if (error) {
-    return (
-      <iframe
-        title="Project location map"
-        src={`https://www.google.com/maps?q=${latitude},${longitude}&z=15&t=p&output=embed`}
-        className={className}
-        style={{ width: "100%", height: "100%", minHeight: 220, border: 0, borderRadius: 10 }}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-      />
-    );
-  }
-
   return (
     <div
-      ref={mapRef}
       className={className}
-      style={{ width: "100%", height: "100%", minHeight: 220, borderRadius: 10, overflow: "hidden" }}
-    />
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        minHeight: 220,
+        borderRadius: 10,
+        overflow: "hidden",
+        background: "#E8DFD3",
+      }}
+    >
+      <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
+      {status === "loading" ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(252,248,244,0.72)",
+            color: "var(--ds-secondary-label)",
+            fontSize: 13,
+            zIndex: 1,
+          }}
+        >
+          Loading terrain map…
+        </div>
+      ) : null}
+      {status === "error" ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            textAlign: "center",
+            background: "rgba(252,248,244,0.92)",
+            color: "var(--ds-secondary-label)",
+            fontSize: 13,
+            zIndex: 1,
+          }}
+        >
+          {errorMessage ?? "Could not load terrain map."}
+        </div>
+      ) : null}
+    </div>
   );
 }

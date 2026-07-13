@@ -102,21 +102,17 @@ export function LocationPickerModal({
         const map = new googleMaps.maps.Map(mapRef.current, {
           center,
           zoom: initialValue?.latitude != null ? 15 : 8,
-          mapTypeId: googleMaps.maps.MapTypeId.TERRAIN,
+          mapTypeId: "terrain",
           mapTypeControl: true,
           mapTypeControlOptions: {
-            mapTypeIds: [
-              googleMaps.maps.MapTypeId.TERRAIN,
-              googleMaps.maps.MapTypeId.ROADMAP,
-              googleMaps.maps.MapTypeId.SATELLITE,
-              googleMaps.maps.MapTypeId.HYBRID,
-            ],
+            mapTypeIds: ["terrain", "roadmap", "satellite", "hybrid"],
           },
           streetViewControl: false,
           fullscreenControl: true,
           zoomControl: true,
         });
         mapInstanceRef.current = map;
+        map.setMapTypeId("terrain");
 
         const marker = new googleMaps.maps.Marker({
           map,
@@ -144,6 +140,7 @@ export function LocationPickerModal({
             const formatted =
               place.formatted_address ?? place.name ?? "";
             applyPosition(lat, lng, formatted);
+            map.setMapTypeId("terrain");
           });
         }
 
@@ -167,11 +164,18 @@ export function LocationPickerModal({
           reverseGeocode(lat, lng);
         });
 
-        // Fix blank map when opened inside a modal
+        map.addListener("idle", () => map.setMapTypeId("terrain"));
+        map.addListener("tilesloaded", () => map.setMapTypeId("terrain"));
+
+        // Fix blank map when opened inside a modal — and keep terrain after resize.
         window.setTimeout(() => {
           googleMaps.maps.event.trigger(map, "resize");
           map.setCenter(center);
+          map.setMapTypeId("terrain");
         }, 150);
+        window.setTimeout(() => {
+          map.setMapTypeId("terrain");
+        }, 400);
 
         if (!cancelled) setMapReady(true);
       } catch (err) {
