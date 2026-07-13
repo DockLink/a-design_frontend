@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { loadGoogleMaps } from "@/lib/maps/google-maps-loader";
 
-const TERRAIN = "terrain" as const;
-
-function forceTerrain(map: google.maps.Map) {
-  map.setMapTypeId(TERRAIN);
-}
+/** Satellite imagery with 3D terrain tilt — user can still switch map types. */
+const DEFAULT_MAP_TYPE = "satellite" as const;
+const MAP_TYPE_OPTIONS = ["satellite", "hybrid", "terrain", "roadmap"] as const;
+const DEFAULT_TILT = 45;
 
 export function TerrainMapPreview({
   latitude,
@@ -28,7 +27,6 @@ export function TerrainMapPreview({
 
   useEffect(() => {
     let cancelled = false;
-    const listeners: google.maps.MapsEventListener[] = [];
 
     async function init() {
       setStatus("loading");
@@ -45,7 +43,6 @@ export function TerrainMapPreview({
             ? { lat: Number(latitude), lng: Number(longitude) }
             : null;
 
-        // Address-only projects: geocode first so we never fall back to roadmap iframe.
         if (!center && address?.trim()) {
           const geocoder = new googleMaps.maps.Geocoder();
           const result = await new Promise<google.maps.GeocoderResult | null>((resolve) => {
@@ -71,19 +68,24 @@ export function TerrainMapPreview({
 
         const map = new googleMaps.maps.Map(mapRef.current, {
           center,
-          zoom: 15,
-          mapTypeId: TERRAIN,
+          zoom: 16,
+          mapTypeId: DEFAULT_MAP_TYPE,
+          tilt: DEFAULT_TILT,
           disableDefaultUI: true,
           zoomControl: true,
           fullscreenControl: true,
           mapTypeControl: true,
+          rotateControl: true,
           mapTypeControlOptions: {
             style: googleMaps.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            mapTypeIds: ["terrain", "roadmap", "satellite", "hybrid"],
+            position: googleMaps.maps.ControlPosition.TOP_RIGHT,
+            mapTypeIds: [...MAP_TYPE_OPTIONS],
           },
           gestureHandling: "cooperative",
         });
         mapInstanceRef.current = map;
+        map.setMapTypeId(DEFAULT_MAP_TYPE);
+        map.setTilt(DEFAULT_TILT);
 
         new googleMaps.maps.Marker({
           map,
@@ -91,30 +93,29 @@ export function TerrainMapPreview({
           title: address?.trim() || undefined,
         });
 
-        forceTerrain(map);
+        // When user picks satellite/hybrid, restore terrain tilt; flat types stay flat.
+        map.addListener("maptypeid_changed", () => {
+          const type = String(map.getMapTypeId() ?? "");
+          if (type === "satellite" || type === "hybrid") {
+            map.setTilt(DEFAULT_TILT);
+          } else {
+            map.setTilt(0);
+          }
+        });
 
-        listeners.push(
-          map.addListener("idle", () => forceTerrain(map)),
-          map.addListener("tilesloaded", () => forceTerrain(map)),
-        );
-
-        // After layout settles, re-assert terrain (resize often resets type).
         window.setTimeout(() => {
           if (cancelled || !mapInstanceRef.current) return;
           googleMaps.maps.event.trigger(map, "resize");
           map.setCenter(center!);
-          forceTerrain(map);
-        }, 50);
-        window.setTimeout(() => {
-          if (cancelled || !mapInstanceRef.current) return;
-          forceTerrain(map);
-        }, 400);
+          map.setMapTypeId(DEFAULT_MAP_TYPE);
+          map.setTilt(DEFAULT_TILT);
+        }, 80);
 
         if (!cancelled) setStatus("ready");
       } catch (err) {
         if (!cancelled) {
           setStatus("error");
-          setErrorMessage(err instanceof Error ? err.message : "Failed to load terrain map");
+          setErrorMessage(err instanceof Error ? err.message : "Failed to load map");
         }
       }
     }
@@ -123,7 +124,6 @@ export function TerrainMapPreview({
 
     return () => {
       cancelled = true;
-      for (const listener of listeners) listener.remove();
       mapInstanceRef.current = null;
     };
   }, [latitude, longitude, address]);
@@ -156,7 +156,7 @@ export function TerrainMapPreview({
             zIndex: 1,
           }}
         >
-          Loading terrain map…
+          Loading satellite terrain…
         </div>
       ) : null}
       {status === "error" ? (
@@ -175,7 +175,7 @@ export function TerrainMapPreview({
             zIndex: 1,
           }}
         >
-          {errorMessage ?? "Could not load terrain map."}
+          {errorMessage ?? "Could not load map."}
         </div>
       ) : null}
     </div>

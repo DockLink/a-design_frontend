@@ -101,18 +101,33 @@ export function LocationPickerModal({
 
         const map = new googleMaps.maps.Map(mapRef.current, {
           center,
-          zoom: initialValue?.latitude != null ? 15 : 8,
-          mapTypeId: "terrain",
+          zoom: initialValue?.latitude != null ? 16 : 8,
+          mapTypeId: "satellite",
+          tilt: initialValue?.latitude != null ? 45 : 0,
           mapTypeControl: true,
           mapTypeControlOptions: {
-            mapTypeIds: ["terrain", "roadmap", "satellite", "hybrid"],
+            style: googleMaps.maps.MapTypeControlStyle.DROPDOWN_MENU,
+            mapTypeIds: ["satellite", "hybrid", "terrain", "roadmap"],
           },
           streetViewControl: false,
           fullscreenControl: true,
           zoomControl: true,
+          rotateControl: true,
         });
         mapInstanceRef.current = map;
-        map.setMapTypeId("terrain");
+        map.setMapTypeId("satellite");
+        if (initialValue?.latitude != null) {
+          map.setTilt(45);
+        }
+
+        map.addListener("maptypeid_changed", () => {
+          const type = String(map.getMapTypeId() ?? "");
+          if (type === "satellite" || type === "hybrid") {
+            map.setTilt(45);
+          } else {
+            map.setTilt(0);
+          }
+        });
 
         const marker = new googleMaps.maps.Marker({
           map,
@@ -140,7 +155,6 @@ export function LocationPickerModal({
             const formatted =
               place.formatted_address ?? place.name ?? "";
             applyPosition(lat, lng, formatted);
-            map.setMapTypeId("terrain");
           });
         }
 
@@ -164,18 +178,15 @@ export function LocationPickerModal({
           reverseGeocode(lat, lng);
         });
 
-        map.addListener("idle", () => map.setMapTypeId("terrain"));
-        map.addListener("tilesloaded", () => map.setMapTypeId("terrain"));
-
-        // Fix blank map when opened inside a modal — and keep terrain after resize.
+        // Fix blank map when opened inside a modal
         window.setTimeout(() => {
           googleMaps.maps.event.trigger(map, "resize");
           map.setCenter(center);
-          map.setMapTypeId("terrain");
+          map.setMapTypeId("satellite");
+          if (initialValue?.latitude != null) {
+            map.setTilt(45);
+          }
         }, 150);
-        window.setTimeout(() => {
-          map.setMapTypeId("terrain");
-        }, 400);
 
         if (!cancelled) setMapReady(true);
       } catch (err) {
