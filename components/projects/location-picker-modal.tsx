@@ -102,7 +102,16 @@ export function LocationPickerModal({
         const map = new googleMaps.maps.Map(mapRef.current, {
           center,
           zoom: initialValue?.latitude != null ? 15 : 8,
-          mapTypeControl: false,
+          mapTypeId: googleMaps.maps.MapTypeId.TERRAIN,
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            mapTypeIds: [
+              googleMaps.maps.MapTypeId.TERRAIN,
+              googleMaps.maps.MapTypeId.ROADMAP,
+              googleMaps.maps.MapTypeId.SATELLITE,
+              googleMaps.maps.MapTypeId.HYBRID,
+            ],
+          },
           streetViewControl: false,
           fullscreenControl: true,
           zoomControl: true,

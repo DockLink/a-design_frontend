@@ -40,8 +40,10 @@ export function ProjectHeaderBanner({
     setIsUploading(true);
     try {
       const { token } = await uploadFile(file);
-      const rest = images.filter((_, i) => i !== 0).map((img) => ({ id: img.id }));
-      await updateProject({ images: [{ id: token }, ...rest] });
+      // Replace cover only: new image becomes index 0; old cover is removed
+      // (not moved into precedent images). Remaining precedents keep order.
+      const precedents = images.slice(1).map((img) => ({ id: img.id }));
+      await updateProject({ images: [{ id: token }, ...precedents] });
       toast.success("Cover image updated");
       await onUpdated?.();
     } catch (err) {

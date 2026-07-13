@@ -36,10 +36,10 @@ export function ProjectLocationSection({
 
   const mapEmbedSrc = (() => {
     if (latitude != null && longitude != null) {
-      return `https://www.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
+      return `https://www.google.com/maps?q=${latitude},${longitude}&z=15&t=p&output=embed`;
     }
     if (address?.trim()) {
-      return `https://www.google.com/maps?q=${encodeURIComponent(address.trim())}&z=15&output=embed`;
+      return `https://www.google.com/maps?q=${encodeURIComponent(address.trim())}&z=15&t=p&output=embed`;
     }
     return null;
   })();
