@@ -6,6 +6,11 @@ import { toast } from "sonner";
 
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { useUploadFile } from "@/hooks/use-upload-file";
+import {
+  appendProjectGalleryImages,
+  projectGalleryImages,
+  removeProjectGalleryImage,
+} from "@/lib/projects/map-projects";
 import type { ProjectImage } from "@/types/projects";
 
 function useGalleryColumnCount(): number {
@@ -85,7 +90,7 @@ export function ProjectImageGallery({
         tokens.push(token);
       }
       await updateProject({
-        images: [...images.map((img) => ({ id: img.id })), ...tokens.map((id) => ({ id }))],
+        images: appendProjectGalleryImages(images, tokens),
       });
       toast.success(imageFiles.length > 1 ? "Photos added" : "Photo added");
       await onUpdated?.();
@@ -100,8 +105,7 @@ export function ProjectImageGallery({
   async function handleRemove(imageId: string) {
     setRemovingId(imageId);
     try {
-      const remaining = images.filter((img) => img.id !== imageId).map((img) => ({ id: img.id }));
-      await updateProject({ images: remaining });
+      await updateProject({ images: removeProjectGalleryImage(images, imageId) });
       toast.success("Photo removed");
       if (previewImage?.id === imageId) setPreviewImage(null);
       await onUpdated?.();
@@ -112,7 +116,7 @@ export function ProjectImageGallery({
     }
   }
 
-  const galleryImages = useMemo(() => images.slice(1), [images]);
+  const galleryImages = useMemo(() => projectGalleryImages(images), [images]);
   const galleryImageIds = useMemo(
     () => galleryImages.map((img) => img.id).join("|"),
     [galleryImages],
