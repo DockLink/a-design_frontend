@@ -20,6 +20,7 @@ import { useUpdateProject } from "@/hooks/use-update-project";
 import { useUploadFile } from "@/hooks/use-upload-file";
 import { useUsers } from "@/hooks/use-users";
 import { addIsoDuration } from "@/lib/projects/duration";
+import { appendProjectGalleryImages } from "@/lib/projects/map-projects";
 import { isValidVimeoUrl } from "@/lib/vimeo/parse-vimeo-url";
 import { isGuestProjectMember } from "@/lib/user/guest";
 import type {
@@ -222,11 +223,11 @@ export function EditProjectSheet({
 
     setIsSaving(true);
     try {
-      let imageIds = images.map((img) => ({ id: img.id }));
+      const uploadedTokens: string[] = [];
       if (pendingImageFiles.length > 0) {
         for (const file of pendingImageFiles) {
           const { token } = await uploadFile(file);
-          imageIds.push({ id: token });
+          uploadedTokens.push(token);
         }
       }
 
@@ -240,7 +241,7 @@ export function EditProjectSheet({
         latitude,
         longitude,
         vimeo_url: vimeoUrl.trim() || undefined,
-        images: imageIds,
+        images: appendProjectGalleryImages(images, uploadedTokens),
         brief_attachments: briefAttachments.map((a) => ({ id: a.id })),
         client: project.client?.id
           ? {

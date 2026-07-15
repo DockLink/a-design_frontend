@@ -6,7 +6,11 @@ import { toast } from "sonner";
 
 import { useUpdateProject } from "@/hooks/use-update-project";
 import { useUploadFile } from "@/hooks/use-upload-file";
-import { projectThumbnailUrl } from "@/lib/projects/map-projects";
+import {
+  appendProjectGalleryImages,
+  projectThumbnailUrl,
+  replaceProjectCover,
+} from "@/lib/projects/map-projects";
 import type { ProjectImage } from "@/types/projects";
 
 export function ProjectHeaderBanner({
@@ -40,10 +44,7 @@ export function ProjectHeaderBanner({
     setIsUploading(true);
     try {
       const { token } = await uploadFile(file);
-      // Replace cover only: new image becomes index 0; old cover is removed
-      // (not moved into precedent images). Remaining precedents keep order.
-      const precedents = images.slice(1).map((img) => ({ id: img.id }));
-      await updateProject({ images: [{ id: token }, ...precedents] });
+      await updateProject({ images: replaceProjectCover(images, token) });
       toast.success("Cover image updated");
       await onUpdated?.();
     } catch (err) {
@@ -70,7 +71,7 @@ export function ProjectHeaderBanner({
         tokens.push(token);
       }
       await updateProject({
-        images: [...images.map((img) => ({ id: img.id })), ...tokens.map((id) => ({ id }))],
+        images: appendProjectGalleryImages(images, tokens),
       });
       toast.success(imageFiles.length > 1 ? "Photos added" : "Photo added");
       await onUpdated?.();
