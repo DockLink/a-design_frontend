@@ -25,6 +25,7 @@ export function getSelectableHomeRoutes(role: UserRole | null): HomeRoutePrefere
     ROLE_DEFAULT_ROUTE.TEAM_LEAD as HomeRoutePreference,
     ROLE_DEFAULT_ROUTE.MEMBER as HomeRoutePreference,
     ROLE_DEFAULT_ROUTE.GUEST as HomeRoutePreference,
+    ROLE_DEFAULT_ROUTE.CLIENT_FULL_ACCESS as HomeRoutePreference,
     NAV_ROUTES.projects,
     NAV_ROUTES.myTasks,
     NAV_ROUTES.notifications,

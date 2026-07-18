@@ -14,6 +14,7 @@ import { ApiError } from "@/types/api";
 import { NAV_ROUTES } from "@/types/navigation";
 import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
+import { isGuestRole } from "@/lib/user/guest";
 
 // Login Form
 
@@ -32,13 +33,12 @@ export function LoginForm() {
     try {
       await login(email.trim(), password);
 
-      const role = useAuthStore.getState().session?.user.roles
-        ? getPrimaryRole(useAuthStore.getState().session!.user.roles)
-        : null;
       const user = useAuthStore.getState().session?.user;
+      const roles = user?.roles ?? [];
+      const role = roles.length ? getPrimaryRole(roles) : null;
 
-      if (role === "GUEST") {
-        const route = await resolveGuestLandingRoute();
+      if (isGuestRole(roles)) {
+        const route = await resolveGuestLandingRoute(roles);
         router.replace(route);
         return;
       }

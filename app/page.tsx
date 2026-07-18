@@ -8,6 +8,7 @@ import { getPrimaryRole } from "@/lib/auth/rbac";
 import { NAV_ROUTES } from "@/types/navigation";
 import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
+import { isGuestRole } from "@/lib/user/guest";
 
 export default function HomePage() {
   const router = useRouter();
@@ -21,12 +22,11 @@ export default function HomePage() {
       return;
     }
 
-    const role = session?.user.roles
-      ? getPrimaryRole(session.user.roles)
-      : null;
+    const roles = session?.user.roles ?? [];
+    const role = roles.length ? getPrimaryRole(roles) : null;
 
-    if (role === "GUEST") {
-      void resolveGuestLandingRoute().then((route) => router.replace(route));
+    if (isGuestRole(roles)) {
+      void resolveGuestLandingRoute(roles).then((route) => router.replace(route));
       return;
     }
 

@@ -18,9 +18,14 @@ export function canEditProjectDetails(orgRole: SidebarRole): boolean {
   return orgRole === "superadmin" || orgRole === "admin";
 }
 
-export function canAccessProjectDetail(role: SidebarRole, isAssigned: boolean): boolean {
+export function canAccessProjectDetail(
+  role: SidebarRole,
+  isAssigned: boolean,
+  fullViewAccess = false,
+): boolean {
   if (role === "superadmin" || role === "admin") return true;
   if (role === "member" || role === "lead") return true;
+  if (fullViewAccess) return true;
   return isAssigned;
 }
 

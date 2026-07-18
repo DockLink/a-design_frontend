@@ -33,6 +33,7 @@ const ROLE_PILL: Record<UserRole, { bg: string; color: string; label: string }> 
   TEAM_LEAD: { bg: "#DBEAFE", color: "#1E3A8A", label: "Team Lead" },
   MEMBER: { bg: "#F5EFE6", color: "#6B5744", label: "Member" },
   GUEST: { bg: "#F5EFE6", color: "#6B5744", label: "Guest" },
+  CLIENT_FULL_ACCESS: { bg: "#E8F0FE", color: "#1E4A7A", label: "Full view access" },
 };
 
 const STATUS_PILL: Record<UserStatus, { bg: string; color: string }> = {
@@ -105,7 +106,7 @@ export function UserManagementPage() {
   const visibleUsers = useMemo(
     () =>
       (isSuperAdmin ? users : users.filter((u) => !u.roles.includes("SUPER_ADMIN"))).filter(
-        (u) => !u.roles.includes("GUEST"),
+        (u) => !u.roles.includes("GUEST") && !u.roles.includes("CLIENT_FULL_ACCESS"),
       ),
     [users, isSuperAdmin],
   );
