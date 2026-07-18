@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useInfiniteProjects } from "@/hooks/use-infinite-projects";
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
+import { isGuestFullViewAccess } from "@/lib/user/guest";
 import {
   dsActionBtn,
   dsCallout,
@@ -141,6 +142,8 @@ export default function ProjectsListPage() {
   const { user } = useAuth();
   const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
   const isGuest = sidebarRole === "guest";
+  const isFullViewGuest = isGuestFullViewAccess(user?.roles);
+  const isAssignedGuest = isGuest && !isFullViewGuest;
   const canCreateProject = sidebarRole === "admin" || sidebarRole === "superadmin";
   const isSuperAdmin = sidebarRole === "superadmin";
   const showSplitView = !canCreateProject && !isGuest;
@@ -165,7 +168,7 @@ export default function ProjectsListPage() {
     fetchNextPage: memberFetchNext,
   } = useInfiniteProjects(
     { limit: PAGE_SIZE, status: "ACTIVE", as_member: true },
-    { enabled: showSplitView || isGuest },
+    { enabled: showSplitView || isAssignedGuest },
   );
 
   const {
@@ -204,13 +207,13 @@ export default function ProjectsListPage() {
     [showSplitView, allProjects, myProjectIds],
   );
 
-  const myLoading = isGuest ? memberLoading : showSplitView && (memberLoading || ledLoading);
+  const myLoading = isAssignedGuest ? memberLoading : showSplitView && (memberLoading || ledLoading);
   const isLoading = allLoading || myLoading;
 
   useEffect(() => {
-    if (!isGuest || memberLoading || memberProjectsRaw.length !== 1) return;
+    if (!isAssignedGuest || memberLoading || memberProjectsRaw.length !== 1) return;
     router.replace(projectRoute(memberProjectsRaw[0].id));
-  }, [isGuest, memberLoading, memberProjectsRaw, router]);
+  }, [isAssignedGuest, memberLoading, memberProjectsRaw, router]);
 
   async function handleDeleteProject() {
     if (!deleteTarget) return;
@@ -234,9 +237,11 @@ export default function ProjectsListPage() {
           <div style={{ ...dsSubtitle, marginTop: "8px" }}>
             {canCreateProject
               ? "All organisation projects"
-              : isGuest
-                ? "Projects you have been assigned to"
-                : "Projects you lead, projects you're on, and all others with complete view access"}
+              : isFullViewGuest
+                ? "All organisation projects — view only"
+                : isAssignedGuest
+                  ? "Projects you have been assigned to"
+                  : "Projects you lead, projects you're on, and all others with complete view access"}
           </div>
         </div>
         {canCreateProject && (
@@ -262,7 +267,7 @@ export default function ProjectsListPage() {
 
       {isLoading ? (
         <div style={dsCallout}>Loading projects…</div>
-      ) : isGuest ? (
+      ) : isAssignedGuest ? (
         <>
           {memberProjectsRaw.length === 0 ? (
             <div style={dsCallout}>No projects assigned yet.</div>

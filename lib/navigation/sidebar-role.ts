@@ -21,7 +21,7 @@ export function toSidebarRole(role: UserRole | null): SidebarRole {
   if (role === "SUPER_ADMIN") return "superadmin";
   if (role === "ADMIN") return "admin";
   if (role === "TEAM_LEAD") return "lead";
-  if (role === "GUEST") return "guest";
+  if (role === "GUEST" || role === "CLIENT_FULL_ACCESS") return "guest";
   return "member";
 }
 
@@ -36,7 +36,7 @@ export const HOME_ROUTE: Record<SidebarRole, string> = {
 export function canAccessRoute(role: UserRole | null, pathname: string): boolean {
   if (!role) return false;
 
-  if (role === "GUEST") {
+  if (role === "GUEST" || role === "CLIENT_FULL_ACCESS") {
     if (GUEST_BLOCKED_ROUTES.some((r) => pathname.startsWith(r))) return false;
     return (
       pathname.startsWith(NAV_ROUTES.guestDashboard) ||
@@ -57,9 +57,14 @@ export function canAccessRoute(role: UserRole | null, pathname: string): boolean
   return true;
 }
 
-export function canOpenProjectDetail(sidebarRole: SidebarRole, isAssigned = false): boolean {
+export function canOpenProjectDetail(
+  sidebarRole: SidebarRole,
+  isAssigned = false,
+  fullViewAccess = false,
+): boolean {
   if (sidebarRole === "superadmin" || sidebarRole === "admin") return true;
   if (sidebarRole === "member" || sidebarRole === "lead") return true;
+  if (fullViewAccess) return true;
   return isAssigned;
 }
 

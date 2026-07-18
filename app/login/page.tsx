@@ -12,6 +12,7 @@ import { APP_NAME } from "@/lib/constants";
 import { NAV_ROUTES } from "@/types/navigation";
 import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
+import { isGuestRole } from "@/lib/user/guest";
 
 const LOGIN_BG = "#F9F5F1";
 
@@ -22,12 +23,11 @@ export default function LoginPage() {
   useEffect(() => {
     if (!isHydrated || !isAuthenticated) return;
 
-    const role = session?.user.roles
-      ? getPrimaryRole(session.user.roles)
-      : null;
+    const roles = session?.user.roles ?? [];
+    const role = roles.length ? getPrimaryRole(roles) : null;
 
-    if (role === "GUEST") {
-      void resolveGuestLandingRoute().then((route) => router.replace(route));
+    if (isGuestRole(roles)) {
+      void resolveGuestLandingRoute(roles).then((route) => router.replace(route));
       return;
     }
 

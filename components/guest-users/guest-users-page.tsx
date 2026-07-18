@@ -13,10 +13,15 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useUsers } from "@/hooks/use-users";
 import { isSuperAdminRole } from "@/lib/navigation/sidebar-role";
-import type { User, UserStatus } from "@/types/users";
+import { guestAccessLabel } from "@/lib/user/guest";
+import type { User, UserRole, UserStatus } from "@/types/users";
 
 const PAGE_SIZE = 20;
-const GUEST_ROLE_OPTIONS = [{ value: "GUEST" as const, label: "Guest" }];
+const GUEST_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "GUEST", label: "Guest" },
+  { value: "CLIENT_FULL_ACCESS", label: "Full view access" },
+];
+const GUEST_LIST_ROLES: UserRole[] = ["GUEST", "CLIENT_FULL_ACCESS"];
 
 const STATUS_PILL: Record<UserStatus, { bg: string; color: string }> = {
   ACTIVE: { bg: "#D8F3DC", color: "#2D6A4F" },
@@ -55,7 +60,7 @@ export function GuestUsersPage() {
       page,
       limit: PAGE_SIZE,
       search: debouncedSearch,
-      roles: ["GUEST"],
+      roles: GUEST_LIST_ROLES,
     });
 
   const activeGuests = useMemo(
@@ -88,8 +93,13 @@ export function GuestUsersPage() {
   }
 
   async function handleCreateGuest(payload: Parameters<typeof createUser>[0]) {
-    await createUser({ ...payload, role: "GUEST" });
-    setFeedback("Guest account created. Assign them to projects from each project's overview.");
+    await createUser(payload);
+    const fullView = payload.role === "CLIENT_FULL_ACCESS";
+    setFeedback(
+      fullView
+        ? "Guest account created with full view access to all projects."
+        : "Guest account created. Assign them to projects from each project's overview.",
+    );
   }
 
   function renderRow(user: User, idx: number, list: User[]) {
@@ -136,6 +146,8 @@ export function GuestUsersPage() {
                 }}
               >
                 {user.email}
+                {" · "}
+                {guestAccessLabel(user.roles)}
               </div>
             </div>
           </div>
@@ -372,7 +384,7 @@ export function GuestUsersPage() {
         roleOptions={GUEST_ROLE_OPTIONS}
         defaultRole="GUEST"
         title="Create guest account"
-        subtitle="Guests get view-only access to projects you assign them to."
+        subtitle="Guest: assign per project. Full view access: view-only on every project."
       />
 
       {deleteTarget && (

@@ -11,6 +11,7 @@ import { ProjectMembersProvider, useProjectMembers } from "@/hooks/use-project-m
 import { getPrimaryRole } from "@/lib/auth/rbac";
 import { toSidebarRole } from "@/lib/navigation/sidebar-role";
 import { canAccessProjectDetail } from "@/lib/projects/permissions";
+import { isGuestFullViewAccess } from "@/lib/user/guest";
 import { NAV_ROUTES } from "@/types/navigation";
 
 function ProjectAccessGate({
@@ -27,16 +28,17 @@ function ProjectAccessGate({
   const { project, isLoading, error } = useProjectContext();
 
   const sidebarRole = toSidebarRole(user?.roles ? getPrimaryRole(user.roles) : null);
+  const fullViewAccess = isGuestFullViewAccess(user?.roles);
   const assignedParam = searchParams.get("assigned") === "1";
   const userId = user?.id ?? "";
   const assigned = assignedParam || isAssigned(userId);
 
   useEffect(() => {
     if (isLoading || !user) return;
-    if (!canAccessProjectDetail(sidebarRole, assigned)) {
+    if (!canAccessProjectDetail(sidebarRole, assigned, fullViewAccess)) {
       router.replace(NAV_ROUTES.projects);
     }
-  }, [isLoading, user, sidebarRole, assigned, router]);
+  }, [isLoading, user, sidebarRole, assigned, fullViewAccess, router]);
 
   if (isLoading) {
     return <div style={{ padding: "24px", color: "var(--ds-tertiary-label)", fontSize: "14px" }}>Loading project…</div>;
@@ -50,7 +52,7 @@ function ProjectAccessGate({
     );
   }
 
-  if (!canAccessProjectDetail(sidebarRole, assigned)) return null;
+  if (!canAccessProjectDetail(sidebarRole, assigned, fullViewAccess)) return null;
 
   return (
     <ProjectShell projectId={projectId} projectName={project.name}>

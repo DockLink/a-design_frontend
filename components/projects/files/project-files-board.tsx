@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { canDownloadProjectFiles, canManageProject } from "@/lib/projects/permissions";
-import {
-  isArchiveFolderPath,
-  resolveUploadFolderPath,
-} from "@/lib/files/archive-path";
+import { isArchiveFolderPath } from "@/lib/files/archive-path";
 import type { ProjectFile, ProjectFolderNode } from "@/types/files";
 
 import { FileList } from "./file-list";
@@ -93,26 +90,20 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
   const tree = folderTree?.tree ?? [];
   const fileCounts = folderTree?.fileCounts ?? {};
-  const sourceByArchivePath = folderTree?.sourceByArchivePath ?? {};
   const selectedNode = currentFolderPath
     ? findNode(tree, currentFolderPath)
     : null;
   const breadcrumb = currentFolderPath
     ? breadcrumbPath(tree, currentFolderPath) ?? []
     : [];
-  const uploadFolderPath = currentFolderPath
-    ? resolveUploadFolderPath(currentFolderPath, sourceByArchivePath)
-    : null;
+  const uploadFolderPath = currentFolderPath;
   const uploadTargetNode = uploadFolderPath
     ? findNode(tree, uploadFolderPath)
     : null;
-  const uploadRedirectsFromArchive =
-    !!currentFolderPath && uploadFolderPath !== currentFolderPath;
+  const isArchiveFolder =
+    !!currentFolderPath && isArchiveFolderPath(currentFolderPath);
   const isVersioned = uploadTargetNode?.isVersioned ?? selectedNode?.isVersioned ?? false;
-  const canUploadHere =
-    !!uploadFolderPath &&
-    !!currentFolderPath &&
-    (!isArchiveFolderPath(currentFolderPath) || uploadRedirectsFromArchive);
+  const canUploadHere = !!uploadFolderPath && !!currentFolderPath;
 
   async function handleDownload(file: ProjectFile) {
     try {
@@ -340,7 +331,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
                   </>
                 ) : (
                   <span className="text-[11px] text-[var(--ds-secondary-label)]">
-                    Select a live folder to upload
+                    Select a folder to upload
                   </span>
                 )}
               </div>
@@ -387,12 +378,8 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           open={showUpload}
           onOpenChange={setShowUpload}
           folderPath={uploadFolderPath}
-          folderLabel={
-            uploadRedirectsFromArchive
-              ? `${uploadTargetNode?.name ?? "Live folder"} (from archive view)`
-              : (selectedNode?.name ?? uploadFolderPath)
-          }
-          isVersioned={isVersioned}
+          folderLabel={selectedNode?.name ?? uploadFolderPath}
+          isVersioned={isVersioned && !isArchiveFolder}
           onUpload={(folderPath, file, onProgress) =>
             uploadFile(folderPath, file, undefined, onProgress)
           }

@@ -138,7 +138,7 @@ function FolderItem({
         <ContextMenu>
           <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
           <ContextMenuContent>
-            {!isArchive && onCreateSubfolder ? (
+            {onCreateSubfolder ? (
               <ContextMenuItem onClick={() => onCreateSubfolder(node.path)}>
                 <FolderPlus size={14} />
                 New subfolder
