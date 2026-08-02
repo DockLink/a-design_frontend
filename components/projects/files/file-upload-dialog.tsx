@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type InputHTMLAttributes } from "react";
 import { AlertCircle, Folder, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,56 +13,53 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { collectDroppedFiles } from "@/lib/files/collect-dropped-files";
 import { formatFileSize } from "@/lib/files/format";
+
+/** Non-standard attrs for folder picker (Chromium / WebKit). */
+const folderInputAttrs = {
+  webkitdirectory: "",
+  directory: "",
+} as InputHTMLAttributes<HTMLInputElement>;
 
 interface QueuedFile {
   file: File;
   sizeLabel: string;
-  uploading: boolean;
-  /** Real upload progress 0-100 from XHR progress events. */
-  progress: number;
-  done: boolean;
-  error?: string;
 }
 
 export function FileUploadDialog({
   open,
   onOpenChange,
-  folderPath,
+  folderPath: _folderPath,
   folderLabel,
   isVersioned,
-  onUpload,
+  onEnqueue,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   folderPath: string;
   folderLabel: string;
   isVersioned: boolean;
-  onUpload: (
-    folderPath: string,
-    file: File,
-    onProgress?: (pct: number) => void
-  ) => Promise<unknown>;
+  onEnqueue: (files: File[]) => void;
 }) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) setQueue([]);
   }, [open]);
 
-  function addFiles(fileList: FileList | null) {
-    if (!fileList) return;
+  function addFiles(files: FileList | File[] | null) {
+    if (!files) return;
+    const list = Array.from(files).filter((f) => f.size > 0);
+    if (list.length === 0) return;
     setQueue((q) => [
       ...q,
-      ...Array.from(fileList).map((f) => ({
+      ...list.map((f) => ({
         file: f,
         sizeLabel: formatFileSize(f.size),
-        uploading: false,
-        progress: 0,
-        done: false,
       })),
     ]);
   }
@@ -71,57 +68,14 @@ export function FileUploadDialog({
     setQueue((q) => q.filter((_, i) => i !== index));
   }
 
-  async function handleUpload() {
-    if (queue.length === 0 || busy) return;
-    setBusy(true);
-
-    const results = await Promise.allSettled(
-      queue.map(async (qf, index) => {
-        if (qf.done) return;
-        setQueue((q) =>
-          q.map((x, i) =>
-            i === index ? { ...x, uploading: true, progress: 0, error: undefined } : x
-          )
-        );
-        try {
-          await onUpload(folderPath, qf.file, (pct) => {
-            setQueue((q) =>
-              q.map((x, i) => (i === index ? { ...x, progress: pct } : x))
-            );
-          });
-          setQueue((q) =>
-            q.map((x, i) =>
-              i === index ? { ...x, uploading: false, progress: 100, done: true } : x
-            )
-          );
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Upload failed";
-          setQueue((q) =>
-            q.map((x, i) =>
-              i === index ? { ...x, uploading: false, error: msg } : x
-            )
-          );
-          throw err;
-        }
-      })
-    );
-
-    setBusy(false);
-
-    const failed = results.filter((r) => r.status === "rejected").length;
-    const succeeded = results.length - failed;
-
-    if (succeeded > 0) {
-      toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} uploaded`);
-    }
-    if (failed > 0) {
-      toast.error(`${failed} file${failed > 1 ? "s" : ""} failed`);
-    }
-
-    if (failed === 0) onOpenChange(false);
+  function handleUpload() {
+    if (queue.length === 0) return;
+    const files = queue.map((q) => q.file);
+    onEnqueue(files);
+    const n = files.length;
+    toast.success(`${n} file${n > 1 ? "s" : ""} queued`);
+    onOpenChange(false);
   }
-
-  const allDone = queue.length > 0 && queue.every((f) => f.done);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,7 +114,7 @@ export function FileUploadDialog({
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
-              addFiles(e.dataTransfer.files);
+              void collectDroppedFiles(e.dataTransfer).then(addFiles);
             }}
             className="flex h-36 flex-col items-center justify-center gap-2 rounded-xl transition-all"
             style={{
@@ -169,17 +123,38 @@ export function FileUploadDialog({
             }}
           >
             <Upload size={24} style={{ color: "var(--ds-accent)" }} />
-            <span className="text-[14px] text-[var(--ds-secondary-label)]">Drag files here</span>
-            <label className="cursor-pointer rounded-md bg-[#F5E6D0] px-3 py-1 text-[12px] font-medium text-[var(--ds-accent)]">
-              Browse
-              <input
-                ref={inputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(e) => addFiles(e.target.files)}
-              />
-            </label>
+            <span className="text-[14px] text-[var(--ds-secondary-label)]">
+              Drag files or folders here
+            </span>
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer rounded-md bg-[#F5E6D0] px-3 py-1 text-[12px] font-medium text-[var(--ds-accent)]">
+                Browse
+                <input
+                  ref={inputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <label className="cursor-pointer rounded-md bg-[#F5E6D0] px-3 py-1 text-[12px] font-medium text-[var(--ds-accent)]">
+                Browse folder
+                <input
+                  ref={folderInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  {...folderInputAttrs}
+                  onChange={(e) => {
+                    addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
           </div>
 
           {/* Queue */}
@@ -188,48 +163,21 @@ export function FileUploadDialog({
               {queue.map((qf, i) => (
                 <div
                   key={i}
-                  className="rounded-lg bg-[var(--ds-bg)] px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-[var(--ds-bg)] px-3 py-2"
                 >
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="truncate text-[13px] font-medium text-[var(--ds-label)]">
-                      {qf.file.name}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-[11px] text-[var(--ds-secondary-label)]">{qf.sizeLabel}</span>
-                      {!qf.uploading && !qf.done && (
-                        <button
-                          type="button"
-                          onClick={() => removeQueued(i)}
-                          className="text-[var(--ds-secondary-label)] hover:text-[var(--ds-label)]"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
+                  <span className="truncate text-[13px] font-medium text-[var(--ds-label)]">
+                    {qf.file.name}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-[11px] text-[var(--ds-secondary-label)]">{qf.sizeLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeQueued(i)}
+                      className="text-[var(--ds-secondary-label)] hover:text-[var(--ds-label)]"
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 overflow-hidden rounded-full bg-[#EDE3D4]" style={{ height: 4 }}>
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: qf.done
-                            ? "100%"
-                            : qf.uploading
-                            ? `${Math.max(qf.progress, 2)}%`
-                            : "0%",
-                          background: qf.error ? "#DC2626" : "var(--ds-accent)",
-                        }}
-                      />
-                    </div>
-                    {qf.uploading && (
-                      <span className="shrink-0 text-[10px] text-[var(--ds-secondary-label)]">
-                        {qf.progress}%
-                      </span>
-                    )}
-                  </div>
-                  {qf.error && (
-                    <p className="mt-1 text-[11px] text-red-600">{qf.error}</p>
-                  )}
                 </div>
               ))}
             </div>
@@ -241,11 +189,11 @@ export function FileUploadDialog({
             Cancel
           </Button>
           <Button
-            disabled={queue.length === 0 || busy || allDone}
-            onClick={() => void handleUpload()}
+            disabled={queue.length === 0}
+            onClick={handleUpload}
             className="bg-[var(--ds-accent)] text-white hover:bg-[var(--ds-accent-hover)]"
           >
-            {busy ? "Uploading…" : allDone ? "Done" : `Upload ${queue.length > 0 ? `(${queue.length})` : ""}`}
+            {`Upload ${queue.length > 0 ? `(${queue.length})` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>

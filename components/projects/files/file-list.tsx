@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Clock,
   Download,
@@ -19,11 +19,16 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { fileExtension, formatFileDate, formatFileSize } from "@/lib/files/format";
-import type { ProjectFile } from "@/types/files";
+import type { ProjectFile, ProjectFolderNode } from "@/types/files";
 import { FileTypeIcon } from "./file-type-icon";
+
+const GRID_COLS = "grid-cols-[28px_1fr_120px_80px_100px]";
+const MAX_SELECTABLE_DEFAULT = 50;
 
 export function FileList({
   files,
+  childFolders = [],
+  fileCounts = {},
   loading,
   error,
   folderPath,
@@ -33,6 +38,11 @@ export function FileList({
   canDownload = true,
   canShare = true,
   canUploadVersion = true,
+  selectedIds,
+  onToggleFile,
+  onToggleAll,
+  maxSelectable = MAX_SELECTABLE_DEFAULT,
+  onOpenFolder,
   onDownload,
   onShare,
   onDelete,
@@ -41,6 +51,8 @@ export function FileList({
   onUploadNewVersion,
 }: {
   files: ProjectFile[];
+  childFolders?: ProjectFolderNode[];
+  fileCounts?: Record<string, number>;
   loading: boolean;
   error: string | null;
   folderPath: string | null;
@@ -50,6 +62,11 @@ export function FileList({
   canDownload?: boolean;
   canShare?: boolean;
   canUploadVersion?: boolean;
+  selectedIds: Set<string>;
+  onToggleFile: (fileId: string) => void;
+  onToggleAll: () => void;
+  maxSelectable?: number;
+  onOpenFolder: (path: string) => void;
   onDownload: (file: ProjectFile) => void;
   onShare: (file: ProjectFile) => void;
   onDelete: (file: ProjectFile) => void;
@@ -58,6 +75,20 @@ export function FileList({
   onUploadNewVersion: (file: ProjectFile, picked: File) => void;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  const selectedInFolder = files.filter((f) => selectedIds.has(f.id)).length;
+  const allSelected =
+    files.length > 0 &&
+    selectedInFolder === Math.min(files.length, maxSelectable) &&
+    selectedInFolder > 0;
+  const someSelected = selectedInFolder > 0 && !allSelected;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected;
+    }
+  }, [someSelected]);
 
   if (!folderPath) {
     return (
@@ -84,7 +115,7 @@ export function FileList({
     );
   }
 
-  if (files.length === 0) {
+  if (files.length === 0 && childFolders.length === 0) {
     return (
       <div className="flex h-48 flex-col items-center justify-center gap-2 text-[var(--ds-secondary-label)]">
         <Folder size={32} className="opacity-30" />
@@ -96,12 +127,42 @@ export function FileList({
   return (
     <div className="h-full overflow-y-auto">
       {/* Column headers */}
-      <div className="sticky top-0 z-10 grid h-9 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-[12px] text-[var(--ds-secondary-label)]">
+      <div
+        className={cn(
+          "sticky top-0 z-10 grid h-9 items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-[12px] text-[var(--ds-secondary-label)]",
+          GRID_COLS
+        )}
+      >
+        <span className="flex items-center justify-center">
+          {files.length > 0 && (
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              checked={allSelected}
+              onChange={onToggleAll}
+              title="Select all in this folder"
+              aria-label="Select all in this folder"
+              className="h-3.5 w-3.5 cursor-pointer accent-[var(--ds-accent)]"
+            />
+          )}
+        </span>
         <span>Name</span>
         <span>Date</span>
         <span>Size</span>
         <span />
       </div>
+
+      {childFolders.map((folder) => (
+        <FolderRow
+          key={folder.path}
+          folder={folder}
+          fileCount={fileCounts[folder.path]}
+          hovered={hoveredId === folder.path}
+          onMouseEnter={() => setHoveredId(folder.path)}
+          onMouseLeave={() => setHoveredId(null)}
+          onOpen={() => onOpenFolder(folder.path)}
+        />
+      ))}
 
       {files.map((file) => (
         <FileRow
@@ -113,6 +174,8 @@ export function FileList({
           canDownload={canDownload}
           canShare={canShare}
           canUploadVersion={canUploadVersion}
+          selected={selectedIds.has(file.id)}
+          onToggleSelect={() => onToggleFile(file.id)}
           hovered={hoveredId === file.id}
           onMouseEnter={() => setHoveredId(file.id)}
           onMouseLeave={() => setHoveredId(null)}
@@ -128,6 +191,64 @@ export function FileList({
   );
 }
 
+function FolderRow({
+  folder,
+  fileCount,
+  hovered,
+  onMouseEnter,
+  onMouseLeave,
+  onOpen,
+}: {
+  folder: ProjectFolderNode;
+  fileCount?: number;
+  hovered: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onOpen: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={cn(
+        "grid h-10 cursor-pointer items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors",
+        GRID_COLS,
+        hovered ? "bg-[var(--ds-bg)]" : "bg-transparent"
+      )}
+    >
+      <span />
+      <div className="flex min-w-0 items-center gap-2">
+        <Folder size={15} style={{ color: "var(--ds-accent)", flexShrink: 0 }} />
+        <span className="truncate text-[13px] font-medium text-[var(--ds-label)]">
+          {folder.name}
+        </span>
+        {folder.isVersioned && (
+          <span className="shrink-0 rounded-[3px] bg-[#F5E6D0] px-1 text-[9px] font-bold text-[var(--ds-accent)]">
+            V
+          </span>
+        )}
+        {fileCount != null && fileCount > 0 && (
+          <span className="shrink-0 rounded-full bg-[#EDE3D4] px-1.5 text-[10px] text-[var(--ds-secondary-label)]">
+            {fileCount}
+          </span>
+        )}
+      </div>
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
 function FileRow({
   file,
   isVersioned,
@@ -136,6 +257,8 @@ function FileRow({
   canDownload,
   canShare,
   canUploadVersion,
+  selected,
+  onToggleSelect,
   hovered,
   onMouseEnter,
   onMouseLeave,
@@ -153,6 +276,8 @@ function FileRow({
   canDownload: boolean;
   canShare: boolean;
   canUploadVersion: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   hovered: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -187,8 +312,9 @@ function FileRow({
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
           className={cn(
-            "grid h-10 grid-cols-[1fr_120px_80px_100px] items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors",
-            hovered ? "bg-[var(--ds-bg)]" : "bg-transparent"
+            "grid h-10 items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors",
+            GRID_COLS,
+            selected || hovered ? "bg-[var(--ds-bg)]" : "bg-transparent"
           )}
         >
           {/* Hidden file input for new-version upload */}
@@ -198,6 +324,18 @@ function FileRow({
             className="hidden"
             onChange={handleFileChange}
           />
+
+          {/* Checkbox */}
+          <span className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Select ${file.fileName}`}
+              className="h-3.5 w-3.5 cursor-pointer accent-[var(--ds-accent)]"
+            />
+          </span>
 
           {/* Name */}
           <div className="flex min-w-0 items-center gap-2">
@@ -226,7 +364,7 @@ function FileRow({
           <div
             className={cn(
               "flex items-center justify-end gap-1 transition-opacity",
-              hovered ? "opacity-100" : "opacity-0"
+              hovered || selected ? "opacity-100" : "opacity-0"
             )}
           >
             {canDownload && (
