@@ -5,8 +5,8 @@ import {
   AlertCircle,
   ChevronLeft,
   Download,
+  FolderInput,
   FolderPlus,
-  Share2,
   Trash2,
   Upload,
   X,
@@ -24,12 +24,11 @@ import {
 } from "@/stores/upload-store";
 import type {
   BulkDownloadUrlItem,
-  CreateShareLinkPayload,
   ProjectFile,
   ProjectFolderNode,
 } from "@/types/files";
 
-import { BulkShareFileDialog } from "./bulk-share-file-dialog";
+import { BulkMoveFileDialog } from "./bulk-move-file-dialog";
 import { FileList } from "./file-list";
 import { FileUploadDialog } from "./file-upload-dialog";
 import { FileVersionHistoryDialog } from "./file-version-history-dialog";
@@ -113,7 +112,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     createShareLink,
     revokeShareLink,
     bulkDeleteFiles,
-    bulkCreateShareLinks,
+    bulkMoveFiles,
     bulkGetDownloadUrls,
     createFolder,
     renameFolder,
@@ -133,11 +132,11 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const [folderDialogSaving, setFolderDialogSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [bulkShareOpen, setBulkShareOpen] = useState(false);
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
 
   useEffect(() => {
     setSelectedIds(new Set());
-    setBulkShareOpen(false);
+    setBulkMoveOpen(false);
   }, [currentFolderPath]);
 
   useEffect(() => {
@@ -371,13 +370,28 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     }
   }
 
-  async function handleBulkCreateShareLinks(payload: CreateShareLinkPayload) {
-    if (!currentFolderPath) return [];
-    return bulkCreateShareLinks(
-      currentFolderPath,
-      selectedFiles.map((f) => f.id),
-      payload
-    );
+  async function handleBulkMove(targetFolderPath: string) {
+    if (!currentFolderPath || selectedFiles.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await bulkMoveFiles(
+        currentFolderPath,
+        targetFolderPath,
+        selectedFiles.map((f) => f.id)
+      );
+      clearSelection();
+      toast.success(
+        res.movedCount === 1
+          ? "Moved 1 file"
+          : `Moved ${res.movedCount} files`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Move failed");
+      await Promise.all([reloadFiles(), reloadTree()]);
+      throw err;
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   if (treeLoading || isProvisioning) {
@@ -571,16 +585,16 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
                     Download
                   </Button>
                 )}
-                {canShare && (
+                {canManage && (
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={bulkBusy}
                     className="h-7 gap-1 text-[12px]"
-                    onClick={() => setBulkShareOpen(true)}
+                    onClick={() => setBulkMoveOpen(true)}
                   >
-                    <Share2 size={11} />
-                    Share
+                    <FolderInput size={11} />
+                    Move
                   </Button>
                 )}
                 {canDelete && (
@@ -668,11 +682,14 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         onRevokeShareLink={revokeShareLink}
       />
 
-      <BulkShareFileDialog
-        open={bulkShareOpen}
-        onOpenChange={setBulkShareOpen}
+      <BulkMoveFileDialog
+        open={bulkMoveOpen}
+        onOpenChange={setBulkMoveOpen}
         files={selectedFiles}
-        onCreateBulkShareLinks={handleBulkCreateShareLinks}
+        tree={tree}
+        fileCounts={fileCounts}
+        currentFolderPath={currentFolderPath}
+        onMove={handleBulkMove}
       />
 
       {/* Version history dialog */}

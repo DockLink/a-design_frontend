@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendFileFetch } from "@/lib/api/backend-file";
-import type { BulkShareLinkItem } from "@/types/files";
+import type { BulkMoveResponse } from "@/types/files";
 
 type RouteContext = { params: Promise<{ projectId: string }> };
 
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const { projectId } = await context.params;
   const body = await req.json();
 
-  const result = await backendFileFetch<{ data: BulkShareLinkItem[] }>(
-    `/projects/${projectId}/files/bulk-share`,
+  const result = await backendFileFetch<BulkMoveResponse>(
+    `/projects/${projectId}/files/bulk-move`,
     {
       method: "POST",
       headers: { Authorization: authorization },

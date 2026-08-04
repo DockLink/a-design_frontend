@@ -52,17 +52,14 @@ export interface BulkFileIdsPayload {
   fileIds: string[];
 }
 
-export interface BulkSharePayload extends BulkFileIdsPayload {
-  expiresAt?: string;
-  allowDownload?: boolean;
+export interface BulkMovePayload extends BulkFileIdsPayload {
+  targetFolderPath: string;
 }
 
-export interface BulkShareLinkItem {
-  fileId: string;
-  token: string;
-  shareUrl: string;
-  expiresAt: string | null;
-  allowDownload: boolean;
+export interface BulkMoveResponse {
+  success: boolean;
+  movedCount: number;
+  data: ProjectFile[];
 }
 
 export interface BulkDownloadUrlItem {

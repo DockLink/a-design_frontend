@@ -7,7 +7,7 @@ import { uploadFileMultipart } from "@/lib/files/multipart-upload";
 import type {
   BulkDeleteResponse,
   BulkDownloadUrlItem,
-  BulkShareLinkItem,
+  BulkMoveResponse,
   CreateShareLinkPayload,
   DownloadUrlResponse,
   ProjectFile,
@@ -196,23 +196,26 @@ export function useProjectFiles(projectId: string) {
     [projectId, loadTree]
   );
 
-  const bulkCreateShareLinks = useCallback(
+  const bulkMoveFiles = useCallback(
     async (
       folderPath: string,
-      fileIds: string[],
-      payload: CreateShareLinkPayload
-    ): Promise<BulkShareLinkItem[]> => {
+      targetFolderPath: string,
+      fileIds: string[]
+    ): Promise<BulkMoveResponse> => {
       const ids = dedupeIds(fileIds);
-      const res = await authApiClient<{ data: BulkShareLinkItem[] }>(
-        `/projects/${projectId}/files/bulk-share`,
+      const res = await authApiClient<BulkMoveResponse>(
+        `/projects/${projectId}/files/bulk-move`,
         {
           method: "POST",
-          body: JSON.stringify({ folderPath, fileIds: ids, ...payload }),
+          body: JSON.stringify({ folderPath, targetFolderPath, fileIds: ids }),
         }
       );
-      return res.data ?? [];
+      const idSet = new Set(ids);
+      setFiles((prev) => prev.filter((f) => !idSet.has(f.id)));
+      await loadTree();
+      return res;
     },
-    [projectId]
+    [projectId, loadTree]
   );
 
   const bulkGetDownloadUrls = useCallback(
@@ -301,7 +304,7 @@ export function useProjectFiles(projectId: string) {
     createShareLink,
     revokeShareLink,
     bulkDeleteFiles,
-    bulkCreateShareLinks,
+    bulkMoveFiles,
     bulkGetDownloadUrls,
     createFolder,
     renameFolder,
