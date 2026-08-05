@@ -1,21 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle, FolderPlus, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  Download,
+  FolderInput,
+  FolderPlus,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { canDownloadProjectFiles, canManageProject } from "@/lib/projects/permissions";
 import { isArchiveFolderPath } from "@/lib/files/archive-path";
-import type { ProjectFile, ProjectFolderNode } from "@/types/files";
+import { sortProjectFolderNodes } from "@/lib/files/sort-folders";
+import {
+  subscribeOnComplete,
+  useUploadStore,
+} from "@/stores/upload-store";
+import type {
+  BulkDownloadUrlItem,
+  ProjectFile,
+  ProjectFolderNode,
+} from "@/types/files";
 
+import { BulkMoveFileDialog } from "./bulk-move-file-dialog";
 import { FileList } from "./file-list";
 import { FileUploadDialog } from "./file-upload-dialog";
 import { FileVersionHistoryDialog } from "./file-version-history-dialog";
 import { FolderTree } from "./folder-tree";
 import { FolderNameDialog } from "./folder-name-dialog";
 import { ShareFileDialog } from "./share-file-dialog";
+
+const MAX_SELECTABLE = 50;
 
 type FolderDialogMode =
   | { type: "create-root" }
@@ -49,12 +70,29 @@ function breadcrumbPath(
   return null;
 }
 
+function triggerBrowserDownloads(items: BulkDownloadUrlItem[]) {
+  items.forEach((item, index) => {
+    window.setTimeout(() => {
+      const a = document.createElement("a");
+      a.href = item.downloadUrl;
+      a.download = item.fileName;
+      a.rel = "noopener noreferrer";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, index * 250);
+  });
+}
+
 export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const { effectiveRole, isViewer } = useProjectMembers();
   const canManage = canManageProject(effectiveRole, isViewer);
   const canDownload = canDownloadProjectFiles(effectiveRole, isViewer);
   const canManageFolders = canManage;
   const isAdmin = effectiveRole === "admin";
+  const canDelete = isAdmin || canManage;
+  const canShare = canManage;
 
   const {
     folderTree,
@@ -67,26 +105,49 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     isProvisioning,
     selectFolder,
     provisionFolders,
-    uploadFile,
     getDownloadUrl,
     getVersionHistory,
     deleteFile,
     renameFile,
     createShareLink,
     revokeShareLink,
+    bulkDeleteFiles,
+    bulkMoveFiles,
+    bulkGetDownloadUrls,
     createFolder,
     renameFolder,
     deleteFolder,
+    reloadFiles,
+    reloadTree,
   } = useProjectFiles(projectId);
+
+  const enqueueUploads = useUploadStore((s) => s.enqueue);
 
   const [showUpload, setShowUpload] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [versionTarget, setVersionTarget] = useState<ProjectFile | null>(null);
   const [shareTarget, setShareTarget] = useState<ProjectFile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [uploadingVersionId, setUploadingVersionId] = useState<string | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialogMode>(null);
   const [folderDialogSaving, setFolderDialogSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setBulkMoveOpen(false);
+  }, [currentFolderPath]);
+
+  useEffect(() => {
+    return subscribeOnComplete((job) => {
+      if (job.projectId !== projectId) return;
+      void reloadTree();
+      if (job.folderPath === currentFolderPath) {
+        void reloadFiles();
+      }
+    });
+  }, [projectId, currentFolderPath, reloadFiles, reloadTree]);
 
   const tree = folderTree?.tree ?? [];
   const fileCounts = folderTree?.fileCounts ?? {};
@@ -96,6 +157,8 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
   const breadcrumb = currentFolderPath
     ? breadcrumbPath(tree, currentFolderPath) ?? []
     : [];
+  const parentFolderPath =
+    breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2].path : null;
   const uploadFolderPath = currentFolderPath;
   const uploadTargetNode = uploadFolderPath
     ? findNode(tree, uploadFolderPath)
@@ -104,6 +167,70 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     !!currentFolderPath && isArchiveFolderPath(currentFolderPath);
   const isVersioned = uploadTargetNode?.isVersioned ?? selectedNode?.isVersioned ?? false;
   const canUploadHere = !!uploadFolderPath && !!currentFolderPath;
+
+  const visibleFiles = useMemo(
+    () => files.filter((f) => f.id !== deletingId),
+    [files, deletingId]
+  );
+
+  // Drop ids that are no longer in the current folder list (e.g. after refresh).
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const valid = new Set(visibleFiles.map((f) => f.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [visibleFiles]);
+
+  const selectedFiles = useMemo(
+    () => visibleFiles.filter((f) => selectedIds.has(f.id)),
+    [visibleFiles, selectedIds]
+  );
+
+  function handleToggleFile(fileId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+        return next;
+      }
+      if (next.size >= MAX_SELECTABLE) {
+        toast.error("You can select up to 50 files");
+        return prev;
+      }
+      next.add(fileId);
+      return next;
+    });
+  }
+
+  function handleToggleAll() {
+    const ids = visibleFiles.map((f) => f.id);
+    const selectedInFolder = ids.filter((id) => selectedIds.has(id)).length;
+    const allSelected =
+      ids.length > 0 &&
+      selectedInFolder === Math.min(ids.length, MAX_SELECTABLE) &&
+      selectedInFolder > 0;
+
+    if (allSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+
+    if (ids.length > MAX_SELECTABLE) {
+      toast.error("You can select up to 50 files");
+    }
+    setSelectedIds(new Set(ids.slice(0, MAX_SELECTABLE)));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
 
   async function handleDownload(file: ProjectFile) {
     try {
@@ -114,18 +241,15 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     }
   }
 
-  async function handleUploadNewVersion(file: ProjectFile, picked: File) {
-    setUploadingVersionId(file.id);
-    try {
-      // Keep the uploaded file's own name; target the specific file being
-      // replaced via its id so the backend supersedes the right record.
-      await uploadFile(file.folderPath, picked, file.id);
-      toast.success(`New version uploaded (replaced "${file.fileName}")`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploadingVersionId(null);
-    }
+  function handleUploadNewVersion(file: ProjectFile, picked: File) {
+    enqueueUploads({
+      projectId,
+      folderPath: file.folderPath,
+      folderLabel: file.folderPath,
+      files: [picked],
+      replaceFileId: file.id,
+    });
+    toast.success("New version queued");
   }
 
   async function handleRename(file: ProjectFile) {
@@ -178,11 +302,95 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     setDeletingId(file.id);
     try {
       await deleteFile(file.id);
+      setSelectedIds((prev) => {
+        if (!prev.has(file.id)) return prev;
+        const next = new Set(prev);
+        next.delete(file.id);
+        return next;
+      });
       toast.success("File deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!currentFolderPath || selectedFiles.length === 0) return;
+    const count = selectedFiles.length;
+    if (
+      !confirm(
+        `Delete ${count} ${count === 1 ? "file" : "files"}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const res = await bulkDeleteFiles(
+        currentFolderPath,
+        selectedFiles.map((f) => f.id)
+      );
+      clearSelection();
+      toast.success(
+        res.deletedCount === 1
+          ? "1 file deleted"
+          : `${res.deletedCount} files deleted`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk delete failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkDownload() {
+    if (!currentFolderPath || selectedFiles.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const urls = await bulkGetDownloadUrls(
+        currentFolderPath,
+        selectedFiles.map((f) => f.id)
+      );
+      if (urls.length === 0) {
+        toast.error("No download links returned");
+        return;
+      }
+      triggerBrowserDownloads(urls);
+      toast.success(
+        urls.length === 1
+          ? "Download started"
+          : `${urls.length} downloads started`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk download failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkMove(targetFolderPath: string) {
+    if (!currentFolderPath || selectedFiles.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await bulkMoveFiles(
+        currentFolderPath,
+        targetFolderPath,
+        selectedFiles.map((f) => f.id)
+      );
+      clearSelection();
+      toast.success(
+        res.movedCount === 1
+          ? "Moved 1 file"
+          : `Moved ${res.movedCount} files`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Move failed");
+      await Promise.all([reloadFiles(), reloadTree()]);
+      throw err;
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -294,6 +502,17 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           <div className="flex h-10 shrink-0 items-center justify-between border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4">
             {/* Path */}
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+              {parentFolderPath && (
+                <button
+                  type="button"
+                  title="Back to parent folder"
+                  aria-label="Back to parent folder"
+                  onClick={() => selectFolder(parentFolderPath)}
+                  className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--ds-accent)] hover:bg-[#EDE3D4]"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+              )}
               {breadcrumb.length === 0 ? (
                 <span className="text-[13px] text-[var(--ds-secondary-label)]">Select a folder</span>
               ) : (
@@ -319,7 +538,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               <div className="ml-3 flex shrink-0 items-center gap-2">
                 {canUploadHere ? (
                   <>
-                    <span className="text-[11px] text-[var(--ds-secondary-label)]">Drop files here</span>
+                    <span className="hidden text-[11px] text-[var(--ds-secondary-label)] sm:inline">Drop files here</span>
                     <Button
                       size="sm"
                       className="h-7 gap-1 bg-[var(--ds-accent)] text-[12px] text-white hover:bg-[var(--ds-accent-hover)]"
@@ -338,6 +557,62 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
             )}
           </div>
 
+          {/* Selection toolbar */}
+          {selectedFiles.length > 0 && (
+            <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-2 border-b border-[rgba(90,60,30,0.10)] bg-[#F5E6D0] px-4 py-1.5">
+              <span className="text-[12px] font-medium text-[var(--ds-label)]">
+                {selectedFiles.length} selected
+              </span>
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={clearSelection}
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-[var(--ds-secondary-label)] hover:bg-[rgba(90,60,30,0.08)] hover:text-[var(--ds-label)] disabled:opacity-50"
+              >
+                <X size={12} />
+                Clear
+              </button>
+              <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                {canDownload && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={bulkBusy}
+                    className="h-7 gap-1 text-[12px]"
+                    onClick={() => void handleBulkDownload()}
+                  >
+                    <Download size={11} />
+                    Download
+                  </Button>
+                )}
+                {canManage && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={bulkBusy}
+                    className="h-7 gap-1 text-[12px]"
+                    onClick={() => setBulkMoveOpen(true)}
+                  >
+                    <FolderInput size={11} />
+                    Move
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={bulkBusy}
+                    className="h-7 gap-1 text-[12px] text-red-700 hover:text-red-800"
+                    onClick={() => void handleBulkDelete()}
+                  >
+                    <Trash2 size={11} />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Versioning banner */}
           {isVersioned && currentFolderPath && (
             <div className="flex h-8 shrink-0 items-center gap-2 border-b border-[rgba(90,60,30,0.08)] bg-amber-50 px-4">
@@ -351,16 +626,23 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           {/* File list */}
           <div className="min-h-0 flex-1 overflow-hidden">
             <FileList
-              files={files.filter((f) => f.id !== deletingId)}
-              loading={filesLoading || uploadingVersionId !== null}
+              files={visibleFiles}
+              childFolders={sortProjectFolderNodes(selectedNode?.children ?? [])}
+              fileCounts={fileCounts}
+              loading={filesLoading}
               error={filesError}
               folderPath={currentFolderPath}
               isVersioned={isVersioned}
-              canDelete={isAdmin || canManage}
+              canDelete={canDelete}
               canRename={canManageFolders}
               canDownload={canDownload}
-              canShare={canManage}
+              canShare={canShare}
               canUploadVersion={canManage}
+              selectedIds={selectedIds}
+              onToggleFile={handleToggleFile}
+              onToggleAll={handleToggleAll}
+              maxSelectable={MAX_SELECTABLE}
+              onOpenFolder={selectFolder}
               onDownload={handleDownload}
               onShare={(f) => setShareTarget(f)}
               onDelete={handleDelete}
@@ -380,8 +662,13 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           folderPath={uploadFolderPath}
           folderLabel={selectedNode?.name ?? uploadFolderPath}
           isVersioned={isVersioned && !isArchiveFolder}
-          onUpload={(folderPath, file, onProgress) =>
-            uploadFile(folderPath, file, undefined, onProgress)
+          onEnqueue={(files) =>
+            enqueueUploads({
+              projectId,
+              folderPath: uploadFolderPath,
+              folderLabel: selectedNode?.name ?? uploadFolderPath,
+              files,
+            })
           }
         />
       )}
@@ -393,6 +680,16 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
         file={shareTarget}
         onCreateShareLink={createShareLink}
         onRevokeShareLink={revokeShareLink}
+      />
+
+      <BulkMoveFileDialog
+        open={bulkMoveOpen}
+        onOpenChange={setBulkMoveOpen}
+        files={selectedFiles}
+        tree={tree}
+        fileCounts={fileCounts}
+        currentFolderPath={currentFolderPath}
+        onMove={handleBulkMove}
       />
 
       {/* Version history dialog */}

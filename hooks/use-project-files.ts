@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { uploadFileMultipart } from "@/lib/files/multipart-upload";
 import type {
+  BulkDeleteResponse,
+  BulkDownloadUrlItem,
+  BulkMoveResponse,
   CreateShareLinkPayload,
   DownloadUrlResponse,
   ProjectFile,
@@ -12,6 +15,10 @@ import type {
   ProjectFolderTree,
   ShareLinkResponse,
 } from "@/types/files";
+
+function dedupeIds(fileIds: string[]): string[] {
+  return [...new Set(fileIds)];
+}
 
 export function useProjectFiles(projectId: string) {
   const [folderTree, setFolderTree] = useState<ProjectFolderTree | null>(null);
@@ -171,6 +178,61 @@ export function useProjectFiles(projectId: string) {
     await authApiClient(`/share/${token}`, { method: "DELETE" });
   }, []);
 
+  const bulkDeleteFiles = useCallback(
+    async (folderPath: string, fileIds: string[]): Promise<BulkDeleteResponse> => {
+      const ids = dedupeIds(fileIds);
+      const res = await authApiClient<BulkDeleteResponse>(
+        `/projects/${projectId}/files/bulk-delete`,
+        {
+          method: "POST",
+          body: JSON.stringify({ folderPath, fileIds: ids }),
+        }
+      );
+      const idSet = new Set(ids);
+      setFiles((prev) => prev.filter((f) => !idSet.has(f.id)));
+      await loadTree();
+      return res;
+    },
+    [projectId, loadTree]
+  );
+
+  const bulkMoveFiles = useCallback(
+    async (
+      folderPath: string,
+      targetFolderPath: string,
+      fileIds: string[]
+    ): Promise<BulkMoveResponse> => {
+      const ids = dedupeIds(fileIds);
+      const res = await authApiClient<BulkMoveResponse>(
+        `/projects/${projectId}/files/bulk-move`,
+        {
+          method: "POST",
+          body: JSON.stringify({ folderPath, targetFolderPath, fileIds: ids }),
+        }
+      );
+      const idSet = new Set(ids);
+      setFiles((prev) => prev.filter((f) => !idSet.has(f.id)));
+      await loadTree();
+      return res;
+    },
+    [projectId, loadTree]
+  );
+
+  const bulkGetDownloadUrls = useCallback(
+    async (folderPath: string, fileIds: string[]): Promise<BulkDownloadUrlItem[]> => {
+      const ids = dedupeIds(fileIds);
+      const res = await authApiClient<{ data: BulkDownloadUrlItem[] }>(
+        `/projects/${projectId}/files/bulk-download-urls`,
+        {
+          method: "POST",
+          body: JSON.stringify({ folderPath, fileIds: ids }),
+        }
+      );
+      return res.data ?? [];
+    },
+    [projectId]
+  );
+
   const createFolder = useCallback(
     async (name: string, parentPath: string | null) => {
       const res = await authApiClient<{ data: ProjectFolderRecord }>(
@@ -241,6 +303,9 @@ export function useProjectFiles(projectId: string) {
     renameFile,
     createShareLink,
     revokeShareLink,
+    bulkDeleteFiles,
+    bulkMoveFiles,
+    bulkGetDownloadUrls,
     createFolder,
     renameFolder,
     deleteFolder,

@@ -47,6 +47,33 @@ export interface CreateShareLinkPayload {
   allowDownload?: boolean;
 }
 
+export interface BulkFileIdsPayload {
+  folderPath: string;
+  fileIds: string[];
+}
+
+export interface BulkMovePayload extends BulkFileIdsPayload {
+  targetFolderPath: string;
+}
+
+export interface BulkMoveResponse {
+  success: boolean;
+  movedCount: number;
+  data: ProjectFile[];
+}
+
+export interface BulkDownloadUrlItem {
+  fileId: string;
+  fileName: string;
+  downloadUrl: string;
+  expiresAt: string;
+}
+
+export interface BulkDeleteResponse {
+  success: boolean;
+  deletedCount: number;
+}
+
 export interface ProvisionFoldersResponse {
   s3RootPrefix: string;
 }
