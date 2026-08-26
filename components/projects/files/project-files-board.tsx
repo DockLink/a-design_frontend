@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ChevronLeft,
@@ -16,17 +17,21 @@ import { Button } from "@/components/ui/button";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useProjectMembers } from "@/hooks/use-project-members";
 import { canDownloadProjectFiles, canManageProject } from "@/lib/projects/permissions";
-import { isArchiveFolderPath } from "@/lib/files/archive-path";
+import { isArchiveFolderPath, resolveUploadFolderPath } from "@/lib/files/archive-path";
+import { ensureFolderPathsExist } from "@/lib/files/ensure-folder-path";
 import { sortProjectFolderNodes } from "@/lib/files/sort-folders";
+import { destinationFolderPath } from "@/lib/files/upload-relative-path";
 import {
   subscribeOnComplete,
   useUploadStore,
 } from "@/stores/upload-store";
+import { projectFilesFolderRoute, projectTabRoute } from "@/types/navigation";
 import type {
   BulkDownloadUrlItem,
   ProjectFile,
   ProjectFolderNode,
 } from "@/types/files";
+import type { UploadFileItem } from "@/types/uploads";
 
 import { BulkMoveFileDialog } from "./bulk-move-file-dialog";
 import { FileList } from "./file-list";
@@ -86,6 +91,10 @@ function triggerBrowserDownloads(items: BulkDownloadUrlItem[]) {
 }
 
 export function ProjectFilesBoard({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const folderFromUrl = searchParams.get("folder");
+
   const { effectiveRole, isViewer } = useProjectMembers();
   const canManage = canManageProject(effectiveRole, isViewer);
   const canDownload = canDownloadProjectFiles(effectiveRole, isViewer);
@@ -121,6 +130,25 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     reloadTree,
   } = useProjectFiles(projectId);
 
+  const navigateToFolder = useCallback(
+    (path: string | null) => {
+      selectFolder(path);
+      if (path) {
+        router.replace(projectFilesFolderRoute(projectId, path), { scroll: false });
+      } else {
+        router.replace(projectTabRoute(projectId, "files"), { scroll: false });
+      }
+    },
+    [projectId, router, selectFolder]
+  );
+
+  // Open folder from ?folder= deep-link (upload toast View, shared links, etc.).
+  useEffect(() => {
+    if (!folderFromUrl) return;
+    if (folderFromUrl === currentFolderPath) return;
+    selectFolder(folderFromUrl);
+  }, [folderFromUrl, currentFolderPath, selectFolder]);
+
   const enqueueUploads = useUploadStore((s) => s.enqueue);
 
   const [showUpload, setShowUpload] = useState(false);
@@ -151,6 +179,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
   const tree = folderTree?.tree ?? [];
   const fileCounts = folderTree?.fileCounts ?? {};
+  const sourceByArchivePath = folderTree?.sourceByArchivePath ?? {};
   const selectedNode = currentFolderPath
     ? findNode(tree, currentFolderPath)
     : null;
@@ -159,13 +188,25 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
     : [];
   const parentFolderPath =
     breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2].path : null;
-  const uploadFolderPath = currentFolderPath;
+  const isArchiveFolder =
+    !!currentFolderPath && isArchiveFolderPath(currentFolderPath);
+  // Uploads/creates always target the live folder, never Superseded archives.
+  const uploadFolderPath = currentFolderPath
+    ? resolveUploadFolderPath(currentFolderPath, sourceByArchivePath)
+    : null;
   const uploadTargetNode = uploadFolderPath
     ? findNode(tree, uploadFolderPath)
     : null;
-  const isArchiveFolder =
-    !!currentFolderPath && isArchiveFolderPath(currentFolderPath);
-  const isVersioned = uploadTargetNode?.isVersioned ?? selectedNode?.isVersioned ?? false;
+  const uploadFolderLabel =
+    uploadTargetNode?.name ??
+    (uploadFolderPath
+      ? uploadFolderPath.split("/").filter(Boolean).pop() ?? uploadFolderPath
+      : "");
+  const uploadsRedirectedFromArchive =
+    isArchiveFolder &&
+    !!uploadFolderPath &&
+    uploadFolderPath !== currentFolderPath;
+  const isVersioned = uploadTargetNode?.isVersioned ?? false;
   const canUploadHere = !!uploadFolderPath && !!currentFolderPath;
 
   const visibleFiles = useMemo(
@@ -246,10 +287,38 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
       projectId,
       folderPath: file.folderPath,
       folderLabel: file.folderPath,
-      files: [picked],
+      files: [{ file: picked }],
       replaceFileId: file.id,
     });
     toast.success("New version queued");
+  }
+
+  async function handleEnqueueUploads(items: UploadFileItem[]) {
+    if (!uploadFolderPath || items.length === 0) return;
+
+    const destinations = [
+      ...new Set(
+        items.map((item) =>
+          destinationFolderPath(uploadFolderPath, item.relativePath)
+        )
+      ),
+    ];
+
+    await ensureFolderPathsExist({
+      tree,
+      destinationPaths: destinations,
+      createFolder: async (name, parentPath) => {
+        const created = await createFolder(name, parentPath);
+        return { path: created.path };
+      },
+    });
+
+    enqueueUploads({
+      projectId,
+      folderPath: uploadFolderPath,
+      folderLabel: uploadFolderLabel || uploadFolderPath,
+      files: items,
+    });
   }
 
   async function handleRename(file: ProjectFile) {
@@ -277,6 +346,20 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
 
   async function handleFolderDialogSubmit(name: string) {
     if (!folderDialog) return;
+    if (
+      folderDialog.type === "create-sub" &&
+      isArchiveFolderPath(folderDialog.parentPath)
+    ) {
+      toast.error("Cannot create folders under Superseded. Use the live folder instead.");
+      return;
+    }
+    if (
+      folderDialog.type === "rename" &&
+      isArchiveFolderPath(folderDialog.path)
+    ) {
+      toast.error("Cannot rename Superseded archive folders.");
+      return;
+    }
     setFolderDialogSaving(true);
     try {
       if (folderDialog.type === "create-root") {
@@ -462,7 +545,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               nodes={tree}
               selectedPath={currentFolderPath}
               fileCounts={fileCounts}
-              onSelectPath={selectFolder}
+              onSelectPath={navigateToFolder}
               canManageFolders={canManageFolders}
               onCreateSubfolder={(parentPath) =>
                 setFolderDialog({ type: "create-sub", parentPath })
@@ -507,7 +590,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
                   type="button"
                   title="Back to parent folder"
                   aria-label="Back to parent folder"
-                  onClick={() => selectFolder(parentFolderPath)}
+                  onClick={() => navigateToFolder(parentFolderPath)}
                   className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--ds-accent)] hover:bg-[#EDE3D4]"
                 >
                   <ChevronLeft size={15} />
@@ -642,7 +725,7 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
               onToggleFile={handleToggleFile}
               onToggleAll={handleToggleAll}
               maxSelectable={MAX_SELECTABLE}
-              onOpenFolder={selectFolder}
+              onOpenFolder={navigateToFolder}
               onDownload={handleDownload}
               onShare={(f) => setShareTarget(f)}
               onDelete={handleDelete}
@@ -660,16 +743,14 @@ export function ProjectFilesBoard({ projectId }: { projectId: string }) {
           open={showUpload}
           onOpenChange={setShowUpload}
           folderPath={uploadFolderPath}
-          folderLabel={selectedNode?.name ?? uploadFolderPath}
-          isVersioned={isVersioned && !isArchiveFolder}
-          onEnqueue={(files) =>
-            enqueueUploads({
-              projectId,
-              folderPath: uploadFolderPath,
-              folderLabel: selectedNode?.name ?? uploadFolderPath,
-              files,
-            })
+          folderLabel={uploadFolderLabel || uploadFolderPath}
+          isVersioned={isVersioned}
+          archiveRedirectNotice={
+            uploadsRedirectedFromArchive
+              ? `You're viewing Superseded — uploads go to ${uploadFolderLabel || "the live folder"}.`
+              : undefined
           }
+          onEnqueue={(files) => handleEnqueueUploads(files)}
         />
       )}
 

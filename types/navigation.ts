@@ -23,6 +23,12 @@ export function projectTabRoute(projectId: string, tab: ProjectTab) {
   return `${projectRoute(projectId)}/${tab}`;
 }
 
+/** Files tab deep-link that opens a specific folder. */
+export function projectFilesFolderRoute(projectId: string, folderPath: string) {
+  const qs = new URLSearchParams({ folder: folderPath });
+  return `${projectTabRoute(projectId, "files")}?${qs}`;
+}
+
 export type ProjectTab =
   | "overview"
   | "files"

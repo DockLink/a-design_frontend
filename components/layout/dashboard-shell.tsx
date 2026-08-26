@@ -12,8 +12,12 @@ import { UploadToastPanel } from "@/components/uploads/upload-toast-panel";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { NotificationsProvider } from "@/hooks/use-notifications";
+import {
+  OPEN_UPLOAD_FOLDER_EVENT,
+  type OpenUploadFolderDetail,
+} from "@/lib/files/open-upload-folder";
 import { canAccessRoute, HOME_ROUTE, toSidebarRole } from "@/lib/navigation/sidebar-role";
-import { NAV_ROUTES } from "@/types/navigation";
+import { NAV_ROUTES, projectFilesFolderRoute } from "@/types/navigation";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -31,6 +35,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       router.replace(HOME_ROUTE[toSidebarRole(primaryRole)]);
     }
   }, [isAuthenticated, isHydrated, pathname, primaryRole, router]);
+
+  useEffect(() => {
+    const onOpenFolder = (event: Event) => {
+      const detail = (event as CustomEvent<OpenUploadFolderDetail>).detail;
+      if (!detail?.projectId || !detail.folderPath) return;
+      router.push(projectFilesFolderRoute(detail.projectId, detail.folderPath));
+    };
+    window.addEventListener(OPEN_UPLOAD_FOLDER_EVENT, onOpenFolder);
+    return () => window.removeEventListener(OPEN_UPLOAD_FOLDER_EVENT, onOpenFolder);
+  }, [router]);
 
   if (!isHydrated || !isAuthenticated) {
     return (

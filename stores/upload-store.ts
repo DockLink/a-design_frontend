@@ -2,6 +2,11 @@
 
 import { create } from "zustand";
 
+import { abortUploadJob } from "@/lib/files/upload-abort";
+import {
+  destinationFolderPath,
+  folderLabelFromPath,
+} from "@/lib/files/upload-relative-path";
 import type {
   EnqueueUploadInput,
   UploadCompleteListener,
@@ -17,6 +22,9 @@ interface UploadStore {
   updateJob: (id: string, patch: Partial<UploadJob>) => void;
   removeJob: (id: string) => void;
   clearFinished: () => void;
+  pauseJob: (id: string) => void;
+  resumeJob: (id: string) => void;
+  cancelJob: (id: string) => void;
 }
 
 function kickUploadPump() {
@@ -26,27 +34,37 @@ function kickUploadPump() {
   });
 }
 
-export const useUploadStore = create<UploadStore>((set) => ({
+export const useUploadStore = create<UploadStore>((set, get) => ({
   jobs: [],
   maxConcurrent: 2,
 
   enqueue: (input) => {
     const createdAt = Date.now();
-    const jobs: UploadJob[] = input.files.map((file) => ({
-      id: crypto.randomUUID(),
-      projectId: input.projectId,
-      folderPath: input.folderPath,
-      folderLabel: input.folderLabel,
-      file,
-      fileName: file.name,
-      fileSize: file.size,
-      replaceFileId: input.replaceFileId,
-      status: "queued",
-      progress: 0,
-      bytesUploaded: 0,
-      etaSeconds: null,
-      createdAt,
-    }));
+    const jobs: UploadJob[] = input.files.map((item) => {
+      const folderPath = destinationFolderPath(
+        input.folderPath,
+        item.relativePath
+      );
+      const folderLabel =
+        folderPath === input.folderPath
+          ? input.folderLabel
+          : folderLabelFromPath(folderPath);
+      return {
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        folderPath,
+        folderLabel,
+        file: item.file,
+        fileName: item.file.name,
+        fileSize: item.file.size,
+        replaceFileId: input.replaceFileId,
+        status: "queued" as const,
+        progress: 0,
+        bytesUploaded: 0,
+        etaSeconds: null,
+        createdAt,
+      };
+    });
 
     set((state) => ({ jobs: [...state.jobs, ...jobs] }));
     kickUploadPump();
@@ -70,9 +88,74 @@ export const useUploadStore = create<UploadStore>((set) => ({
   clearFinished: () => {
     set((state) => ({
       jobs: state.jobs.filter(
-        (job) => job.status === "queued" || job.status === "uploading"
+        (job) =>
+          job.status === "queued" ||
+          job.status === "uploading" ||
+          job.status === "paused"
       ),
     }));
+  },
+
+  pauseJob: (id) => {
+    const job = get().jobs.find((j) => j.id === id);
+    if (!job) return;
+    if (job.status !== "queued" && job.status !== "uploading") return;
+
+    const wasUploading = job.status === "uploading";
+    set((state) => ({
+      jobs: state.jobs.map((j) =>
+        j.id === id
+          ? { ...j, status: "paused" as const, etaSeconds: null }
+          : j
+      ),
+    }));
+    if (wasUploading) abortUploadJob(id);
+    else kickUploadPump();
+  },
+
+  resumeJob: (id) => {
+    const job = get().jobs.find((j) => j.id === id);
+    if (!job || job.status !== "paused") return;
+
+    set((state) => ({
+      jobs: state.jobs.map((j) =>
+        j.id === id
+          ? {
+              ...j,
+              status: "queued" as const,
+              progress: 0,
+              bytesUploaded: 0,
+              etaSeconds: null,
+              error: undefined,
+              startedAt: undefined,
+            }
+          : j
+      ),
+    }));
+    kickUploadPump();
+  },
+
+  cancelJob: (id) => {
+    const job = get().jobs.find((j) => j.id === id);
+    if (!job) return;
+    if (
+      job.status !== "queued" &&
+      job.status !== "uploading" &&
+      job.status !== "paused"
+    ) {
+      return;
+    }
+
+    const wasUploading = job.status === "uploading";
+    set((state) => ({
+      jobs: state.jobs.map((j) =>
+        j.id === id
+          ? { ...j, status: "cancelled" as const, etaSeconds: null }
+          : j
+      ),
+    }));
+    if (wasUploading) abortUploadJob(id);
+    else kickUploadPump();
   },
 }));
 

@@ -38,7 +38,7 @@ export function TimelineList({
 
   if (items.length === 0) {
     return (
-      <div className="overflow-hidden rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)]">
+      <div className="overflow-hidden rounded-2xl border border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] shadow-[0_1px_3px_rgba(60,40,20,0.06)]">
         <div className="px-6 py-16 text-center text-sm text-[var(--ds-secondary-label)]">
           No milestones yet.
           {canManage && (
@@ -59,8 +59,8 @@ export function TimelineList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)]">
-      <div className="grid h-10 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-xs text-[var(--ds-secondary-label)]">
+    <div className="overflow-hidden rounded-2xl border border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] shadow-[0_1px_3px_rgba(60,40,20,0.06)]">
+      <div className="grid h-11 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.10)] bg-[var(--ds-bg)] px-4 text-xs font-medium text-[var(--ds-secondary-label)]">
         <span />
         <span>Title</span>
         <span>Stage</span>
@@ -76,7 +76,7 @@ export function TimelineList({
             key={ms.id}
             onMouseEnter={() => setHoveredId(ms.id)}
             onMouseLeave={() => setHoveredId(null)}
-            className={`grid h-11 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.07)] px-4 transition-colors ${hovered ? "bg-[var(--ds-bg)]" : ""}`}
+            className={`grid h-12 grid-cols-[44px_1fr_140px_120px_100px] items-center border-b border-[rgba(90,60,30,0.06)] px-4 transition-colors ${hovered ? "bg-[var(--ds-bg)]" : ""}`}
           >
             <div className="flex items-center">
               <TimelineStatusIcon status={ms.status} />
@@ -101,7 +101,7 @@ export function TimelineList({
         <button
           type="button"
           onClick={onAddClick}
-          className="flex h-11 w-full cursor-pointer items-center gap-2 border-t border-dashed border-[rgba(90,60,30,0.18)] px-4 text-[13px] text-[var(--ds-accent)]"
+          className="flex h-12 w-full cursor-pointer items-center gap-2 border-t border-dashed border-[rgba(90,60,30,0.18)] px-4 text-[13px] text-[var(--ds-accent)] transition-colors hover:bg-[var(--ds-bg)]"
         >
           <Plus className="size-3.5" />
           Add milestone

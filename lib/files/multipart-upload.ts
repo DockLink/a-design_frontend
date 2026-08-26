@@ -44,6 +44,19 @@ const PART_CONCURRENCY = 6;
 /** Presign this many parts at a time so JWT stays fresh on very large files. */
 const PRESIGN_BATCH_SIZE = 24;
 
+export class UploadAbortedError extends Error {
+  constructor(message = "Upload aborted") {
+    super(message);
+    this.name = "UploadAbortedError";
+  }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new UploadAbortedError();
+  }
+}
+
 async function controlRequest<T>(path: string, body: unknown): Promise<T> {
   const attempt = async (token: string): Promise<T> => {
     const res = await fetch(path, {
@@ -82,10 +95,23 @@ async function controlRequest<T>(path: string, body: unknown): Promise<T> {
 function putPart(
   url: string,
   blob: Blob,
-  onPartProgress: (loaded: number) => void
+  onPartProgress: (loaded: number) => void,
+  signal?: AbortSignal
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new UploadAbortedError());
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
+    const onAbort = () => {
+      xhr.abort();
+      reject(new UploadAbortedError());
+    };
+
+    signal?.addEventListener("abort", onAbort, { once: true });
+
     xhr.open("PUT", url);
     if (xhr.upload) {
       xhr.upload.onprogress = (e) => {
@@ -93,6 +119,7 @@ function putPart(
       };
     }
     xhr.onload = () => {
+      signal?.removeEventListener("abort", onAbort);
       if (xhr.status >= 200 && xhr.status < 300) {
         const etag = xhr.getResponseHeader("ETag");
         if (!etag) {
@@ -109,7 +136,14 @@ function putPart(
         reject(new Error(`A file part failed to upload (HTTP ${xhr.status}).`));
       }
     };
-    xhr.onerror = () => reject(new Error("Network error during upload."));
+    xhr.onerror = () => {
+      signal?.removeEventListener("abort", onAbort);
+      reject(new Error("Network error during upload."));
+    };
+    xhr.onabort = () => {
+      signal?.removeEventListener("abort", onAbort);
+      reject(new UploadAbortedError());
+    };
     xhr.send(blob);
   });
 }
@@ -120,12 +154,15 @@ export async function uploadFileMultipart(opts: {
   file: File;
   replaceFileId?: string;
   onProgress?: ProgressCb;
+  signal?: AbortSignal;
 }): Promise<unknown> {
-  const { projectId, folderPath, file, replaceFileId, onProgress } = opts;
+  const { projectId, folderPath, file, replaceFileId, onProgress, signal } = opts;
 
   if (file.size === 0) {
     throw new Error("Cannot upload an empty file.");
   }
+
+  throwIfAborted(signal);
 
   const base = `/api/projects/${projectId}/files/multipart`;
 
@@ -137,6 +174,8 @@ export async function uploadFileMultipart(opts: {
   const { uploadId, key, partSize } = init.data;
 
   try {
+    throwIfAborted(signal);
+
     const totalParts = Math.max(1, Math.ceil(file.size / partSize));
     const partNumbers = Array.from({ length: totalParts }, (_, i) => i + 1);
 
@@ -152,24 +191,32 @@ export async function uploadFileMultipart(opts: {
     const parts: { partNumber: number; etag: string }[] = [];
 
     const uploadOne = async (partNumber: number, url: string) => {
+      throwIfAborted(signal);
       const start = (partNumber - 1) * partSize;
       const end = Math.min(start + partSize, file.size);
       const blob = file.slice(start, end);
-      const etag = await putPart(url, blob, (loaded) => {
-        loadedPerPart[partNumber - 1] = loaded;
-        reportProgress();
-      });
+      const etag = await putPart(
+        url,
+        blob,
+        (loaded) => {
+          loadedPerPart[partNumber - 1] = loaded;
+          reportProgress();
+        },
+        signal
+      );
       parts.push({ partNumber, etag });
     };
 
     // Presign and upload in rolling batches so control calls use fresh tokens.
     for (let batchStart = 0; batchStart < partNumbers.length; batchStart += PRESIGN_BATCH_SIZE) {
+      throwIfAborted(signal);
       const batch = partNumbers.slice(batchStart, batchStart + PRESIGN_BATCH_SIZE);
       const presigned = await controlRequest<PresignResponse>(`${base}/presign`, {
         key,
         uploadId,
         partNumbers: batch,
       });
+      throwIfAborted(signal);
       const urlByPart = new Map(
         presigned.data.urls.map((u) => [u.partNumber, u.url])
       );
@@ -177,6 +224,7 @@ export async function uploadFileMultipart(opts: {
       let cursor = 0;
       const worker = async () => {
         while (cursor < batch.length) {
+          throwIfAborted(signal);
           const partNumber = batch[cursor++];
           const url = urlByPart.get(partNumber);
           if (!url) throw new Error(`Missing presigned URL for part ${partNumber}.`);
@@ -188,6 +236,7 @@ export async function uploadFileMultipart(opts: {
       );
     }
 
+    throwIfAborted(signal);
     parts.sort((a, b) => a.partNumber - b.partNumber);
 
     const completed = await controlRequest<{ data: unknown }>(`${base}/complete`, {

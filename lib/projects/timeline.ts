@@ -50,7 +50,145 @@ export const STAGE_CHART_COLORS = [
 ] as const;
 
 export const PX_PER_DAY = 4;
-export const GANTT_LEFT_COL = 220;
+export const GANTT_LEFT_COL = 280;
+
+export interface TimelineSummary {
+  phasesComplete: number;
+  phasesTotal: number;
+  milestonesDone: number;
+  milestonesTotal: number;
+  onTrack: number;
+  delayed: number;
+}
+
+export function stageChildCount(group: TimelineStageGroup): number {
+  const taskCount = group.milestones.reduce(
+    (sum, m) => sum + (m.tasks?.length ?? 0),
+    0
+  );
+  return group.milestones.length + taskCount + (group.orphanTasks?.length ?? 0);
+}
+
+export function stageProgressPercent(group: TimelineStageGroup): number {
+  const total = group.milestones.length;
+  if (total === 0) {
+    const orphans = group.orphanTasks ?? [];
+    if (orphans.length === 0) return 0;
+    const done = orphans.filter((t) => t.status === "completed").length;
+    return Math.round((done / orphans.length) * 100);
+  }
+  const done = group.milestones.filter((m) => m.status === "completed").length;
+  return Math.round((done / total) * 100);
+}
+
+export function deriveStageDisplayStatus(
+  group: TimelineStageGroup,
+  now = new Date()
+): TimelineItemStatus {
+  const children = [
+    ...group.milestones,
+    ...(group.orphanTasks ?? []),
+  ];
+  if (children.length > 0) {
+    if (children.every((c) => c.status === "completed")) return "completed";
+    if (children.some((c) => c.status === "overdue")) return "overdue";
+    if (children.some((c) => c.status === "active") || group.isActive) return "active";
+    return "upcoming";
+  }
+  if (group.isActive) return "active";
+  const end = new Date(group.endDate + "T00:00:00");
+  const start = new Date(group.startDate + "T00:00:00");
+  if (end < now) return "completed";
+  if (start <= now && end >= now) return "active";
+  return "upcoming";
+}
+
+export function stageStatusLabel(
+  group: TimelineStageGroup,
+  now = new Date()
+): string {
+  const status = deriveStageDisplayStatus(group, now);
+  if (status === "completed") return "Completed";
+  if (status === "overdue") return "Delayed";
+  if (status === "active") {
+    const pct = stageProgressPercent(group);
+    return pct > 0 ? `${pct}% Done` : "In progress";
+  }
+  return "Upcoming";
+}
+
+export function stageDurationWeeks(group: TimelineStageGroup): number {
+  const start = new Date(group.startDate + "T00:00:00").getTime();
+  const end = new Date(group.endDate + "T00:00:00").getTime();
+  const days = Math.max(1, Math.ceil((end - start) / 86400000));
+  return Math.max(1, Math.round(days / 7));
+}
+
+export function isStageComplete(group: TimelineStageGroup, now = new Date()): boolean {
+  return deriveStageDisplayStatus(group, now) === "completed";
+}
+
+export function computeTimelineSummary(
+  groups: TimelineStageGroup[],
+  now = new Date()
+): TimelineSummary {
+  const phasesTotal = groups.length;
+  const phasesComplete = groups.filter((g) => isStageComplete(g, now)).length;
+
+  let milestonesDone = 0;
+  let milestonesTotal = 0;
+  let onTrack = 0;
+  let delayed = 0;
+
+  for (const g of groups) {
+    for (const m of g.milestones) {
+      milestonesTotal += 1;
+      if (m.status === "completed") milestonesDone += 1;
+      else if (m.status === "overdue") delayed += 1;
+      else onTrack += 1;
+    }
+    for (const t of g.orphanTasks ?? []) {
+      if (t.status === "overdue") delayed += 1;
+      else if (t.status !== "completed") onTrack += 1;
+    }
+  }
+
+  return {
+    phasesComplete,
+    phasesTotal,
+    milestonesDone,
+    milestonesTotal,
+    onTrack,
+    delayed,
+  };
+}
+
+export function getActiveStageGroup(
+  groups: TimelineStageGroup[],
+  todayIso?: string
+): TimelineStageGroup | null {
+  if (groups.length === 0) return null;
+  const today = todayIso
+    ? new Date(todayIso + "T00:00:00")
+    : new Date();
+
+  const flagged = groups.find((g) => g.isActive);
+  if (flagged && deriveStageDisplayStatus(flagged, today) !== "completed") {
+    return flagged;
+  }
+
+  const inWindow = groups.find((g) => {
+    const start = new Date(g.startDate + "T00:00:00");
+    const end = new Date(g.endDate + "T00:00:00");
+    return start <= today && end >= today;
+  });
+  if (inWindow) return inWindow;
+
+  const activeStatus = groups.find(
+    (g) => deriveStageDisplayStatus(g, today) === "active"
+  );
+  return activeStatus ?? null;
+}
 
 export function stageColor(index: number): string {
   return STAGE_CHART_COLORS[index % STAGE_CHART_COLORS.length];

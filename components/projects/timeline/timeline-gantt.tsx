@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
   dayOffset,
+  deriveStageDisplayStatus,
   formatTimelineDate,
   GANTT_LEFT_COL,
   PX_PER_DAY,
+  stageChildCount,
+  stageStatusLabel,
   type TimelineMilestoneItem,
   type TimelineStageGroup,
   type TimelineTaskItem,
@@ -19,16 +22,25 @@ interface ChartBounds {
   today: string;
 }
 
-const HEADER_H = 36;
-const MIN_STAGE_H = 48;
-const MIN_MS_H = 40;
-const MIN_TASK_H = 34;
+const HEADER_H = 40;
+const MIN_STAGE_H = 56;
+const MIN_MS_H = 42;
+const MIN_TASK_H = 36;
 
-// Relative weights used to distribute available height across row types so
-// stages read larger than milestones, which read larger than tasks.
 const W_STAGE = 1;
 const W_MS = 0.82;
 const W_TASK = 0.68;
+
+const ROW_BORDER = "rgba(90,60,30,0.06)";
+const STAGE_BORDER = "rgba(90,60,30,0.08)";
+const GRID_LINE = "rgba(90,60,30,0.05)";
+
+function statusDotColor(status: string, fallback: string): string {
+  if (status === "completed") return "#5A8A7A";
+  if (status === "overdue") return "#B87A6A";
+  if (status === "active") return fallback;
+  return "#C4B5A5";
+}
 
 function countRowsByType(
   groups: TimelineStageGroup[],
@@ -109,10 +121,6 @@ export function TimelineGantt({
     [groups, collapsedStages, expandedMilestones]
   );
 
-  // Distribute the FULL available body height across visible rows (weighted by
-  // type) so the chart always fills the viewport with no empty space below —
-  // Jira/ClickUp style. When the content is taller than the viewport we fall
-  // back to per-type minimums and let the area scroll.
   const { stageH, msH, taskH } = useMemo(() => {
     const bodyHeight = Math.max(0, containerSize.height - HEADER_H);
     const { stages, milestones, tasks } = rowsByType;
@@ -121,14 +129,12 @@ export function TimelineGantt({
       return { stageH: MIN_STAGE_H, msH: MIN_MS_H, taskH: MIN_TASK_H };
     }
 
-    // Natural (minimum) total height of all rows.
     const naturalMin =
       stages * MIN_STAGE_H + milestones * MIN_MS_H + tasks * MIN_TASK_H;
     if (naturalMin >= bodyHeight) {
       return { stageH: MIN_STAGE_H, msH: MIN_MS_H, taskH: MIN_TASK_H };
     }
 
-    // Solve unit * (Σ weights) = bodyHeight, then heights = unit * weight.
     const totalWeight = stages * W_STAGE + milestones * W_MS + tasks * W_TASK;
     const unit = bodyHeight / totalWeight;
     return {
@@ -153,7 +159,7 @@ export function TimelineGantt({
     while (cursor <= end) {
       const iso = cursor.toISOString().slice(0, 10);
       markers.push({
-        label: cursor.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        label: cursor.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
         px: dayOffset(chartBounds.chartStart, iso) * pxPerDay,
       });
       cursor.setMonth(cursor.getMonth() + 1);
@@ -163,7 +169,7 @@ export function TimelineGantt({
 
   if (groups.length === 0) {
     return (
-      <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)] px-6 text-center text-sm text-[var(--ds-secondary-label)]">
+      <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] px-6 text-center text-sm text-[var(--ds-secondary-label)] shadow-[0_1px_3px_rgba(60,40,20,0.06)]">
         No stages yet. Add stages from the project overview or tasks board, then create milestones to
         build the timeline.
       </div>
@@ -176,35 +182,41 @@ export function TimelineGantt({
 
   function barWidth(startDate: string, endDate: string) {
     return Math.max(
-      12,
+      16,
       (dayOffset(chartBounds.chartStart, endDate) -
         dayOffset(chartBounds.chartStart, startDate)) *
         pxPerDay
     );
   }
 
-  function renderTaskRow(task: TimelineTaskItem, color: string) {
+  function renderTaskRow(task: TimelineTaskItem, color: string, indexLabel?: string) {
     const taskBg =
       task.status === "completed"
         ? "#C4B5A5"
         : task.status === "overdue"
-          ? "#DC2626"
+          ? "#B87A6A"
           : task.status === "active"
             ? color
             : "#D4C4B4";
-    const barH = Math.min(22, Math.max(14, taskH * 0.42));
+    const barH = Math.min(22, Math.max(14, taskH * 0.48));
+    const left = barLeft(task.startDate);
+    const width = barWidth(task.startDate, task.endDate);
+    const showLabel = width >= 56;
+
     return (
       <div
         key={task.id}
-        className="flex border-b border-[rgba(90,60,30,0.05)]"
-        style={{ height: taskH }}
+        className="flex"
+        style={{ height: taskH, borderBottom: `1px solid ${ROW_BORDER}` }}
       >
         <div
-          className="sticky left-0 z-[3] flex shrink-0 items-center gap-2 border-r border-[var(--ds-separator)] bg-[#FAFAF8] pl-9 pr-3"
+          className="sticky left-0 z-[3] flex shrink-0 items-center gap-2 border-r border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] pl-10 pr-3"
           style={{ width: GANTT_LEFT_COL }}
         >
-          {task.status === "completed" && <Check className="size-3 shrink-0 text-[#3D8B5E]" />}
-          <span className="truncate text-[12px] text-[var(--ds-secondary-label)]">{task.title}</span>
+          <span className="truncate text-[12px] text-[var(--ds-tertiary-label,#9C8573)]">
+            {indexLabel ? `${indexLabel} ` : ""}
+            {task.title}
+          </span>
         </div>
         <div className="relative flex-1" style={{ width: chartWidth, height: taskH }}>
           <div
@@ -212,16 +224,20 @@ export function TimelineGantt({
             onMouseEnter={(e) => setTooltip({ item: task, x: e.clientX, y: e.clientY })}
             onMouseMove={(e) => setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null))}
             onMouseLeave={() => setTooltip(null)}
-            className="absolute cursor-pointer rounded-md"
+            className="absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-full px-2"
             style={{
               top: (taskH - barH) / 2,
               height: barH,
-              left: barLeft(task.startDate),
-              width: barWidth(task.startDate, task.endDate),
+              left,
+              width,
               background: taskBg,
-              opacity: task.status === "completed" ? 0.7 : 0.92,
+              opacity: task.status === "completed" ? 0.75 : 0.95,
             }}
-          />
+          >
+            {showLabel && (
+              <span className="truncate text-[10px] font-medium text-white/95">{task.title}</span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -231,7 +247,7 @@ export function TimelineGantt({
     <>
       <div
         ref={containerRef}
-        className="h-[calc(100vh-180px)] min-h-[420px] overflow-auto rounded-xl border border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)]"
+        className="h-[calc(100vh-320px)] min-h-[420px] overflow-auto rounded-2xl border border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] shadow-[0_1px_3px_rgba(60,40,20,0.06)]"
       >
         <div
           className="relative"
@@ -242,7 +258,7 @@ export function TimelineGantt({
           }}
         >
           <div
-            className="pointer-events-none absolute top-0 bottom-0 z-[1] border-r border-[var(--ds-separator)]"
+            className="pointer-events-none absolute top-0 bottom-0 z-[1] border-r border-[rgba(90,60,30,0.08)]"
             style={{ left: GANTT_LEFT_COL - 1, width: 0 }}
           />
 
@@ -253,23 +269,23 @@ export function TimelineGantt({
             {months.map((m) => (
               <div
                 key={"grid" + m.label + m.px}
-                className="absolute inset-y-0 w-px bg-[rgba(90,60,30,0.06)]"
-                style={{ left: m.px }}
+                className="absolute inset-y-0 w-px"
+                style={{ left: m.px, background: GRID_LINE }}
               />
             ))}
           </div>
 
           {/* Header */}
           <div
-            className="sticky top-0 z-[5] flex border-b border-[rgba(90,60,30,0.10)]"
+            className="sticky top-0 z-[5] flex border-b border-[rgba(90,60,30,0.08)]"
             style={{ height: HEADER_H }}
           >
             <div
-              className="sticky left-0 z-[6] flex shrink-0 items-center border-r border-[var(--ds-separator)] bg-[var(--ds-bg)] pl-3.5"
+              className="sticky left-0 z-[6] flex shrink-0 items-center border-r border-[rgba(90,60,30,0.08)] bg-[var(--ds-bg)] pl-4"
               style={{ width: GANTT_LEFT_COL }}
             >
               <span className="text-[11px] font-medium tracking-wide text-[var(--ds-secondary-label)]">
-                STAGE / MILESTONE / TASK
+                PHASE / MILESTONE
               </span>
             </div>
             <div className="relative flex-1 bg-[var(--ds-bg)]" style={{ width: chartWidth }}>
@@ -279,8 +295,13 @@ export function TimelineGantt({
                   className="absolute inset-y-0 flex items-center"
                   style={{ left: m.px }}
                 >
-                  <div className="absolute inset-y-0 left-0 w-px bg-[rgba(90,60,30,0.08)]" />
-                  <span className="whitespace-nowrap pl-1.5 text-[11px] text-[var(--ds-secondary-label)]">{m.label}</span>
+                  <div
+                    className="absolute inset-y-0 left-0 w-px"
+                    style={{ background: GRID_LINE }}
+                  />
+                  <span className="whitespace-nowrap pl-2 text-[11px] font-medium text-[var(--ds-secondary-label)]">
+                    {m.label}
+                  </span>
                 </div>
               ))}
             </div>
@@ -291,8 +312,8 @@ export function TimelineGantt({
             className="pointer-events-none absolute bottom-0 z-[4]"
             style={{ top: HEADER_H, left: GANTT_LEFT_COL + todayPx, height: bodyMinHeight }}
           >
-            <div className="absolute inset-y-0 left-0 border-l border-dashed border-[var(--ds-accent)]" />
-            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[var(--ds-accent)] px-1.5 py-0.5 text-[10px] text-white">
+            <div className="absolute inset-y-0 left-0 w-[2px] bg-[var(--ds-accent)] opacity-80" />
+            <span className="absolute -top-0 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[var(--ds-accent)] px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-white shadow-sm">
               Today
             </span>
           </div>
@@ -302,30 +323,55 @@ export function TimelineGantt({
             const collapsed = collapsedStages.has(group.id);
             const stageLeft = barLeft(group.startDate);
             const stageW = barWidth(group.startDate, group.endDate);
-            const rollupH = Math.min(26, Math.max(8, stageH * 0.22));
+            const stageBarH = Math.min(28, Math.max(18, stageH * 0.42));
+            const displayStatus = deriveStageDisplayStatus(group);
+            const statusLabel = stageStatusLabel(group);
+            const childCount = stageChildCount(group);
+            const showStageLabel = stageW >= 72;
+            const dotColor = statusDotColor(displayStatus, group.color);
+
             return (
               <div key={group.id}>
                 <div
-                  className={`flex border-b border-[rgba(90,60,30,0.10)] ${groupIndex > 0 ? "border-t border-[rgba(90,60,30,0.10)]" : ""}`}
-                  style={{ height: stageH }}
+                  className="flex"
+                  style={{
+                    height: stageH,
+                    borderBottom: `1px solid ${STAGE_BORDER}`,
+                    borderTop: groupIndex > 0 ? `1px solid ${STAGE_BORDER}` : undefined,
+                  }}
                 >
                   <button
                     type="button"
                     onClick={() => onToggleStage(group.id)}
-                    className="sticky left-0 z-[3] flex shrink-0 cursor-pointer items-center gap-2 border-r border-[var(--ds-separator)] bg-[#EDE3D4] px-3.5 text-left"
+                    className="sticky left-0 z-[3] flex shrink-0 cursor-pointer items-center gap-2.5 border-r border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] px-3.5 text-left hover:bg-[var(--ds-bg)]"
                     style={{ width: GANTT_LEFT_COL }}
                   >
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{ background: dotColor }}
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-semibold text-[var(--ds-label)]">
+                        {group.name}
+                      </div>
+                      <div className="truncate text-[11px] text-[var(--ds-secondary-label)]">
+                        {statusLabel}
+                      </div>
+                    </div>
+                    {childCount > 0 && (
+                      <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ds-bg)] px-1.5 text-[10px] font-medium text-[var(--ds-secondary-label)]">
+                        {childCount}
+                      </span>
+                    )}
                     {collapsed ? (
                       <ChevronRight className="size-4 shrink-0 text-[var(--ds-secondary-label)]" />
                     ) : (
                       <ChevronDown className="size-4 shrink-0 text-[var(--ds-secondary-label)]" />
                     )}
-                    <span className="flex-1 truncate text-[14px] font-semibold text-[var(--ds-label)]">
-                      {group.name}
-                    </span>
                   </button>
                   <div
-                    className="relative bg-[#EDE3D4]"
+                    className="relative"
                     style={{ width: chartWidth, height: stageH }}
                   >
                     <div
@@ -337,7 +383,7 @@ export function TimelineGantt({
                             title: group.name,
                             startDate: group.startDate,
                             endDate: group.endDate,
-                            status: group.isActive ? "active" : "upcoming",
+                            status: displayStatus === "completed" ? "completed" : displayStatus === "overdue" ? "overdue" : group.isActive ? "active" : "upcoming",
                             apiStatus: "ACTIVE",
                           },
                           x: e.clientX,
@@ -348,55 +394,51 @@ export function TimelineGantt({
                         setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null))
                       }
                       onMouseLeave={() => setTooltip(null)}
-                      className="absolute cursor-pointer rounded-sm"
+                      className="absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-full px-3 shadow-[0_1px_2px_rgba(60,40,20,0.08)]"
                       style={{
-                        top: (stageH - rollupH) / 2,
-                        height: rollupH,
+                        top: (stageH - stageBarH) / 2,
+                        height: stageBarH,
                         left: stageLeft,
                         width: stageW,
                         background: group.color,
+                        opacity: displayStatus === "completed" ? 0.72 : 1,
                       }}
-                    />
-                    <div
-                      className="absolute w-[4px]"
-                      style={{
-                        top: (stageH - rollupH) / 2 - 2,
-                        height: rollupH + 4,
-                        left: stageLeft,
-                        background: group.color,
-                      }}
-                    />
-                    <div
-                      className="absolute w-[4px]"
-                      style={{
-                        top: (stageH - rollupH) / 2 - 2,
-                        height: rollupH + 4,
-                        left: stageLeft + stageW - 4,
-                        background: group.color,
-                      }}
-                    />
+                    >
+                      {showStageLabel && (
+                        <span className="truncate text-[11px] font-medium text-white">
+                          {group.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {!collapsed && (
                   <>
-                    {group.milestones.map((ms) => {
+                    {group.milestones.map((ms, msIndex) => {
                       const msExpanded = expandedMilestones.has(ms.id);
                       const hasTasks = (ms.tasks?.length ?? 0) > 0;
-                      const barBg = ms.status === "completed" ? "#EDE3D4" : group.color;
-                      const msBarH = Math.min(28, Math.max(16, msH * 0.48));
+                      const barBg = ms.status === "completed" ? "#C4B5A5" : group.color;
+                      const msBarH = Math.min(24, Math.max(16, msH * 0.5));
+                      const msLeft = barLeft(ms.startDate);
+                      const msW = barWidth(ms.startDate, ms.endDate);
+                      const showMsLabel = msW >= 56;
+                      const indexLabel = `${groupIndex + 1}.${msIndex + 1}`;
 
                       return (
                         <div key={ms.id}>
                           <div
-                            className="flex border-b border-[rgba(90,60,30,0.07)]"
-                            style={{ height: msH }}
+                            className="flex"
+                            style={{
+                              height: msH,
+                              borderBottom: `1px solid ${ROW_BORDER}`,
+                            }}
                           >
                             <button
                               type="button"
                               disabled={!hasTasks}
                               onClick={() => hasTasks && toggleMilestone(ms.id)}
-                              className="sticky left-0 z-[3] flex shrink-0 items-center gap-1.5 border-r border-[var(--ds-separator)] bg-[var(--ds-surface-elevated)] pl-7 pr-3"
+                              className="sticky left-0 z-[3] flex shrink-0 items-center gap-1.5 border-r border-[rgba(90,60,30,0.08)] bg-[var(--ds-surface-elevated)] pl-8 pr-3 text-left disabled:cursor-default"
                               style={{ width: GANTT_LEFT_COL }}
                             >
                               {hasTasks ? (
@@ -408,44 +450,66 @@ export function TimelineGantt({
                               ) : (
                                 <span className="size-3.5 shrink-0" />
                               )}
-                              {ms.status === "completed" && (
-                                <Check className="size-3 shrink-0 text-[#2D6A4F]" />
-                              )}
-                              <span className="flex-1 truncate text-[13px] text-[var(--ds-secondary-label)]">{ms.title}</span>
+                              <span className="flex-1 truncate text-[12px] text-[var(--ds-secondary-label)]">
+                                <span className="mr-1 text-[var(--ds-tertiary-label,#9C8573)]">
+                                  {indexLabel}
+                                </span>
+                                {ms.title}
+                              </span>
                             </button>
-                            <div className="relative flex-1" style={{ width: chartWidth, height: msH }}>
+                            <div
+                              className="relative flex-1"
+                              style={{ width: chartWidth, height: msH }}
+                            >
                               <div
                                 role="presentation"
                                 onMouseEnter={(e) =>
                                   setTooltip({ item: ms, x: e.clientX, y: e.clientY })
                                 }
                                 onMouseMove={(e) =>
-                                  setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : null))
+                                  setTooltip((t) =>
+                                    t ? { ...t, x: e.clientX, y: e.clientY } : null
+                                  )
                                 }
                                 onMouseLeave={() => setTooltip(null)}
-                                className="absolute cursor-pointer rounded-full"
+                                className="absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-full px-2.5"
                                 style={{
                                   top: (msH - msBarH) / 2,
                                   height: msBarH,
-                                  left: barLeft(ms.startDate),
-                                  width: barWidth(ms.startDate, ms.endDate),
+                                  left: msLeft,
+                                  width: msW,
                                   background: barBg,
-                                  opacity: ms.status === "completed" ? 0.85 : 1,
-                                  border:
-                                    ms.status === "active"
-                                      ? `2px solid ${group.color}`
-                                      : undefined,
+                                  opacity: ms.status === "completed" ? 0.8 : 0.92,
                                 }}
-                              />
+                              >
+                                {showMsLabel && (
+                                  <span className="truncate text-[10px] font-medium text-white">
+                                    {ms.title}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
-                          {msExpanded && ms.tasks?.map((task) => renderTaskRow(task, group.color))}
+                          {msExpanded &&
+                            ms.tasks?.map((task, taskIndex) =>
+                              renderTaskRow(
+                                task,
+                                group.color,
+                                `${indexLabel}.${taskIndex + 1}`
+                              )
+                            )}
                         </div>
                       );
                     })}
 
-                    {group.orphanTasks?.map((task) => renderTaskRow(task, group.color))}
+                    {group.orphanTasks?.map((task, orphanIndex) =>
+                      renderTaskRow(
+                        task,
+                        group.color,
+                        `${groupIndex + 1}.${group.milestones.length + orphanIndex + 1}`
+                      )
+                    )}
                   </>
                 )}
               </div>
@@ -456,7 +520,7 @@ export function TimelineGantt({
 
       {tooltip && (
         <div
-          className="pointer-events-none fixed z-[999] rounded-md bg-[var(--ds-label)] px-2 py-1 text-[11px] leading-snug whitespace-nowrap text-white"
+          className="pointer-events-none fixed z-[999] rounded-lg bg-[var(--ds-label)] px-2.5 py-1.5 text-[11px] leading-snug whitespace-nowrap text-white shadow-lg"
           style={{ left: tooltip.x + 12, top: tooltip.y - 44 }}
         >
           <div className="font-medium">{tooltip.item.title}</div>

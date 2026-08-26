@@ -67,9 +67,9 @@ function FolderItem({
   const hasChildren = node.children.length > 0;
   const count = fileCounts[node.path];
   const isArchive = isArchiveFolderPath(node.path);
+  const canMutateStructure = canManageFolders && !isArchive;
   const canDelete =
-    canManageFolders &&
-    !isArchive &&
+    canMutateStructure &&
     !folderHasChildren(node) &&
     folderIsEmpty(node.path, fileCounts);
 
@@ -134,7 +134,7 @@ function FolderItem({
 
   return (
     <>
-      {canManageFolders ? (
+      {canMutateStructure ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
           <ContextMenuContent>
