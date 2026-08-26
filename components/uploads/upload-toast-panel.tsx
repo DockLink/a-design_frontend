@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckCircle2, Loader2, Upload, X, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Pause,
+  Play,
+  Upload,
+  X,
+  XCircle,
+} from "lucide-react";
 
 import { formatFileSize } from "@/lib/files/format";
 import {
@@ -26,6 +34,15 @@ function statusIcon(job: UploadJob) {
   if (job.status === "failed") {
     return <XCircle size={14} className="shrink-0 text-red-600" />;
   }
+  if (job.status === "paused") {
+    return (
+      <Pause
+        size={14}
+        className="shrink-0"
+        style={{ color: "var(--ds-secondary-label)" }}
+      />
+    );
+  }
   if (job.status === "uploading") {
     return (
       <Loader2
@@ -45,14 +62,23 @@ function statusIcon(job: UploadJob) {
 }
 
 function JobRow({ job }: { job: UploadJob }) {
+  const pauseJob = useUploadStore((s) => s.pauseJob);
+  const resumeJob = useUploadStore((s) => s.resumeJob);
+  const cancelJob = useUploadStore((s) => s.cancelJob);
+
   const barWidth =
     job.status === "completed"
       ? 100
-      : job.status === "uploading"
-        ? Math.max(job.progress, 2)
+      : job.status === "uploading" || job.status === "paused"
+        ? Math.max(job.progress, job.status === "paused" ? 0 : 2)
         : job.status === "failed"
           ? job.progress
           : 0;
+
+  const showActions =
+    job.status === "queued" ||
+    job.status === "uploading" ||
+    job.status === "paused";
 
   return (
     <div className="rounded-lg bg-[var(--ds-bg)] px-3 py-2">
@@ -68,15 +94,55 @@ function JobRow({ job }: { job: UploadJob }) {
             {formatFileSize(job.fileSize)}
           </p>
         </div>
-        {(job.status === "uploading" || job.status === "queued") && (
+        {(job.status === "uploading" ||
+          job.status === "queued" ||
+          job.status === "paused") && (
           <span className="shrink-0 text-[11px] tabular-nums text-[var(--ds-secondary-label)]">
-            {job.status === "queued" ? "Queued" : `${job.progress}%`}
+            {job.status === "queued"
+              ? "Queued"
+              : job.status === "paused"
+                ? job.progress > 0
+                  ? `Paused · ${job.progress}%`
+                  : "Paused"
+                : `${job.progress}%`}
           </span>
+        )}
+        {showActions && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {job.status === "paused" ? (
+              <button
+                type="button"
+                onClick={() => resumeJob(job.id)}
+                className="rounded p-1 text-[var(--ds-secondary-label)] hover:bg-[var(--ds-surface-elevated)] hover:text-[var(--ds-label)]"
+                aria-label={`Resume ${job.fileName}`}
+              >
+                <Play size={12} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => pauseJob(job.id)}
+                className="rounded p-1 text-[var(--ds-secondary-label)] hover:bg-[var(--ds-surface-elevated)] hover:text-[var(--ds-label)]"
+                aria-label={`Pause ${job.fileName}`}
+              >
+                <Pause size={12} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => cancelJob(job.id)}
+              className="rounded p-1 text-[var(--ds-secondary-label)] hover:bg-[var(--ds-surface-elevated)] hover:text-[var(--ds-label)]"
+              aria-label={`Cancel ${job.fileName}`}
+            >
+              <X size={12} />
+            </button>
+          </div>
         )}
       </div>
 
       {(job.status === "uploading" ||
         job.status === "queued" ||
+        job.status === "paused" ||
         job.status === "completed") && (
         <div
           className="overflow-hidden rounded-full bg-[#EDE3D4]"
@@ -89,7 +155,9 @@ function JobRow({ job }: { job: UploadJob }) {
               background:
                 job.status === "completed"
                   ? "#059669"
-                  : "var(--ds-accent)",
+                  : job.status === "paused"
+                    ? "var(--ds-secondary-label)"
+                    : "var(--ds-accent)",
             }}
           />
         </div>
@@ -111,10 +179,12 @@ export function UploadToastPanel() {
   const jobs = useUploadStore((s) => s.jobs);
   const clearFinished = useUploadStore((s) => s.clearFinished);
   const activeCount = selectActiveJobCount(jobs);
+  const failedCount = jobs.filter((j) => j.status === "failed").length;
   const finishedCount = jobs.filter(
     (j) => j.status === "completed" || j.status === "failed"
   ).length;
   const uploadingCount = jobs.filter((j) => j.status === "uploading").length;
+  const pausedCount = jobs.filter((j) => j.status === "paused").length;
   const totalPendingOrDone = jobs.length;
 
   useEffect(() => {
@@ -135,7 +205,9 @@ export function UploadToastPanel() {
   const headerLabel =
     activeCount > 0
       ? `Uploading ${Math.min(completedCount + uploadingCount, visibleJobs.length)} of ${visibleJobs.length}`
-      : `${finishedCount} upload${finishedCount > 1 ? "s" : ""} finished`;
+      : pausedCount > 0 && finishedCount === 0
+        ? `${pausedCount} upload${pausedCount > 1 ? "s" : ""} paused`
+        : `${finishedCount} upload${finishedCount > 1 ? "s" : ""} finished`;
 
   return (
     <div
@@ -160,7 +232,7 @@ export function UploadToastPanel() {
             {headerLabel}
           </p>
         </div>
-        {finishedCount > 0 && (
+        {failedCount > 0 && (
           <button
             type="button"
             onClick={() => clearFinished()}

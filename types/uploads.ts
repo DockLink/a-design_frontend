@@ -1,6 +1,7 @@
 export type UploadStatus =
   | "queued"
   | "uploading"
+  | "paused"
   | "completed"
   | "failed"
   | "cancelled";
@@ -23,11 +24,18 @@ export interface UploadJob {
   createdAt: number;
 }
 
+/** One file to enqueue; optional relativePath preserves nested folder structure. */
+export interface UploadFileItem {
+  file: File;
+  relativePath?: string;
+}
+
 export interface EnqueueUploadInput {
   projectId: string;
+  /** Base destination folder (current selection). */
   folderPath: string;
   folderLabel?: string;
-  files: File[];
+  files: UploadFileItem[];
   replaceFileId?: string;
 }
 
