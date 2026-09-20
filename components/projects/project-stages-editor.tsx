@@ -105,7 +105,8 @@ export function ProjectStagesEditor({
   async function handleSaveEdit(stageId: string) {
     const stage = stageById.get(stageId);
     if (!stage) return;
-    if (!editName.trim() || !editStart || !editEnd) {
+    const trimmedEditName = editName.trim();
+    if (!trimmedEditName || !editStart || !editEnd) {
       toast.error("Stage name, start and end dates are required");
       return;
     }
@@ -114,10 +115,19 @@ export function ProjectStagesEditor({
       return;
     }
 
+    // Prevent editing to a duplicate stage name (excluding the current stage)
+    const isDuplicate = stages.some(
+      (s) => s.id !== stageId && s.title.toLowerCase() === trimmedEditName.toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error("A stage with this name already exists");
+      return;
+    }
+
     setIsEditSaving(true);
     try {
-      if (editName.trim() !== stage.title) {
-        await updateTaskable(stageId, { title: editName.trim() });
+      if (trimmedEditName !== stage.title) {
+        await updateTaskable(stageId, { title: trimmedEditName });
       }
       const currentStart = toDateInput(stage.start_date);
       const currentEnd = toDateInput(resolveTaskEndDateIso(stage));
@@ -139,16 +149,27 @@ export function ProjectStagesEditor({
   }
 
   async function handleCreateStage() {
-    if (!newStageName.trim() || !newStageStart || !newStageEnd) return;
+    const trimmedName = newStageName.trim();
+    if (!trimmedName || !newStageStart || !newStageEnd) return;
+
     if (new Date(newStageEnd) < new Date(newStageStart)) {
       toast.error("End date must be on or after the start date");
+      return;
+    }
+
+    // Prevent duplicate stage names
+    const isDuplicate = stages.some(
+      (stage) => stage.title.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error("A stage with this name already exists");
       return;
     }
     setIsCreating(true);
     try {
       const payload: CreateTaskRequest & { end_date: string } = {
         project_id: projectId,
-        title: newStageName.trim(),
+        title: trimmedName,
         start_date: new Date(newStageStart).toISOString(),
         end_date: new Date(newStageEnd + "T23:59:59").toISOString(),
         taskable_type: "STAGE",

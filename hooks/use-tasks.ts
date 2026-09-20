@@ -11,6 +11,8 @@ export function useTasks(params: TasksQueryParams) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const projectsStr = params.projects ? JSON.stringify(params.projects) : undefined;
+
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -31,7 +33,7 @@ export function useTasks(params: TasksQueryParams) {
     params.taskable_type,
     params.search,
     params.depth,
-    JSON.stringify(params.projects),
+    projectsStr,
   ]);
 
   useEffect(() => {

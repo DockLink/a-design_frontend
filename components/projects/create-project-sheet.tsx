@@ -62,9 +62,51 @@ export function CreateProjectSheet({
   const [briefAttachments, setBriefAttachments] = useState<ProjectBriefAttachment[]>([]);
   const [isUploadingBrief, setIsUploadingBrief] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewPhotoIndex, setPreviewPhotoIndex] = useState<number | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    try {
+      const saved = localStorage.getItem("create_project_draft");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setName(parsed.name || "");
+        setDescription(parsed.description || "");
+        setStartDate(parsed.startDate || "");
+        setLocation(parsed.location || "");
+        setLatitude(parsed.latitude);
+        setLongitude(parsed.longitude);
+        setVimeoUrl(parsed.vimeoUrl || "");
+        setClientName(parsed.clientName || "");
+        setProjectLeadId(parsed.projectLeadId || "");
+        
+        if (parsed.stageOptions) {
+          setStageOptions(parsed.stageOptions);
+        } else {
+          setStageOptions(defaultStageOptions());
+        }
+        
+        if (parsed.selectedStageIds) {
+          setSelectedStageIds(new Set(parsed.selectedStageIds));
+        } else {
+          const defaults = defaultStageOptions();
+          setSelectedStageIds(new Set(defaults.map((s) => s.id)));
+        }
+        
+        setCustomStageName("");
+        setShowAddStage(false);
+        setThumbnailFiles([]);
+        setThumbnailPreviews([]);
+        setBriefAttachments([]);
+        setIsUploadingBrief(false);
+        setHasDraft(true);
+        return;
+      }
+    } catch (e) {
+      console.error("Failed to parse project draft", e);
+    }
+
     const defaults = defaultStageOptions();
     setName("");
     setDescription("");
@@ -82,14 +124,51 @@ export function CreateProjectSheet({
     setThumbnailFiles([]);
     setThumbnailPreviews([]);
     setBriefAttachments([]);
+    setBriefAttachments([]);
     setIsUploadingBrief(false);
+    setHasDraft(false);
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const draft = {
+      name,
+      description,
+      startDate,
+      location,
+      latitude,
+      longitude,
+      vimeoUrl,
+      clientName,
+      projectLeadId,
+      stageOptions,
+      selectedStageIds: Array.from(selectedStageIds),
+    };
+    
+    // Don't save empty drafts if they haven't typed anything
+    const isModified = name || description || startDate || location || vimeoUrl || clientName || projectLeadId || selectedStageIds.size !== defaultStageOptions().length;
+    
+    if (isModified) {
+      localStorage.setItem("create_project_draft", JSON.stringify(draft));
+      setHasDraft(true);
+    }
+  }, [name, description, startDate, location, latitude, longitude, vimeoUrl, clientName, projectLeadId, stageOptions, selectedStageIds, open]);
 
   useEffect(() => {
     return () => {
       thumbnailPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [thumbnailPreviews]);
+
+  useEffect(() => {
+    return () => {
+      briefAttachments.forEach((a) => {
+        if (a.url && a.url.startsWith("blob:")) {
+          URL.revokeObjectURL(a.url);
+        }
+      });
+    };
+  }, [briefAttachments]);
 
   const selectedCount = selectedStageIds.size;
   const projectStartDay = startDate;
@@ -143,10 +222,52 @@ export function CreateProjectSheet({
 
   function handleThumbnailChange(files: FileList | null) {
     if (!files?.length) return;
-    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    thumbnailPreviews.forEach((url) => URL.revokeObjectURL(url));
-    setThumbnailFiles(imageFiles);
-    setThumbnailPreviews(imageFiles.map((f) => URL.createObjectURL(f)));
+    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    
+    const existingNames = new Set(thumbnailFiles.map((f) => f.name));
+    let skippedCount = 0;
+    
+    const validNewFiles = newFiles.filter(f => {
+      if (existingNames.has(f.name)) {
+        skippedCount++;
+        return false;
+      }
+      return true;
+    });
+
+    if (validNewFiles.length === 0) {
+      if (skippedCount > 0) {
+        toast.error(skippedCount === 1 ? "1 duplicate photo was skipped" : `${skippedCount} duplicate photos were skipped`);
+      }
+      return;
+    }
+
+    const newPreviews = validNewFiles.map((f) => URL.createObjectURL(f));
+    
+    setThumbnailFiles(prev => [...prev, ...validNewFiles]);
+    setThumbnailPreviews(prev => [...prev, ...newPreviews]);
+    
+    if (skippedCount > 0) {
+      toast.error(skippedCount === 1 ? "1 duplicate photo was skipped" : `${skippedCount} duplicate photos were skipped`);
+    }
+
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+    }
+  }
+
+  function handleRemoveThumbnail(index: number) {
+    setThumbnailFiles(prev => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+    setThumbnailPreviews(prev => {
+      const next = [...prev];
+      URL.revokeObjectURL(next[index]);
+      next.splice(index, 1);
+      return next;
+    });
   }
 
   function handleLocationConfirm(value: LocationPickerValue) {
@@ -161,17 +282,37 @@ export function CreateProjectSheet({
     setIsUploadingBrief(true);
     try {
       const uploaded: ProjectBriefAttachment[] = [];
+      const existingNames = new Set(briefAttachments.map((a) => a.file_name));
+      let skippedCount = 0;
+
       for (const file of Array.from(files)) {
+        if (existingNames.has(file.name)) {
+          skippedCount++;
+          continue;
+        }
+        existingNames.add(file.name);
+
         const { token } = await uploadFile(file);
         uploaded.push({
           id: token,
-          url: "",
+          url: URL.createObjectURL(file),
           file_name: file.name,
           mime_type: file.type || null,
         });
       }
-      setBriefAttachments((prev) => [...prev, ...uploaded]);
-      toast.success(uploaded.length > 1 ? "Files added to brief" : "File added to brief");
+      
+      if (uploaded.length > 0) {
+        setBriefAttachments((prev) => [...prev, ...uploaded]);
+        toast.success(uploaded.length > 1 ? "Files added to brief" : "File added to brief");
+      }
+      
+      if (skippedCount > 0) {
+        toast.error(
+          skippedCount === 1
+            ? "1 duplicate file was skipped"
+            : `${skippedCount} duplicate files were skipped`
+        );
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to upload files");
     } finally {
@@ -260,12 +401,41 @@ export function CreateProjectSheet({
         }
       );
       toast.success("Project created");
+      localStorage.removeItem("create_project_draft");
+      setHasDraft(false);
       onCreated?.(project.id);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  function handleClearDraft() {
+    if (window.confirm("Are you sure you want to discard your draft?")) {
+      localStorage.removeItem("create_project_draft");
+      setHasDraft(false);
+      
+      // Reset all fields to default
+      const defaults = defaultStageOptions();
+      setName("");
+      setDescription("");
+      setStartDate("");
+      setLocation("");
+      setLatitude(undefined);
+      setLongitude(undefined);
+      setVimeoUrl("");
+      setClientName("");
+      setProjectLeadId("");
+      setStageOptions(defaults);
+      setSelectedStageIds(new Set(defaults.map((s) => s.id)));
+      setCustomStageName("");
+      setShowAddStage(false);
+      setThumbnailFiles([]);
+      setThumbnailPreviews([]);
+      setBriefAttachments([]);
+      setIsUploadingBrief(false);
     }
   }
 
@@ -295,7 +465,26 @@ export function CreateProjectSheet({
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: "var(--ds-text-title-2)", fontWeight: 600 }}>New project</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "var(--ds-text-title-2)", fontWeight: 600 }}>New project</span>
+            {hasDraft && (
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                style={{
+                  fontSize: "var(--ds-text-caption-1)",
+                  color: "var(--ds-tertiary-label)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  padding: "4px",
+                }}
+              >
+                Clear draft
+              </button>
+            )}
+          </div>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <X size={18} />
           </button>
@@ -306,7 +495,7 @@ export function CreateProjectSheet({
           style={{ flex: 1, overflowY: "auto", padding: "22px", display: "flex", flexDirection: "column", gap: "18px" }}
         >
           <div className="space-y-2">
-            <Label htmlFor="proj-name">Project name</Label>
+            <Label htmlFor="proj-name">Project name <span className="text-red-500">*</span></Label>
             <Input id="proj-name" value={name} onChange={(e) => setName(e.target.value)} className="bg-[var(--ds-bg)] h-10" required />
           </div>
 
@@ -353,7 +542,7 @@ export function CreateProjectSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="proj-start">Start date</Label>
+            <Label htmlFor="proj-start">Start date <span className="text-red-500">*</span></Label>
             <Input
               id="proj-start"
               type="date"
@@ -398,7 +587,7 @@ export function CreateProjectSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="client-name">Client name</Label>
+            <Label htmlFor="client-name">Client name <span className="text-red-500">*</span></Label>
             <Input id="client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} className="bg-[var(--ds-bg)] h-10" required />
           </div>
 
@@ -419,7 +608,7 @@ export function CreateProjectSheet({
 
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-              <Label>Project stages ({selectedCount} selected)</Label>
+              <Label>Project stages ({selectedCount} selected) <span className="text-red-500">*</span></Label>
               <button
                 type="button"
                 onClick={() => setShowAddStage((v) => !v)}
@@ -592,44 +781,94 @@ export function CreateProjectSheet({
               hidden
               onChange={(e) => handleThumbnailChange(e.target.files)}
             />
-            <button
-              type="button"
-              onClick={() => thumbnailInputRef.current?.click()}
-              style={{
-                width: "100%",
-                minHeight: "120px",
-                borderRadius: "12px",
-                border: "1px dashed rgba(90,60,30,0.25)",
-                background: "var(--ds-bg)",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                overflow: "hidden",
-                position: "relative",
-                padding: thumbnailPreviews.length > 0 ? "10px" : "0",
-              }}
-            >
-              {thumbnailPreviews.length > 0 ? (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "8px", width: "100%" }}>
+            {thumbnailPreviews.length > 0 ? (
+              <>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
+                    gap: "8px",
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "12px",
+                    border: "1px dashed rgba(90,60,30,0.25)",
+                    background: "var(--ds-bg)",
+                  }}
+                >
                   {thumbnailPreviews.map((preview, index) => (
-                    <img
-                      key={preview}
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "8px" }}
-                    />
+                    <div key={preview} style={{ position: "relative" }}>
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "8px", cursor: "pointer" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewPhotoIndex(index);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveThumbnail(index);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          width: 22,
+                          height: 22,
+                          borderRadius: 6,
+                          border: "none",
+                          background: "rgba(0,0,0,0.55)",
+                          color: "white",
+                          fontSize: 14,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        aria-label="Remove photo"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <>
-                  <ImagePlus size={22} color="var(--ds-accent-hover)" />
-                  <span style={{ fontSize: "var(--ds-text-footnote)", color: "var(--ds-tertiary-label)" }}>Upload project photos</span>
-                </>
-              )}
-            </button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 w-full"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                >
+                  Add more photos
+                </Button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => thumbnailInputRef.current?.click()}
+                style={{
+                  width: "100%",
+                  minHeight: "120px",
+                  borderRadius: "12px",
+                  border: "1px dashed rgba(90,60,30,0.25)",
+                  background: "var(--ds-bg)",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  overflow: "hidden",
+                  position: "relative",
+                  padding: "0",
+                }}
+              >
+                <ImagePlus size={22} color="var(--ds-accent-hover)" />
+                <span style={{ fontSize: "var(--ds-text-footnote)", color: "var(--ds-tertiary-label)" }}>Upload project photos</span>
+              </button>
+            )}
           </div>
 
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingTop: "8px" }}>
@@ -649,6 +888,51 @@ export function CreateProjectSheet({
         initialValue={location ? { address: location, latitude, longitude } : null}
         onConfirm={handleLocationConfirm}
       />
+      {previewPhotoIndex !== null && (
+        <div 
+          onClick={() => setPreviewPhotoIndex(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px"
+          }}
+        >
+          <img 
+            src={thumbnailPreviews[previewPhotoIndex]} 
+            alt="Preview fullscreen" 
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setPreviewPhotoIndex(null)}
+            style={{
+              position: "absolute",
+              top: "24px",
+              right: "24px",
+              background: "rgba(255,255,255,0.15)",
+              border: "none",
+              borderRadius: "50%",
+              width: "48px",
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "white",
+              transition: "background 0.2s"
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
+          >
+            <X size={28} />
+          </button>
+        </div>
+      )}
     </>
   );
 }

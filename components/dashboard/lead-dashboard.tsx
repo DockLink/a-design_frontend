@@ -50,7 +50,6 @@ export function LeadDashboard() {
   const { tasks: apiTasks, isLoading: tasksLoading } = useTasks({
     page: 1,
     limit: 10,
-    status: "ACTIVE",
     taskable_type: "TASK",
     depth: 1,
     projects: ledProjectIds.length ? ledProjectIds : undefined,

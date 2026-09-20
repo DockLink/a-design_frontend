@@ -120,6 +120,9 @@ export function useProjectTasksBoard(projectId: string) {
   const stages = useMemo(() => stageTasks.map((s) => mapStageToView(s)), [stageTasks]);
   const milestones = useMemo(() => milestoneTasks.map((m) => mapMilestoneToView(m)), [milestoneTasks]);
 
+  const milestoneIdsKey = useMemo(() => taskIdsKey(milestoneTasks), [milestoneTasks]);
+  const hierarchyKey = `${stageIdsKey}|${milestoneIdsKey}`;
+
   const memberUsers = useMemo(() => {
     return members
       .filter((m) => m.status === "ACTIVE" && m.assignee)
@@ -154,8 +157,8 @@ export function useProjectTasksBoard(projectId: string) {
   const isAdmin = effectiveRole === "admin";
 
   useEffect(() => {
-    if (hierarchyKeyRef.current === stageIdsKey) return;
-    hierarchyKeyRef.current = stageIdsKey;
+    if (hierarchyKeyRef.current === hierarchyKey) return;
+    hierarchyKeyRef.current = hierarchyKey;
 
     if (!stageIdsKey) {
       setMilestoneParents({});
@@ -214,7 +217,7 @@ export function useProjectTasksBoard(projectId: string) {
     return () => {
       cancelled = true;
     };
-  }, [stageIdsKey, stageTasks]);
+  }, [hierarchyKey, stageIdsKey, stageTasks]);
 
   useEffect(() => {
     if (assigneesKeyRef.current === rawTaskIdsKey) return;
@@ -342,6 +345,20 @@ export function useProjectTasksBoard(projectId: string) {
         startDate = new Date(due.getTime() - 1000);
       }
 
+      const inputTitle = input.title.trim();
+      const inputDueDate = new Date(input.dueDate).toISOString().slice(0, 10);
+
+      const isDuplicate = tasks.some((t) => {
+        return (
+          t.title.trim().toLowerCase() === inputTitle.toLowerCase() &&
+          t.dueDate === inputDueDate
+        );
+      });
+
+      if (isDuplicate) {
+        throw new Error("A task with this name and date already exists");
+      }
+
       // Attach to milestone if chosen, otherwise to the stage so the task
       // still rolls up into the stage for auto-completion + timeline.
       const parentId = input.milestoneId || input.stageId || undefined;
@@ -360,6 +377,15 @@ export function useProjectTasksBoard(projectId: string) {
       });
 
       const created = await createTask(payload);
+
+      if (input.milestoneId) {
+        setTaskMilestoneMap((prev) => ({ ...prev, [created.id]: input.milestoneId! }));
+      } else if (input.stageId) {
+        const parentStage = stages.find((s) => s.id === input.stageId);
+        if (parentStage) {
+          setTaskStageMap((prev) => ({ ...prev, [created.id]: parentStage.name }));
+        }
+      }
 
       if (input.assigneeUserIds.length > 0) {
         await authApiClient<TaskWithAssignees>(`/tasks/${created.id}/assignees`, {
@@ -458,6 +484,7 @@ export function useProjectTasksBoard(projectId: string) {
         method: "PATCH",
         body: JSON.stringify({ completed }),
       });
+      assigneesKeyRef.current = null;
       await refetchTasks();
     },
     [refetchTasks]
@@ -487,7 +514,7 @@ export function useProjectTasksBoard(projectId: string) {
     return tasks.filter((t) => t.assignees.some((a) => a.userId === currentUserView.userId));
   }, [tasks, currentUserView]);
 
-  const visibleTasks = isAdmin || canManage ? tasks : myTasks;
+  const visibleTasks = tasks;
 
   return {
     stages,

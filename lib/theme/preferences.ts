@@ -51,7 +51,7 @@ const HOME_ROUTES = new Set<string>([
   "/my-tasks",
   "/notifications",
 ]);
-const CUID_LIKE = /^[a-z0-9]{20,}$/i;
+const CUID_LIKE = /^[a-z0-9\-]{20,}$/i;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 export function mergeUserPreferences(stored?: Partial<UserPreferences> | null): UserPreferences {

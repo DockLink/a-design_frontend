@@ -8,7 +8,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useMemberProjects } from "@/hooks/use-member-projects";
 import { useTasks } from "@/hooks/use-tasks";
+import { authApiClient } from "@/lib/api/authenticated-client";
 import { canOpenProjectDetail } from "@/lib/navigation/sidebar-role";
+import { isTaskCompleted } from "@/lib/projects/map-stages";
 import {
   dsActionBtn,
   dsBody,
@@ -68,7 +70,7 @@ export function MemberDashboard({
   // NOTE: do NOT filter by status here. Tasks use workflow statuses
   // (TODO / IN_PROGRESS / COMPLETED / …), never the literal "ACTIVE", so a
   // status filter would silently hide every task.
-  const { tasks: apiTasks, isLoading: tasksLoading, error: tasksError } = useTasks({
+  const { tasks: apiTasks, isLoading: tasksLoading, error: tasksError, refetch: refetchTasks } = useTasks({
     page: 1,
     limit: tasksLimit,
     taskable_type: "TASK",
@@ -76,7 +78,7 @@ export function MemberDashboard({
     projects: projectIds.length ? projectIds : undefined,
   });
 
-  const [doneTasks, setDoneTasks] = useState<Set<string>>(new Set());
+  const [optimisticStatus, setOptimisticStatus] = useState<Record<string, boolean>>({});
 
   const projectNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -101,16 +103,26 @@ export function MemberDashboard({
 
   const displayName = user ? getUserDisplayName(user) : "there";
 
-  const overdueCount = tasks.filter(
-    (t) => t.urgency === "overdue" && !doneTasks.has(t.id)
-  ).length;
+  const overdueCount = tasks.filter((t) => {
+    const done = optimisticStatus[t.id] ?? isTaskCompleted(t.status);
+    return t.urgency === "overdue" && !done;
+  }).length;
 
-  function toggleDone(id: string) {
-    setDoneTasks((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  async function toggleDone(task: MemberTaskRow) {
+    const currentDone = optimisticStatus[task.id] ?? isTaskCompleted(task.status);
+    const nextDone = !currentDone;
+
+    setOptimisticStatus((prev) => ({ ...prev, [task.id]: nextDone }));
+
+    try {
+      await authApiClient(`/tasks/${task.id}/my-completion`, {
+        method: "PATCH",
+        body: JSON.stringify({ completed: nextDone }),
+      });
+      await refetchTasks();
+    } catch (err) {
+      setOptimisticStatus((prev) => ({ ...prev, [task.id]: currentDone }));
+    }
   }
 
   function goToTasks() {
@@ -206,7 +218,7 @@ export function MemberDashboard({
               </div>
             )}
             {tasks.map((task, i) => {
-              const done = doneTasks.has(task.id);
+              const done = optimisticStatus[task.id] ?? isTaskCompleted(task.status);
               return (
                 <div
                   key={task.id}
@@ -225,7 +237,7 @@ export function MemberDashboard({
                   }}
                 >
                   <button
-                    onClick={() => toggleDone(task.id)}
+                    onClick={() => toggleDone(task)}
                     style={{
                       width: 20,
                       height: 20,

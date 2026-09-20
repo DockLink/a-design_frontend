@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { toHoldRequestDateIso } from "@/lib/hold-requests/display";
+import { useAuth } from "@/hooks/use-auth";
 import type {
   CreateHoldRequestPayload,
   HoldRequestsListResponse,
@@ -11,6 +12,7 @@ import type {
 } from "@/types/hold-requests";
 
 export function useTaskHoldRequests(taskId: string | null, enabled: boolean) {
+  const { user } = useAuth();
   const [holds, setHolds] = useState<TaskableHoldRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +49,8 @@ export function useTaskHoldRequests(taskId: string | null, enabled: boolean) {
   }, [enabled, taskId, fetchHolds]);
 
   const pendingHold = useMemo(
-    () => holds.find((h) => h.status === "PENDING") ?? null,
-    [holds]
+    () => holds.find((h) => h.status === "PENDING" && h.requestedById === user?.id) ?? null,
+    [holds, user?.id]
   );
 
   const createHoldRequest = useCallback(

@@ -146,6 +146,22 @@ export function useProjectTimeline(projectId: string) {
         (m) => milestoneStageMap[m.id]?.stageId === input.stageId
       ).length;
 
+      const inputTitle = input.title.trim();
+      const inputStartDate = new Date(input.startDate).toISOString().slice(0, 10);
+
+      const isDuplicate = milestoneTasks.some((m) => {
+        const mTitle = m.title.trim();
+        const mStartDate = new Date(m.start_date).toISOString().slice(0, 10);
+        return (
+          mTitle.toLowerCase() === inputTitle.toLowerCase() &&
+          mStartDate === inputStartDate
+        );
+      });
+
+      if (isDuplicate) {
+        throw new Error("A milestone with this name and date already exists");
+      }
+
       const payload = withTaskEndDate({
         project_id: projectId,
         title: input.title.trim(),

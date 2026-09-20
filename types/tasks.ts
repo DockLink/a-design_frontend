@@ -115,4 +115,5 @@ export type TaskUrgency = "overdue" | "today" | "soon";
 /** UI row for member dashboard */
 export interface MemberTaskRow extends LeadTaskRow {
   urgency: TaskUrgency;
+  status: TaskableStatus;
 }

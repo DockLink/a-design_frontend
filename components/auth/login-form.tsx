@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
@@ -109,12 +110,12 @@ export function LoginForm() {
       )}
 
       <div className="flex justify-end">
-        <button
-          type="button"
+        <Link
+          href="/forgot-password"
           className="text-xs font-light text-black hover:underline"
         >
           Forgot password?
-        </button>
+        </Link>
       </div>
 
       <Button

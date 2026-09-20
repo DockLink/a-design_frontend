@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Flag, LayoutGrid, List, ListTree, Plus, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +51,17 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
 
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [selectedTask, setSelectedTask] = useState<ProjectTaskView | null>(null);
+
+  // Sync selected task with latest data from tasks array
+  useEffect(() => {
+    if (selectedTask) {
+      const updated = tasks.find((t) => t.id === selectedTask.id);
+      if (updated && updated !== selectedTask) {
+        setSelectedTask(updated);
+      }
+    }
+  }, [tasks, selectedTask]);
+
   const [createStatus, setCreateStatus] = useState<BoardColumnId | null>(null);
   const [showStageManagement, setShowStageManagement] = useState(false);
   const [showMilestoneManagement, setShowMilestoneManagement] = useState(false);
@@ -188,11 +199,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
             ))}
           </div>
           <span className="rounded-lg bg-[var(--ds-bg)] px-3 py-1.5 text-xs font-medium text-[var(--ds-secondary-label)]">
-            {viewMode === "milestones" || viewMode === "team"
-              ? `Tasks: ${filteredAll.length}`
-              : isAdmin
-                ? `All tasks: ${filteredVisible.length}`
-                : `My tasks: ${filteredVisible.length}`}
+            Tasks: {viewMode === "milestones" || viewMode === "team" ? filteredAll.length : filteredVisible.length}
           </span>
         </div>
 
@@ -355,7 +362,23 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
         members={memberUsers}
         stageRange={selectedTaskStageRange}
         onUpdateAssignees={updateTaskAssignees}
-        onMarkMyCompletion={markMyCompletion}
+        onMarkMyCompletion={async (taskId, completed) => {
+          setSelectedTask((prev) => {
+            if (prev?.id === taskId) {
+              const now = new Date().toISOString();
+              return {
+                ...prev,
+                assignees: prev.assignees.map((a) =>
+                  a.userId === currentUser?.userId
+                    ? { ...a, completedAt: completed ? now : null }
+                    : a
+                ),
+              };
+            }
+            return prev;
+          });
+          await markMyCompletion(taskId, completed);
+        }}
         onUpdateStatus={handleSheetStatusChange}
         onReopen={async (taskId) => {
           await reopenTask(taskId);
