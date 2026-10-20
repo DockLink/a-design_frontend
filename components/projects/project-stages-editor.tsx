@@ -5,11 +5,12 @@ import { Check, Layers, Pencil, Plus, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
-import { mapStageToView } from "@/lib/projects/map-stages";
-import { resolveTaskEndDateIso } from "@/lib/tasks/task-dates";
+import { STAGE_START_REQUIRED_WITH_END } from "@/lib/projects/default-stages";
+import { mapStageToView, stageHasSchedule } from "@/lib/projects/map-stages";
 import type { CreateTaskRequest, Task } from "@/types/tasks";
 
-function toDateInput(iso: string): string {
+function toDateInput(iso?: string | null): string {
+  if (!iso) return "";
   return iso.slice(0, 10);
 }
 
@@ -33,6 +34,7 @@ export function ProjectStagesEditor({
   const [newStageName, setNewStageName] = useState("");
   const [newStageStart, setNewStageStart] = useState("");
   const [newStageEnd, setNewStageEnd] = useState("");
+  const [createStartError, setCreateStartError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -92,7 +94,7 @@ export function ProjectStagesEditor({
     setEditingId(stageId);
     setEditName(stage.title);
     setEditStart(toDateInput(stage.start_date));
-    setEditEnd(toDateInput(resolveTaskEndDateIso(stage)));
+    setEditEnd(toDateInput(stage.end_date));
   }
 
   function cancelEdit() {
@@ -106,11 +108,18 @@ export function ProjectStagesEditor({
     const stage = stageById.get(stageId);
     if (!stage) return;
     const trimmedEditName = editName.trim();
-    if (!trimmedEditName || !editStart || !editEnd) {
+    if (!trimmedEditName) {
+      toast.error("Stage name is required");
+      return;
+    }
+    const currentStart = toDateInput(stage.start_date);
+    const currentEnd = toDateInput(stage.end_date);
+    const datesChanged = editStart !== currentStart || editEnd !== currentEnd;
+    if (datesChanged && (!editStart || !editEnd)) {
       toast.error("Stage name, start and end dates are required");
       return;
     }
-    if (new Date(editEnd) < new Date(editStart)) {
+    if (editStart && editEnd && new Date(editEnd) < new Date(editStart)) {
       toast.error("End date must be on or after the start date");
       return;
     }
@@ -129,9 +138,7 @@ export function ProjectStagesEditor({
       if (trimmedEditName !== stage.title) {
         await updateTaskable(stageId, { title: trimmedEditName });
       }
-      const currentStart = toDateInput(stage.start_date);
-      const currentEnd = toDateInput(resolveTaskEndDateIso(stage));
-      if (editStart !== currentStart || editEnd !== currentEnd) {
+      if (datesChanged && editStart && editEnd) {
         await updateTaskableDates(
           stageId,
           new Date(`${editStart}T00:00:00`).toISOString(),
@@ -150,9 +157,17 @@ export function ProjectStagesEditor({
 
   async function handleCreateStage() {
     const trimmedName = newStageName.trim();
-    if (!trimmedName || !newStageStart || !newStageEnd) return;
+    if (!trimmedName) return;
 
-    if (new Date(newStageEnd) < new Date(newStageStart)) {
+    const start = newStageStart.trim();
+    const end = newStageEnd.trim();
+    if (end && !start) {
+      setCreateStartError(STAGE_START_REQUIRED_WITH_END);
+      return;
+    }
+    setCreateStartError("");
+
+    if (start && end && new Date(end) < new Date(start)) {
       toast.error("End date must be on or after the start date");
       return;
     }
@@ -167,19 +182,20 @@ export function ProjectStagesEditor({
     }
     setIsCreating(true);
     try {
-      const payload: CreateTaskRequest & { end_date: string } = {
+      const payload: CreateTaskRequest = {
         project_id: projectId,
         title: trimmedName,
-        start_date: new Date(newStageStart).toISOString(),
-        end_date: new Date(newStageEnd + "T23:59:59").toISOString(),
         taskable_type: "STAGE",
         order: stages.length,
       };
+      if (start) payload.start_date = new Date(start).toISOString();
+      if (end) payload.end_date = new Date(end + "T23:59:59").toISOString();
       await createTaskable(payload);
       await notifyUpdated();
       setNewStageName("");
       setNewStageStart("");
       setNewStageEnd("");
+      setCreateStartError("");
       toast.success("Stage created");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create stage");
@@ -188,8 +204,7 @@ export function ProjectStagesEditor({
     }
   }
 
-  const canCreate =
-    !!newStageName.trim() && !!newStageStart && !!newStageEnd && !isCreating;
+  const canCreate = !!newStageName.trim() && !isCreating;
 
   return (
     <div className="space-y-3">
@@ -285,8 +300,9 @@ export function ProjectStagesEditor({
                           {stage.name}
                         </div>
                         <div className="text-[11.5px] text-[var(--ds-secondary-label)]">
-                          {new Date(stage.startDate).toLocaleDateString()} –{" "}
-                          {new Date(stage.endDate).toLocaleDateString()}
+                          {stageHasSchedule(stage)
+                            ? `${new Date(stage.startDate).toLocaleDateString()} – ${new Date(stage.endDate).toLocaleDateString()}`
+                            : "Dates not set"}
                         </div>
                       </div>
                     </div>
@@ -341,12 +357,21 @@ export function ProjectStagesEditor({
           className="mb-2 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
         />
         <div className="mb-2.5 grid grid-cols-2 gap-2">
-          <input
-            type="date"
-            value={newStageStart}
-            onChange={(e) => setNewStageStart(e.target.value)}
-            className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
-          />
+          <div>
+            <input
+              type="date"
+              value={newStageStart}
+              onChange={(e) => {
+                setNewStageStart(e.target.value);
+                if (createStartError) setCreateStartError("");
+              }}
+              aria-invalid={Boolean(createStartError)}
+              className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
+            />
+            {createStartError ? (
+              <p className="mt-1 text-[11px] text-red-500">{createStartError}</p>
+            ) : null}
+          </div>
           <input
             type="date"
             value={newStageEnd}

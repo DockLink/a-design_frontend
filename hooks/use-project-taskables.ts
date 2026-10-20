@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { queryKeys } from "@/lib/query/keys";
-import { withTaskEndDate } from "@/lib/tasks/create-task-payload";
+import { normalizeCreateTaskPayload } from "@/lib/tasks/create-task-payload";
 import { toTasksQueryString } from "@/lib/tasks/query-string";
 import type { CreateTaskRequest, Task, TaskableType, TasksListResponse, TasksQueryParams } from "@/types/tasks";
 
@@ -49,7 +49,7 @@ export function useProjectTaskables(
 
   const createMutation = useMutation({
     mutationFn: async (payload: CreateTaskRequest) => {
-      const normalized = withTaskEndDate(payload);
+      const normalized = normalizeCreateTaskPayload(payload);
       return authApiClient<Task>("/tasks", {
         method: "POST",
         body: JSON.stringify(normalized),

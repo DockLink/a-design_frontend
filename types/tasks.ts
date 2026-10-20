@@ -78,7 +78,7 @@ export interface TasksQueryParams {
 export interface CreateTaskRequest {
   project_id: string;
   title: string;
-  start_date: string;
+  start_date?: string;
   end_date?: string;
   duration?: string;
   code?: string;

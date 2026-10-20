@@ -13,6 +13,7 @@ import { useUsers } from "@/hooks/use-users";
 import {
   buildStagesFromOptions,
   defaultStageOptions,
+  STAGE_START_REQUIRED_WITH_END,
   type ProjectStageOption,
 } from "@/lib/projects/default-stages";
 import { MemberSearchSelect } from "@/components/projects/member-search-select";
@@ -64,6 +65,7 @@ export function CreateProjectSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState<number | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
+  const [stageDateErrors, setStageDateErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -101,6 +103,7 @@ export function CreateProjectSheet({
         setBriefAttachments([]);
         setIsUploadingBrief(false);
         setHasDraft(true);
+        setStageDateErrors({});
         return;
       }
     } catch (e) {
@@ -127,6 +130,7 @@ export function CreateProjectSheet({
     setBriefAttachments([]);
     setIsUploadingBrief(false);
     setHasDraft(false);
+    setStageDateErrors({});
   }, [open]);
 
   useEffect(() => {
@@ -218,6 +222,12 @@ export function CreateProjectSheet({
     setStageOptions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
     );
+    setStageDateErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
   function handleThumbnailChange(files: FileList | null) {
@@ -342,29 +352,43 @@ export function CreateProjectSheet({
     }
 
     const selectedStages = stageOptions.filter((s) => selectedStageIds.has(s.id));
+    const nextStageDateErrors: Record<string, string> = {};
     let latestEndDay = "";
     for (const stage of selectedStages) {
-      if (!stage.startDate || !stage.endDate) {
-        toast.error(`Set a start and end date for the "${stage.name}" stage`);
-        return;
+      const stageStart = stage.startDate?.trim() ?? "";
+      const stageEnd = stage.endDate?.trim() ?? "";
+      if (stageEnd && !stageStart) {
+        nextStageDateErrors[stage.id] = STAGE_START_REQUIRED_WITH_END;
+        continue;
       }
-      if (stage.startDate < startDate) {
+      if (stageStart && stageStart < startDate) {
         toast.error(
           `"${stage.name}" stage can't start before the project start (${new Date(startDate).toLocaleDateString()})`
         );
         return;
       }
-      if (stage.endDate < stage.startDate) {
+      if (stageStart && stageEnd && stageEnd < stageStart) {
         toast.error(`"${stage.name}" stage end date must be on or after its start date`);
         return;
       }
-      if (stage.endDate > latestEndDay) latestEndDay = stage.endDate;
+      if (stageEnd && stageEnd > latestEndDay) latestEndDay = stageEnd;
+    }
+
+    if (Object.keys(nextStageDateErrors).length > 0) {
+      setStageDateErrors(nextStageDateErrors);
+      return;
+    }
+    setStageDateErrors({});
+
+    if (!latestEndDay) {
+      toast.error("Set an end date on at least one stage so the project end date can be determined");
+      return;
     }
 
     // The project end is the latest stage end date.
     const projectEndIso = new Date(`${latestEndDay}T23:59:59`).toISOString();
 
-    const stages = buildStagesFromOptions(startDate, stageOptions, selectedStageIds, projectEndIso);
+    const stages = buildStagesFromOptions(stageOptions, selectedStageIds);
 
     setIsSubmitting(true);
     try {
@@ -436,6 +460,7 @@ export function CreateProjectSheet({
       setThumbnailPreviews([]);
       setBriefAttachments([]);
       setIsUploadingBrief(false);
+      setStageDateErrors({});
     }
   }
 
@@ -722,10 +747,12 @@ export function CreateProjectSheet({
             <div>
               <Label>Stage timeline</Label>
               <p style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)", lineHeight: 1.4, margin: "4px 0 10px" }}>
-                Set a start and end date for each stage.{projectStartDay
+                Stage dates are optional.{projectStartDay
                   ? ` Stages can't start before the project start (${new Date(projectStartDay).toLocaleDateString()}).`
                   : " Set the project start date first."}
-                {projectEndDay && ` Project end: ${new Date(projectEndDay).toLocaleDateString()}.`}
+                {projectEndDay
+                  ? ` Project end: ${new Date(projectEndDay).toLocaleDateString()}.`
+                  : " Project end is set from the latest stage end date."}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {stageOptions
@@ -752,7 +779,11 @@ export function CreateProjectSheet({
                             min={projectStartDay}
                             onChange={(e) => updateStageDate(stage.id, "startDate", e.target.value)}
                             className="bg-[var(--ds-bg)] h-9 mt-1"
+                            aria-invalid={Boolean(stageDateErrors[stage.id])}
                           />
+                          {stageDateErrors[stage.id] ? (
+                            <p className="mt-1 text-[11px] text-red-500">{stageDateErrors[stage.id]}</p>
+                          ) : null}
                         </div>
                         <div>
                           <span style={{ fontSize: "var(--ds-text-caption-1)", color: "var(--ds-tertiary-label)" }}>End</span>

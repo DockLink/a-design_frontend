@@ -5,12 +5,23 @@ export interface ProjectStageView {
   id: string;
   name: string;
   order: number;
-  startDate: string;
+  startDate: string | null;
   duration: string;
-  endDate: string;
+  endDate: string | null;
   isActive: boolean;
   status: TaskableStatus;
   isCompleted: boolean;
+}
+
+export function isValidDateValue(value?: string | null): value is string {
+  if (!value || !value.trim()) return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+
+export function stageHasSchedule<T extends { startDate?: string | null; endDate?: string | null }>(
+  stage: T
+): stage is T & { startDate: string; endDate: string } {
+  return isValidDateValue(stage.startDate) && isValidDateValue(stage.endDate);
 }
 
 export interface ProjectMilestoneView {
@@ -25,19 +36,23 @@ export interface ProjectMilestoneView {
 }
 
 export function mapStageToView(stage: Task, now = new Date()): ProjectStageView {
-  const endIso = resolveTaskEndDateIso(stage);
-  const end = new Date(endIso);
-  const start = new Date(stage.start_date);
+  const startDate = isValidDateValue(stage.start_date) ? stage.start_date : null;
+  const endDate = isValidDateValue(stage.end_date) ? stage.end_date : null;
   const isCompleted = stage.status === "COMPLETED";
-  const isActive = !isCompleted && start <= now && end >= now;
+  const isActive =
+    startDate != null &&
+    endDate != null &&
+    !isCompleted &&
+    new Date(startDate) <= now &&
+    new Date(endDate) >= now;
 
   return {
     id: stage.id,
     name: stage.title,
     order: stage.order,
-    startDate: stage.start_date,
-    duration: resolveTaskDurationIso(stage),
-    endDate: endIso,
+    startDate,
+    duration: startDate && endDate ? resolveTaskDurationIso(stage) : "",
+    endDate,
     isActive,
     status: stage.status,
     isCompleted,

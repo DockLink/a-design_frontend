@@ -155,14 +155,10 @@ export function TaskCreateDialog({
 
   const rangeStart = selectedMilestone
     ? selectedMilestone.startDate.slice(0, 10)
-    : selectedStage
-      ? selectedStage.startDate.slice(0, 10)
-      : undefined;
+    : selectedStage?.startDate?.slice(0, 10);
   const rangeEnd = selectedMilestone
     ? selectedMilestone.endDate.slice(0, 10)
-    : selectedStage
-      ? selectedStage.endDate.slice(0, 10)
-      : undefined;
+    : selectedStage?.endDate?.slice(0, 10);
   const rangeLabel = selectedMilestone ? "milestone" : "stage";
 
   // Keep the due date inside the active range as the parent selection changes.

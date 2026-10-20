@@ -10,6 +10,9 @@ export const DEFAULT_PROJECT_STAGE_NAMES = [
   "Post Construction",
 ] as const;
 
+export const STAGE_START_REQUIRED_WITH_END =
+  "Start date is required when end date is set";
+
 export interface ProjectStageOption {
   id: string;
   name: string;
@@ -34,27 +37,25 @@ function toIsoEnd(date: string): string {
   return new Date(`${date}T23:59:59`).toISOString();
 }
 
-export function buildStagesFromOptions(
-  startDate: string,
-  options: ProjectStageOption[],
-  selectedIds: Set<string>,
-  projectEndDate?: string
-): CreateProjectStageInput[] {
-  const start = new Date(startDate);
-  if (Number.isNaN(start.getTime())) return [];
+function filledDate(value?: string | null): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
 
-  const projectStartIso = start.toISOString();
-  const projectEndIso = projectEndDate ?? start.toISOString();
+export function buildStagesFromOptions(
+  options: ProjectStageOption[],
+  selectedIds: Set<string>
+): CreateProjectStageInput[] {
   const selected = options.filter((o) => selectedIds.has(o.id));
 
   return selected.map((stage, idx) => {
-    const stageStartIso = stage.startDate ? toIsoStart(stage.startDate) : projectStartIso;
-    const stageEndIso = stage.endDate ? toIsoEnd(stage.endDate) : projectEndIso;
+    const start = filledDate(stage.startDate);
+    const end = filledDate(stage.endDate);
     return {
       name: stage.name,
       order: idx,
-      start_date: stageStartIso,
-      end_date: stageEndIso,
+      ...(start ? { start_date: toIsoStart(start) } : {}),
+      ...(end ? { end_date: toIsoEnd(end) } : {}),
     };
   });
 }

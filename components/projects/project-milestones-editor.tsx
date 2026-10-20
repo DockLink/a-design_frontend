@@ -66,8 +66,8 @@ export function ProjectMilestonesEditor({
     () => stageViews.find((s) => s.id === (stageId || stageViews[0]?.id)),
     [stageViews, stageId]
   );
-  const stageStart = selectedStage ? selectedStage.startDate.slice(0, 10) : undefined;
-  const stageEnd = selectedStage ? selectedStage.endDate.slice(0, 10) : undefined;
+  const stageStart = selectedStage?.startDate?.slice(0, 10);
+  const stageEnd = selectedStage?.endDate?.slice(0, 10);
 
   const loadParents = useCallback(async () => {
     if (stages.length === 0) {
@@ -213,9 +213,9 @@ export function ProjectMilestonesEditor({
     }
     const parentStage = stageById.get(milestoneStageMap[milestoneId] ?? "");
     if (parentStage) {
-      const sStart = parentStage.startDate.slice(0, 10);
-      const sEnd = parentStage.endDate.slice(0, 10);
-      if (editStart < sStart || editEnd > sEnd) {
+      const sStart = parentStage.startDate?.slice(0, 10);
+      const sEnd = parentStage.endDate?.slice(0, 10);
+      if (sStart && sEnd && (editStart < sStart || editEnd > sEnd)) {
         toast.error(
           `Milestone must fall within the stage period (${new Date(sStart).toLocaleDateString()} – ${new Date(sEnd).toLocaleDateString()})`
         );
@@ -275,8 +275,8 @@ export function ProjectMilestonesEditor({
         <div className="space-y-4">
               {stageViews.map((s) => {
                 const items = grouped.byStage[s.id];
-                const sStart = s.startDate.slice(0, 10);
-                const sEnd = s.endDate.slice(0, 10);
+                const sStart = s.startDate?.slice(0, 10);
+                const sEnd = s.endDate?.slice(0, 10);
                 return (
                   <div key={s.id}>
                     <div className="mb-2 flex items-center gap-2">

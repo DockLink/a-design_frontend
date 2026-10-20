@@ -140,7 +140,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
       ? milestoneParents[selectedTask.milestoneId]?.stageId
       : undefined;
     const stage = stageId ? stages.find((s) => s.id === stageId) : undefined;
-    if (!stage) return null;
+    if (!stage?.startDate || !stage.endDate) return null;
     return { start: stage.startDate, end: stage.endDate };
   }, [selectedTask, milestoneParents, stages]);
 
