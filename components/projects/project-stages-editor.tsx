@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Layers, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { Check, CircleDot, Layers, Pencil, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
@@ -68,6 +68,19 @@ export function ProjectStagesEditor({
       await setTaskableStatus(stageId, "COMPLETED");
       await notifyUpdated();
       toast.success("Stage marked complete");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update stage");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleMarkInProgress(stageId: string) {
+    setBusyId(stageId);
+    try {
+      await setTaskableStatus(stageId, "IN_PROGRESS");
+      await notifyUpdated();
+      toast.success("Stage marked in progress");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update stage");
     } finally {
@@ -220,7 +233,7 @@ export function ProjectStagesEditor({
       </div>
 
       <p className="text-[12px] leading-relaxed text-[var(--ds-secondary-label)]">
-        Edit stage names and dates, mark stages complete, or add new phases to the project timeline.
+        Edit stage names and dates, mark stages in progress or complete, or add new phases to the project timeline.
       </p>
 
       {stageViews.length === 0 ? (
@@ -232,6 +245,7 @@ export function ProjectStagesEditor({
         <div className="space-y-2">
           {stageViews.map((stage, index) => {
             const isEditing = editingId === stage.id;
+            const isInProgress = stage.status === "IN_PROGRESS";
             return (
               <div
                 key={stage.id}
@@ -286,15 +300,27 @@ export function ProjectStagesEditor({
                         className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
                           stage.isCompleted
                             ? "bg-[#3D8B5E] text-white"
-                            : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
+                            : isInProgress
+                              ? "bg-[#D4A96A] text-white"
+                              : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
                         }`}
                       >
-                        {stage.isCompleted ? <Check size={14} /> : index + 1}
+                        {stage.isCompleted ? (
+                          <Check size={14} />
+                        ) : isInProgress ? (
+                          <CircleDot size={14} />
+                        ) : (
+                          index + 1
+                        )}
                       </span>
                       <div className="min-w-0">
                         <div
                           className={`truncate text-[13.5px] font-medium ${
-                            stage.isCompleted ? "text-[#248A3D]" : "text-[var(--ds-label)]"
+                            stage.isCompleted
+                              ? "text-[#248A3D]"
+                              : isInProgress
+                                ? "text-[#C9894A]"
+                                : "text-[var(--ds-label)]"
                           }`}
                         >
                           {stage.name}
@@ -327,15 +353,28 @@ export function ProjectStagesEditor({
                           <RotateCcw size={12} /> Reopen
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => void handleMarkComplete(stage.id)}
-                          disabled={busyId === stage.id}
-                          title="Mark stage complete"
-                          className="flex items-center gap-1 rounded-lg border border-[#3D8B5E]/30 bg-[#3D8B5E]/8 px-2 py-1.5 text-[11px] font-medium text-[#248A3D] hover:bg-[#3D8B5E]/15 disabled:opacity-50"
-                        >
-                          <Check size={12} /> Complete
-                        </button>
+                        <>
+                          {!isInProgress && (
+                            <button
+                              type="button"
+                              onClick={() => void handleMarkInProgress(stage.id)}
+                              disabled={busyId === stage.id}
+                              title="Mark stage in progress"
+                              className="flex items-center gap-1 rounded-lg border border-[#D4A96A]/40 bg-[#D4A96A]/10 px-2 py-1.5 text-[11px] font-medium text-[#C9894A] hover:bg-[#D4A96A]/18 disabled:opacity-50"
+                            >
+                              <CircleDot size={12} /> In progress
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleMarkComplete(stage.id)}
+                            disabled={busyId === stage.id}
+                            title="Mark stage complete"
+                            className="flex items-center gap-1 rounded-lg border border-[#3D8B5E]/30 bg-[#3D8B5E]/8 px-2 py-1.5 text-[11px] font-medium text-[#248A3D] hover:bg-[#3D8B5E]/15 disabled:opacity-50"
+                          >
+                            <Check size={12} /> Complete
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
