@@ -45,6 +45,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
     updateTaskAssignees,
     updateTaskStatus,
     markMyCompletion,
+    deleteTask,
     reopenTask,
     currentUser,
   } = useProjectTasksBoard(projectId);
@@ -52,13 +53,16 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [selectedTask, setSelectedTask] = useState<ProjectTaskView | null>(null);
 
-  // Sync selected task with latest data from tasks array
+  // Sync selected task with latest data from tasks array; close if deleted.
   useEffect(() => {
-    if (selectedTask) {
-      const updated = tasks.find((t) => t.id === selectedTask.id);
-      if (updated && updated !== selectedTask) {
-        setSelectedTask(updated);
-      }
+    if (!selectedTask) return;
+    const updated = tasks.find((t) => t.id === selectedTask.id);
+    if (!updated) {
+      setSelectedTask(null);
+      return;
+    }
+    if (updated !== selectedTask) {
+      setSelectedTask(updated);
     }
   }, [tasks, selectedTask]);
 
@@ -387,6 +391,10 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
               ? { ...prev, status: "in-progress", apiStatus: "REOPENED" }
               : prev
           );
+        }}
+        onDelete={async (taskId) => {
+          await deleteTask(taskId);
+          setSelectedTask(null);
         }}
       />
 

@@ -34,7 +34,6 @@ export function useLedProjects(
     ledProjects,
     ledProjectIds,
     rawProjects,
-    teamMembers: [] as { id: string; name: string; initials: string; tasks: number }[],
     isLoading,
     error,
     refetch,

@@ -73,7 +73,7 @@ export function useProjectTimeline(projectId: string) {
             const detail = await authApiClient<Task & { children?: Task[] }>(
               `/tasks/${stage.id}?include_children=true`
             );
-            for (const child of detail.children ?? []) {
+            for (const child of (detail.children ?? []).filter((c) => c.status !== "INACTIVE")) {
               if (child.taskableType === "MILESTONE") {
                 parentMap[child.id] = { stageId: stage.id, stageName: stage.title };
                 // Load tasks under this milestone
@@ -82,7 +82,7 @@ export function useProjectTimeline(projectId: string) {
                     `/tasks/${child.id}?include_children=true`
                   );
                   tasksByMilestone[child.id] = (milestoneDetail.children ?? [])
-                    .filter((t) => t.taskableType === "TASK")
+                    .filter((t) => t.taskableType === "TASK" && t.status !== "INACTIVE")
                     .map((t) => mapTaskToTimelineItem(t));
                 } catch {
                   // milestone may have no tasks yet

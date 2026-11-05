@@ -88,6 +88,7 @@ export function useProjectTasksBoard(projectId: string) {
     createTaskable: createTask,
     patchTaskInCache,
     reopenTaskable,
+    deleteTaskable,
   } = useProjectTaskables(projectId, "TASK", TASK_BOARD_FETCH_OPTIONS);
 
   const [assigneeMap, setAssigneeMap] = useState<Record<string, TaskAssigneeView[]>>({});
@@ -179,7 +180,7 @@ export function useProjectTasksBoard(projectId: string) {
           const detail = await authApiClient<Task & { children?: Task[] }>(
             `/tasks/${stage.id}?include_children=true`
           );
-          const children = detail.children ?? [];
+          const children = (detail.children ?? []).filter((c) => c.status !== "INACTIVE");
           for (const child of children) {
             if (child.taskableType === "TASK") {
               taskToStage[child.id] = stage.title;
@@ -192,7 +193,9 @@ export function useProjectTasksBoard(projectId: string) {
               const milestoneDetail = await authApiClient<Task & { children?: Task[] }>(
                 `/tasks/${child.id}?include_children=true`
               );
-              for (const taskChild of milestoneDetail.children ?? []) {
+              for (const taskChild of (milestoneDetail.children ?? []).filter(
+                (c) => c.status !== "INACTIVE"
+              )) {
                 if (taskChild.taskableType === "TASK") {
                   milestoneToTasks[taskChild.id] = child.id;
                   taskToStage[taskChild.id] = stage.title;
@@ -490,6 +493,16 @@ export function useProjectTasksBoard(projectId: string) {
     [refetchTasks]
   );
 
+  const deleteTask = useCallback(
+    async (taskId: string) => {
+      await deleteTaskable(taskId);
+      hierarchyKeyRef.current = null;
+      assigneesKeyRef.current = null;
+      await refreshAll();
+    },
+    [deleteTaskable, refreshAll]
+  );
+
   const reopenTask = useCallback(
     async (taskId: string) => {
       patchTaskInCache(taskId, { status: "REOPENED" });
@@ -538,6 +551,7 @@ export function useProjectTasksBoard(projectId: string) {
     updateTaskAssignees,
     updateTaskStatus,
     markMyCompletion,
+    deleteTask,
     reopenTask,
     refetchTasks,
   };

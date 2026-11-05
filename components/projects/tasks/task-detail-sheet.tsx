@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, PauseCircle, Plus, RotateCcw } from "lucide-react";
+import { Check, PauseCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDeleteDialog } from "@/components/projects/confirm-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetBody, SheetCloseButton, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -39,6 +40,7 @@ export function TaskDetailSheet({
   onMarkMyCompletion,
   onUpdateStatus,
   onReopen,
+  onDelete,
 }: {
   task: ProjectTaskView | null;
   open: boolean;
@@ -51,9 +53,12 @@ export function TaskDetailSheet({
   onMarkMyCompletion?: (taskId: string, completed: boolean) => Promise<void>;
   onUpdateStatus?: (taskId: string, status: BoardColumnId) => Promise<void>;
   onReopen?: (taskId: string) => Promise<void>;
+  onDelete?: (taskId: string) => Promise<void>;
 }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showHoldDialog, setShowHoldDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [localStatus, setLocalStatus] = useState<BoardColumnId | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
@@ -79,6 +84,7 @@ export function TaskDetailSheet({
   // Reset the optimistic status whenever a different task is opened.
   useEffect(() => {
     setLocalStatus(null);
+    setShowDeleteConfirm(false);
   }, [task?.id]);
 
   if (!task) return null;
@@ -113,6 +119,20 @@ export function TaskDetailSheet({
       toast.error(err instanceof Error ? err.message : "Failed to reopen task");
     } finally {
       setIsReopening(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!onDelete || !task) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(task.id);
+      setShowDeleteConfirm(false);
+      toast.success(`"${task.title}" deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete task");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -540,9 +560,23 @@ export function TaskDetailSheet({
               )}
             </div>
 
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              {canManage && onDelete && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isDeleting}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="gap-1.5 border-red-200 text-[var(--ds-destructive)] hover:bg-red-50"
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete task
+                </Button>
+              )}
+            </div>
           </SheetBody>
         </SheetContent>
       </Sheet>
@@ -556,6 +590,22 @@ export function TaskDetailSheet({
           onSubmit={createHoldRequest}
         />
       )}
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        title="Delete task?"
+        description={
+          <>
+            <strong className="text-[var(--ds-label)]">{task.title}</strong>
+            {subtasks.length > 0
+              ? " and its subtasks will be removed. This cannot be undone."
+              : " will be removed. This cannot be undone."}
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </>
   );
 }

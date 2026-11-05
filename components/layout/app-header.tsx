@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Search } from "lucide-react";
+import { Bell, LogOut, Search, Settings } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -38,13 +39,47 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const { unreadCount } = useNotifications();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   const hasUnreadNotifications = unreadCount > 0;
 
   const title = getPageTitle(pathname);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+
+    function onPointerDown(event: MouseEvent) {
+      if (!accountRef.current?.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setAccountOpen(false);
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [accountOpen]);
+
+  function handleLogout() {
+    setAccountOpen(false);
+    logout();
+    router.replace(NAV_ROUTES.login);
+  }
+
+  function goSettings() {
+    setAccountOpen(false);
+    router.push(NAV_ROUTES.settings);
+  }
 
   return (
     <header
@@ -111,28 +146,105 @@ export function AppHeader() {
         </HeaderBtn>
 
         {user && (
-          <div
-            title={getUserDisplayName(user)}
-            style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "50%",
-              background: "rgba(212,169,106,0.18)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "var(--ds-text-caption-2)",
-              fontWeight: 600,
-              color: "var(--ds-accent-hover)",
-              cursor: "default",
-              flexShrink: 0,
-            }}
-          >
-            {getUserInitials(user)}
+          <div ref={accountRef} style={{ position: "relative", flexShrink: 0 }}>
+            <button
+              type="button"
+              title={getUserDisplayName(user)}
+              aria-label="Account"
+              aria-expanded={accountOpen}
+              aria-haspopup="menu"
+              onClick={() => setAccountOpen((open) => !open)}
+              style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "50%",
+                background: "rgba(212,169,106,0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "var(--ds-text-caption-2)",
+                fontWeight: 600,
+                color: "var(--ds-accent-hover)",
+                cursor: "pointer",
+                border: "none",
+                padding: 0,
+              }}
+            >
+              {getUserInitials(user)}
+            </button>
+
+            {accountOpen ? (
+              <div
+                role="menu"
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  minWidth: "180px",
+                  padding: "4px",
+                  borderRadius: "12px",
+                  background: "var(--ds-surface)",
+                  border: "0.5px solid var(--ds-separator)",
+                  boxShadow: "0 8px 24px rgba(26, 20, 16, 0.12)",
+                  zIndex: 40,
+                }}
+              >
+                <AccountMenuItem
+                  icon={<Settings size={15} />}
+                  label="Settings"
+                  onClick={goSettings}
+                />
+                <AccountMenuItem
+                  icon={<LogOut size={15} />}
+                  label="Log out"
+                  onClick={handleLogout}
+                />
+              </div>
+            ) : null}
           </div>
         )}
       </div>
     </header>
+  );
+}
+
+function AccountMenuItem({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "8px 10px",
+        borderRadius: "8px",
+        border: "none",
+        background: hovered ? "rgba(60,60,67,0.06)" : "transparent",
+        color: "var(--ds-label)",
+        fontSize: "var(--ds-text-footnote)",
+        fontWeight: 500,
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span style={{ color: "var(--ds-tertiary-label)", display: "flex" }}>{icon}</span>
+      {label}
+    </button>
   );
 }
 

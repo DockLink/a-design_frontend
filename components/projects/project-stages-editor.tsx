@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, CircleDot, Layers, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Check, CircleDot, Layers, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDeleteDialog } from "@/components/projects/confirm-delete-dialog";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
 import { STAGE_START_REQUIRED_WITH_END } from "@/lib/projects/default-stages";
 import { mapStageToView, stageHasSchedule } from "@/lib/projects/map-stages";
@@ -29,6 +30,7 @@ export function ProjectStagesEditor({
     updateTaskableDates,
     setTaskableStatus,
     reopenTaskable,
+    deleteTaskable,
   } = useProjectTaskables(projectId, "STAGE");
 
   const [newStageName, setNewStageName] = useState("");
@@ -37,6 +39,8 @@ export function ProjectStagesEditor({
   const [createStartError, setCreateStartError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -97,6 +101,23 @@ export function ProjectStagesEditor({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to reopen stage");
     } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setBusyId(deleteTarget.id);
+    try {
+      await deleteTaskable(deleteTarget.id);
+      await notifyUpdated();
+      toast.success(`"${deleteTarget.name}" deleted`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete stage");
+    } finally {
+      setIsDeleting(false);
       setBusyId(null);
     }
   }
@@ -342,6 +363,15 @@ export function ProjectStagesEditor({
                       >
                         <Pencil size={13} />
                       </button>
+                      <button
+                        type="button"
+                        title="Delete stage"
+                        onClick={() => setDeleteTarget({ id: stage.id, name: stage.name })}
+                        disabled={busyId === stage.id}
+                        className="flex size-8 items-center justify-center rounded-lg border border-[rgba(90,60,30,0.15)] text-[var(--ds-destructive)] hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                       {stage.isCompleted ? (
                         <button
                           type="button"
@@ -429,6 +459,20 @@ export function ProjectStagesEditor({
           {isCreating ? "Creating…" : "Add stage"}
         </button>
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title="Delete stage?"
+        description={
+          <>
+            <strong className="text-[var(--ds-label)]">{deleteTarget?.name}</strong> and its
+            milestones and tasks will be removed. This cannot be undone.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

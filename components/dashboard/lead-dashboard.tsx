@@ -7,14 +7,14 @@ import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useLedProjects } from "@/hooks/use-led-projects";
-import { useTasks } from "@/hooks/use-tasks";
+import { useMemberProjects } from "@/hooks/use-member-projects";
+import { useMyAssignedTasks } from "@/hooks/use-my-assigned-tasks";
 import { canOpenProjectDetail } from "@/lib/navigation/sidebar-role";
 import {
   dsActionBtn,
   dsBody,
   dsCallout,
   dsCaption,
-  dsCaption2,
   dsCard,
   dsFootnote,
   dsLargeTitle,
@@ -44,15 +44,24 @@ export function LeadDashboard() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { ledProjects, ledProjectIds, teamMembers, rawProjects, isLoading, error } =
-    useLedProjects();
+  const { ledProjects, isLoading, error } = useLedProjects();
 
-  const { tasks: apiTasks, isLoading: tasksLoading } = useTasks({
-    page: 1,
+  // Personal tasks are scoped to all active memberships (any role), not PRU-only.
+  // Assignment guarantees membership, not project-lead status.
+  const {
+    memberProjects,
+    projectIds: memberProjectIds,
+    isLoading: memberProjectsLoading,
+  } = useMemberProjects({ page: 1, limit: 100, status: "ACTIVE" });
+
+  const {
+    tasks: apiTasks,
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useMyAssignedTasks({
+    projectIds: memberProjectIds,
+    userId: user?.id,
     limit: 10,
-    taskable_type: "TASK",
-    depth: 1,
-    projects: ledProjectIds.length ? ledProjectIds : undefined,
   });
 
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
@@ -60,9 +69,9 @@ export function LeadDashboard() {
 
   const projectNameById = useMemo(() => {
     const map = new Map<string, string>();
-    rawProjects.forEach((p) => map.set(p.id, p.name));
+    memberProjects.forEach((p) => map.set(p.id, p.name));
     return map;
-  }, [rawProjects]);
+  }, [memberProjects]);
 
   const TASKS = useMemo<LeadTaskRow[]>(
     () =>
@@ -71,6 +80,8 @@ export function LeadDashboard() {
       ),
     [apiTasks, projectNameById]
   );
+
+  const tasksPanelLoading = memberProjectsLoading || tasksLoading;
 
   const greeting = getGreeting();
   const dateStr = new Date().toLocaleDateString("en-US", {
@@ -136,11 +147,13 @@ export function LeadDashboard() {
         {/* LEFT — tasks */}
         <div>
           <div style={dsSectionLabel}>Your tasks</div>
-          {tasksLoading && <div style={dsCallout}>Loading tasks…</div>}
-          {error && <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{error}</div>}
+          {tasksPanelLoading && <div style={dsCallout}>Loading tasks…</div>}
+          {tasksError && (
+            <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{tasksError}</div>
+          )}
           <div style={dsCard}>
-            {TASKS.length === 0 && !tasksLoading && (
-              <div style={{ padding: "18px", ...dsCallout }}>No tasks on your led projects.</div>
+            {TASKS.length === 0 && !tasksPanelLoading && !tasksError && (
+              <div style={{ padding: "18px", ...dsCallout }}>No tasks assigned to you yet.</div>
             )}
             {TASKS.map((task, i) => {
               const done = doneTasks.has(task.id);
@@ -198,12 +211,17 @@ export function LeadDashboard() {
           </div>
         </div>
 
-        {/* RIGHT — projects + team */}
+        {/* RIGHT — projects */}
         <div>
           <div style={dsSectionLabel}>Projects you lead</div>
           {isLoading && <div style={dsFootnote}>Loading…</div>}
+          {error && (
+            <div style={{ ...dsFootnote, color: "var(--ds-destructive)", marginBottom: "8px" }}>
+              {error}
+            </div>
+          )}
           <div style={dsCard}>
-            {ledProjects.length === 0 && !isLoading && (
+            {ledProjects.length === 0 && !isLoading && !error && (
               <div style={{ padding: "16px", ...dsFootnote }}>
                 No assigned lead projects yet.
               </div>
@@ -242,34 +260,6 @@ export function LeadDashboard() {
                 </button>
               );
             })}
-          </div>
-
-          <div style={dsSectionLabel}>Team</div>
-          <div style={dsCard}>
-            {teamMembers.length === 0 && (
-              <div style={{ padding: "16px", ...dsFootnote }}>No team members yet.</div>
-            )}
-            {teamMembers.map((member, i) => (
-              <div
-                key={member.id}
-                style={{
-                  display: "flex", alignItems: "center", height: "52px",
-                  padding: "0 16px", gap: "12px",
-                  borderBottom: i < teamMembers.length - 1 ? "0.5px solid rgba(60,60,67,0.10)" : "none",
-                }}
-              >
-                <div style={{
-                  width: "32px", height: "32px", borderRadius: "50%",
-                  background: "rgba(212,169,106,0.15)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "var(--ds-text-caption-2)", fontWeight: 600, color: "var(--ds-accent-hover)", flexShrink: 0,
-                }}>
-                  {member.initials}
-                </div>
-                <span style={{ ...dsBody, flex: 1 }}>{member.name}</span>
-                <span style={dsCaption}>{member.tasks} tasks</span>
-              </div>
-            ))}
           </div>
         </div>
       </div>

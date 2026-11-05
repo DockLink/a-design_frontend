@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Flag, Pencil, Plus, RotateCcw } from "lucide-react";
+import { Check, Flag, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDeleteDialog } from "@/components/projects/confirm-delete-dialog";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { mapStageToView } from "@/lib/projects/map-stages";
@@ -27,9 +28,12 @@ export function ProjectMilestonesEditor({
     updateTaskableDates: updateMilestoneDates,
     setTaskableStatus,
     reopenTaskable,
+    deleteTaskable,
   } = useProjectTaskables(projectId, "MILESTONE");
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Maps milestone id -> parent stage id.
   const [milestoneStageMap, setMilestoneStageMap] = useState<Record<string, string>>({});
@@ -81,7 +85,7 @@ export function ProjectMilestonesEditor({
           const detail = await authApiClient<Task & { children?: Task[] }>(
             `/tasks/${stage.id}?include_children=true`
           );
-          for (const child of detail.children ?? []) {
+          for (const child of (detail.children ?? []).filter((c) => c.status !== "INACTIVE")) {
             if (child.taskableType === "MILESTONE") {
               map[child.id] = stage.id;
             }
@@ -164,6 +168,24 @@ export function ProjectMilestonesEditor({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to reopen milestone");
     } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setBusyId(deleteTarget.id);
+    try {
+      await deleteTaskable(deleteTarget.id);
+      await loadParents();
+      await notifyUpdated();
+      toast.success(`"${deleteTarget.name}" deleted`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete milestone");
+    } finally {
+      setIsDeleting(false);
       setBusyId(null);
     }
   }
@@ -312,6 +334,7 @@ export function ProjectMilestonesEditor({
                             onChangeEnd={setEditEnd}
                             onComplete={() => void handleMarkComplete(m.id)}
                             onReopen={() => void handleReopenMilestone(m.id)}
+                            onDelete={() => setDeleteTarget({ id: m.id, name: m.name })}
                           />
                         ))}
                       </div>
@@ -351,6 +374,7 @@ export function ProjectMilestonesEditor({
                         onChangeEnd={setEditEnd}
                         onComplete={() => void handleMarkComplete(m.id)}
                         onReopen={() => void handleReopenMilestone(m.id)}
+                        onDelete={() => setDeleteTarget({ id: m.id, name: m.name })}
                       />
                     ))}
                   </div>
@@ -428,6 +452,20 @@ export function ProjectMilestonesEditor({
             </>
           )}
         </div>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title="Delete milestone?"
+        description={
+          <>
+            <strong className="text-[var(--ds-label)]">{deleteTarget?.name}</strong> and its
+            tasks will be removed. This cannot be undone.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -451,6 +489,7 @@ function MilestoneRow({
   onChangeEnd,
   onComplete,
   onReopen,
+  onDelete,
 }: {
   id: string;
   name: string;
@@ -471,6 +510,7 @@ function MilestoneRow({
   onChangeEnd: (v: string) => void;
   onComplete: () => void;
   onReopen: () => void;
+  onDelete: () => void;
 }) {
   if (isEditing) {
     return (
@@ -582,6 +622,15 @@ function MilestoneRow({
           className="flex size-8 items-center justify-center rounded-lg text-[var(--ds-accent-hover)] transition-colors hover:bg-[var(--ds-bg)]"
         >
           <Pencil size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={busy}
+          title="Delete milestone"
+          className="flex size-8 items-center justify-center rounded-lg text-[var(--ds-destructive)] transition-colors hover:bg-red-50 disabled:opacity-50"
+        >
+          <Trash2 size={13} />
         </button>
       </div>
     </div>
