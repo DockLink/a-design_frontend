@@ -59,8 +59,8 @@ export function TimelineAddMilestoneDialog({
   }, [open, stages]);
 
   const selectedStage = stages.find((s) => s.id === stageId);
-  const stageStart = selectedStage ? selectedStage.startDate.slice(0, 10) : undefined;
-  const stageEnd = selectedStage ? selectedStage.endDate.slice(0, 10) : undefined;
+  const stageStart = selectedStage?.startDate?.slice(0, 10);
+  const stageEnd = selectedStage?.endDate?.slice(0, 10);
 
   const canSubmit = Boolean(title.trim() && stageId && startDate && endDate);
 

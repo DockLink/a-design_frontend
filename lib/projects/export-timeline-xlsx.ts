@@ -20,8 +20,8 @@ function flattenTimelineGroups(groups: TimelineStageGroup[]): ExportRow[] {
       Type: "Stage",
       Title: group.name,
       Stage: group.name,
-      Start: group.startDate,
-      End: group.endDate,
+      Start: group.startDate ?? "",
+      End: group.endDate ?? "",
       Status: group.isActive ? "active" : "upcoming",
       Description: "",
     });

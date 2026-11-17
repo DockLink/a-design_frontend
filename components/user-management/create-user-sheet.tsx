@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,18 @@ export function CreateUserSheet({
   const [role, setRole] = useState<UserRole>(defaultRole);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset form when panel opens
+  useEffect(() => {
+    if (open) {
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPassword("");
+      setRole(defaultRole);
+      setError(null);
+    }
+  }, [open, defaultRole]);
+
   const canSubmit = useMemo(
     () => firstName.trim() && email.trim() && password.trim(),
     [email, firstName, password]
@@ -52,6 +64,13 @@ export function CreateUserSheet({
     e.preventDefault();
     if (!canSubmit) return;
     setError(null);
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Enter a valid email address");
+      return;
+    }
+
     try {
       await onSubmit({
         first_name: firstName.trim(),
@@ -128,6 +147,7 @@ export function CreateUserSheet({
         </div>
 
         <form
+          autoComplete="off"
           onSubmit={handleSubmit}
           style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}
         >
@@ -159,6 +179,7 @@ export function CreateUserSheet({
             <Input
               id="create-email"
               type="email"
+              autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@studio.lk"
@@ -170,6 +191,7 @@ export function CreateUserSheet({
             <Label htmlFor="create-password">Password</Label>
             <PasswordInput
               id="create-password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 chars with symbols"

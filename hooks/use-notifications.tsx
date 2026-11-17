@@ -89,8 +89,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const { user, primaryRole, isAuthenticated } = useAuth();
 
   const sidebarRole = primaryRole ? toSidebarRole(primaryRole) : null;
-  const canReviewHolds = sidebarRole === "admin" || sidebarRole === "superadmin";
-  const isOrgAdmin = canReviewHolds;
+  const isOrgAdmin = sidebarRole === "admin" || sidebarRole === "superadmin";
   const userId = user?.id ?? null;
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -98,6 +97,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [readKeys, setReadKeys] = useState<Set<string>>(new Set());
   const [ledProjectIds, setLedProjectIds] = useState<Set<string>>(new Set());
 
+  const canReviewHolds = isOrgAdmin || ledProjectIds.size > 0;
   const canReviewAccess = isOrgAdmin || ledProjectIds.size > 0;
 
   const readStorageKey = userId ? `notif:read:${userId}` : null;
@@ -110,7 +110,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     setReadKeys(readStorageKey ? new Set(readStorage(readStorageKey)) : new Set());
   }, [readStorageKey]);
 
-  // Projects this user leads (PRU) — used to scope access-request review.
+  // Projects this user leads (PRU) — used to scope hold/access-request review.
   useEffect(() => {
     if (!isAuthenticated || !userId || isOrgAdmin) {
       setLedProjectIds(new Set());
@@ -198,14 +198,27 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     try {
       const mapped: AppNotification[] = [];
 
-      // Hold requests
+      // Hold requests — reviewers see project holds; members see their own history.
       const holdQs = new URLSearchParams({ page: "1", limit: "50" });
       if (!canReviewHolds) holdQs.set("requested_by_id", userId);
       try {
         const holdRes = await authApiClient<HoldRequestsListResponse>(
           `/taskable-hold-requests?${holdQs}`
         );
-        mapped.push(...(holdRes.data ?? []).map((r) => holdRequestToNotification(r, canReviewHolds)));
+        let holdItems = holdRes.data ?? [];
+        if (!isOrgAdmin && ledProjectIds.size > 0) {
+          holdItems = holdItems.filter(
+            (r) => r.task?.projectId != null && ledProjectIds.has(r.task.projectId)
+          );
+        }
+        mapped.push(
+          ...holdItems.map((r) => {
+            const projectId = r.task?.projectId;
+            const canProcess =
+              isOrgAdmin || (projectId != null && ledProjectIds.has(projectId));
+            return holdRequestToNotification(r, canProcess);
+          })
+        );
       } catch {
         /* non-critical */
       }

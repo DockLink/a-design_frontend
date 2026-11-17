@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,9 @@ import { resolveGuestLandingRoute } from "@/lib/navigation/guest-landing";
 import { resolveHomeRoute } from "@/lib/navigation/home-route";
 import { isGuestRole } from "@/lib/user/guest";
 
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = 72;
+
 // Login Form
 
 export function LoginForm() {
@@ -29,6 +33,14 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    if (
+      email.trim().length > MAX_EMAIL_LENGTH ||
+      password.length > MAX_PASSWORD_LENGTH
+    ) {
+      setError("Email or password is too long.");
+      return;
+    }
 
     try {
       await login(email.trim(), password);
@@ -79,6 +91,7 @@ export function LoginForm() {
           }}
           aria-invalid={Boolean(error)}
           className="h-9 text-sm"
+          maxLength={MAX_EMAIL_LENGTH}
           required
         />
       </div>
@@ -98,6 +111,7 @@ export function LoginForm() {
           }}
           invalid={Boolean(error)}
           className="h-9 pr-10 text-sm"
+          maxLength={MAX_PASSWORD_LENGTH}
           required
         />
       </div>
@@ -109,12 +123,12 @@ export function LoginForm() {
       )}
 
       <div className="flex justify-end">
-        <button
-          type="button"
+        <Link
+          href="/forgot-password"
           className="text-xs font-light text-black hover:underline"
         >
           Forgot password?
-        </button>
+        </Link>
       </div>
 
       <Button

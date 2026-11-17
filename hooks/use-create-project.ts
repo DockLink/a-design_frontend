@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
-import { withTaskEndDate } from "@/lib/tasks/create-task-payload";
+import { normalizeCreateTaskPayload } from "@/lib/tasks/create-task-payload";
 import type {
   CreateProjectRequest,
   CreateProjectStageInput,
@@ -31,18 +31,18 @@ export function useCreateProject() {
 
       if (options?.stages?.length) {
         for (const stage of options.stages) {
-          const taskPayload: CreateTaskRequest & { end_date?: string; duration?: string } = {
+          const taskPayload: CreateTaskRequest = {
             project_id: project.id,
             title: stage.name,
-            start_date: stage.start_date,
-            end_date: stage.end_date,
-            duration: stage.duration,
             order: stage.order,
             taskable_type: "STAGE",
           };
+          if (stage.start_date) taskPayload.start_date = stage.start_date;
+          if (stage.end_date) taskPayload.end_date = stage.end_date;
+          if (stage.duration) taskPayload.duration = stage.duration;
           await authApiClient("/tasks", {
             method: "POST",
-            body: JSON.stringify(withTaskEndDate(taskPayload)),
+            body: JSON.stringify(normalizeCreateTaskPayload(taskPayload)),
           });
         }
       }

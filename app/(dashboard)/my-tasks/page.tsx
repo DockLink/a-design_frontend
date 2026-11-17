@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ChevronRight, ListTodo, Search } from "lucide-react";
 
+import { useAuth } from "@/hooks/use-auth";
 import { useMemberProjects } from "@/hooks/use-member-projects";
-import { useTasks } from "@/hooks/use-tasks";
+import { useMyAssignedTasks } from "@/hooks/use-my-assigned-tasks";
 import {
   getTaskStatusLabel,
   getTaskStatusStyle,
@@ -41,20 +42,20 @@ function getDue(startDate: string): { label: string; urgency: TaskUrgency } {
 
 export default function MyTasksPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { memberProjects, projectIds, isLoading: projectsLoading } = useMemberProjects({
     page: 1,
     limit: 100,
     status: "ACTIVE",
   });
 
-  // Do NOT filter by status: tasks use workflow statuses (TODO / IN_PROGRESS /
-  // COMPLETED / …), never "ACTIVE", so a status filter hides every task.
-  const { tasks, isLoading: tasksLoading, error } = useTasks({
-    page: 1,
+  // Only tasks with an ACTIVE assignee for the current user.
+  // Do NOT filter by task status: workflow statuses are TODO / IN_PROGRESS / …
+  // and a literal "ACTIVE" status filter hides every task.
+  const { tasks, isLoading: tasksLoading, error } = useMyAssignedTasks({
+    projectIds,
+    userId: user?.id,
     limit: 200,
-    taskable_type: "TASK",
-    depth: 1,
-    projects: projectIds.length ? projectIds : undefined,
   });
 
   const [filter, setFilter] = useState<FilterKey>("open");

@@ -1,10 +1,20 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import { apiClient } from "@/lib/api/client";
-import { clearActivity, isInactiveTooLong, recordActivity } from "@/lib/auth/activity";
+import {
+  clearActivity,
+  isInactiveTooLong,
+  LAST_ACTIVE_KEY,
+  recordActivity,
+} from "@/lib/auth/activity";
+import {
+  clearBrowserSession,
+  hasBrowserSession,
+  markBrowserSession,
+} from "@/lib/auth/browser-session";
 import { notifySessionExpired } from "@/lib/auth/session-expiry";
 import { getPrimaryRole, hasAnyRole } from "@/lib/auth/rbac";
 import { toAuthSession } from "@/lib/auth/sessions";
@@ -13,6 +23,63 @@ import { ApiError } from "@/types/api";
 import type { AuthState } from "@/types/auth";
 import type { LoginResponse } from "@/types/auth";
 import type { User, UserRole } from "@/types/users";
+
+/** localStorage gated by a session cookie so a full browser quit forces re-login. */
+const authPersistStorage = {
+  getItem: (name: string): string | null => {
+    if (typeof window === "undefined") return null;
+    if (!hasBrowserSession()) {
+      try {
+        window.localStorage.removeItem(name);
+        window.localStorage.removeItem(LAST_ACTIVE_KEY);
+      } catch {
+        /* ignore quota / privacy-mode errors */
+      }
+      return null;
+    }
+    try {
+      return window.localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string): void => {
+    if (typeof window === "undefined") return;
+    try {
+      // Avoid re-setting the session cookie when persist writes `{ session: null }`
+      // after logout / forced expiry.
+      const parsed = JSON.parse(value) as { state?: { session?: unknown } };
+      if (parsed?.state?.session) {
+        markBrowserSession();
+        window.localStorage.setItem(name, value);
+      } else {
+        clearBrowserSession();
+        window.localStorage.removeItem(name);
+        window.localStorage.removeItem(LAST_ACTIVE_KEY);
+      }
+    } catch {
+      try {
+        window.localStorage.setItem(name, value);
+      } catch {
+        /* ignore quota / privacy-mode errors */
+      }
+    }
+  },
+  removeItem: (name: string): void => {
+    if (typeof window === "undefined") return;
+    clearBrowserSession();
+    try {
+      window.localStorage.removeItem(name);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+function clearAuthSessionArtifacts(): void {
+  clearActivity();
+  clearBrowserSession();
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -29,6 +96,8 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           });
 
+          // Mark the browser process before persist writes the session.
+          markBrowserSession();
           set({
             session: toAuthSession(response),
             isLoading: false,
@@ -42,7 +111,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        clearActivity();
+        clearAuthSessionArtifacts();
         set({ session: null });
       },
 
@@ -50,6 +119,7 @@ export const useAuthStore = create<AuthState>()(
         const session = get().session;
         if (!session?.refreshToken) {
           if (session) {
+            clearAuthSessionArtifacts();
             set({ session: null });
             notifySessionExpired();
           }
@@ -59,7 +129,7 @@ export const useAuthStore = create<AuthState>()(
         // Honour the hard inactivity ceiling: if the user hasn't interacted in
         // longer than the allowed window, force a logout instead of refreshing.
         if (isInactiveTooLong()) {
-          clearActivity();
+          clearAuthSessionArtifacts();
           set({ session: null });
           notifySessionExpired();
           return null;
@@ -81,7 +151,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           // Refresh token itself is dead → session is unrecoverable.
           if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
-            clearActivity();
+            clearAuthSessionArtifacts();
             set({ session: null });
             notifySessionExpired();
             return null;
@@ -138,6 +208,7 @@ export const useAuthStore = create<AuthState>()(
                 /* fall through to logout */
               }
             }
+            clearAuthSessionArtifacts();
             set({ session: null, isLoading: false });
             return;
           }
@@ -158,6 +229,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: AUTH_STORAGE_KEY,
+      storage: createJSONStorage(() => authPersistStorage),
       partialize: (state) => ({ session: state.session }),
       skipHydration: true,
       onRehydrateStorage: () => (state, error) => {

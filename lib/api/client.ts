@@ -7,6 +7,7 @@ export async function apiClient<T>(
 ): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
+    credentials: "omit",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",

@@ -264,22 +264,36 @@ export function ProjectMinutesBoard({ projectId }: { projectId: string }) {
     }
   }
 
-  async function handlePdfUpload(file: File) {
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      toast.error("Please choose a PDF file");
-      return;
+  async function handlePdfUpload(files: File[]) {
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+        toast.error(`"${file.name}" is not a valid PDF file`);
+        continue;
+      }
+      if (editPdfs.some((pdf) => pdf.name === file.name) || validFiles.some(f => f.name === file.name)) {
+        toast.error(`File "${file.name}" has already been added`);
+        continue;
+      }
+      validFiles.push(file);
     }
+
+    if (validFiles.length === 0) return;
+
     setUploadingPdf(true);
     try {
-      const token = await uploadAttachment(file);
-      setEditPdfs((prev) => [
-        ...prev,
-        {
-          id: `pdf-${token}`,
-          name: file.name,
-          token,
-        },
-      ]);
+      const newPdfs = await Promise.all(
+        validFiles.map(async (file) => {
+          const token = await uploadAttachment(file);
+          return {
+            id: `pdf-${token}`,
+            name: file.name,
+            token,
+          };
+        })
+      );
+      setEditPdfs((prev) => [...prev, ...newPdfs]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PDF upload failed");
     } finally {
@@ -945,7 +959,7 @@ function EditorView({
   onRemoveAction: (id: string) => void;
   onAudioUpload: (file: File) => void;
   onRemoveAudio: () => void;
-  onPdfUpload: (file: File) => void;
+  onPdfUpload: (files: File[]) => void;
   onRemovePdf: (id: string) => void;
   onCancel: () => void;
   onPublish: () => void;
@@ -1163,9 +1177,10 @@ function EditorView({
             ref={pdfInputRef}
             type="file"
             accept="application/pdf,.pdf"
+            multiple
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onPdfUpload(file);
+              const files = Array.from(e.target.files || []);
+              if (files.length > 0) onPdfUpload(files);
               e.target.value = "";
             }}
             style={{ display: "none" }}

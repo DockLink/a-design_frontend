@@ -1,5 +1,10 @@
 import { addIsoDuration } from "@/lib/projects/duration";
-import type { ProjectMilestoneView, ProjectStageView } from "@/lib/projects/map-stages";
+import {
+  isValidDateValue,
+  stageHasSchedule,
+  type ProjectMilestoneView,
+  type ProjectStageView,
+} from "@/lib/projects/map-stages";
 import type { Task, TaskableStatus } from "@/types/tasks";
 import type { Project } from "@/types/projects";
 
@@ -32,8 +37,8 @@ export interface TimelineStageGroup {
   name: string;
   order: number;
   color: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   isActive: boolean;
   milestones: TimelineMilestoneItem[];
   /** Tasks attached directly to the stage (no milestone). */
@@ -96,6 +101,7 @@ export function deriveStageDisplayStatus(
     return "upcoming";
   }
   if (group.isActive) return "active";
+  if (!stageHasSchedule(group)) return "upcoming";
   const end = new Date(group.endDate + "T00:00:00");
   const start = new Date(group.startDate + "T00:00:00");
   if (end < now) return "completed";
@@ -107,6 +113,8 @@ export function stageStatusLabel(
   group: TimelineStageGroup,
   now = new Date()
 ): string {
+  const childCount = stageChildCount(group);
+  if (!stageHasSchedule(group) && childCount === 0) return "Dates not set";
   const status = deriveStageDisplayStatus(group, now);
   if (status === "completed") return "Completed";
   if (status === "overdue") return "Delayed";
@@ -118,6 +126,7 @@ export function stageStatusLabel(
 }
 
 export function stageDurationWeeks(group: TimelineStageGroup): number {
+  if (!stageHasSchedule(group)) return 0;
   const start = new Date(group.startDate + "T00:00:00").getTime();
   const end = new Date(group.endDate + "T00:00:00").getTime();
   const days = Math.max(1, Math.ceil((end - start) / 86400000));
@@ -178,6 +187,7 @@ export function getActiveStageGroup(
   }
 
   const inWindow = groups.find((g) => {
+    if (!stageHasSchedule(g)) return false;
     const start = new Date(g.startDate + "T00:00:00");
     const end = new Date(g.endDate + "T00:00:00");
     return start <= today && end >= today;
@@ -263,13 +273,16 @@ export function computeChartBounds(
   }
 
   for (const s of stages) {
-    dates.push(new Date(s.startDate).getTime(), new Date(s.endDate).getTime());
+    if (isValidDateValue(s.startDate)) dates.push(new Date(s.startDate).getTime());
+    if (isValidDateValue(s.endDate)) dates.push(new Date(s.endDate).getTime());
   }
   for (const m of milestones) {
-    dates.push(new Date(m.startDate).getTime(), new Date(m.endDate).getTime());
+    if (isValidDateValue(m.startDate)) dates.push(new Date(m.startDate).getTime());
+    if (isValidDateValue(m.endDate)) dates.push(new Date(m.endDate).getTime());
   }
 
-  if (dates.length === 0) {
+  const validDates = dates.filter((t) => !Number.isNaN(t));
+  if (validDates.length === 0) {
     const start = new Date(now);
     start.setMonth(start.getMonth() - 1);
     const end = new Date(now);
@@ -281,8 +294,8 @@ export function computeChartBounds(
     };
   }
 
-  const min = Math.min(...dates);
-  const max = Math.max(...dates, now.getTime());
+  const min = Math.min(...validDates);
+  const max = Math.max(...validDates, now.getTime());
   const padStart = new Date(min);
   padStart.setDate(padStart.getDate() - 7);
   const padEnd = new Date(max);
@@ -405,13 +418,15 @@ export function buildTimelineGroups(
       ...g.milestones.map((m) => new Date(m.endDate).getTime()),
       ...orphans.map((t) => new Date(t.endDate).getTime()),
     ];
-    if (childStarts.length > 0) {
-      g.startDate = toDateOnlyIso(
-        new Date(Math.min(new Date(g.startDate).getTime(), ...childStarts))
-      );
-      g.endDate = toDateOnlyIso(
-        new Date(Math.max(new Date(g.endDate).getTime(), ...childEnds))
-      );
+    const validChildStarts = childStarts.filter((t) => !Number.isNaN(t));
+    const validChildEnds = childEnds.filter((t) => !Number.isNaN(t));
+    if (validChildStarts.length > 0 && validChildEnds.length > 0) {
+      const ownStart = isValidDateValue(g.startDate) ? new Date(g.startDate).getTime() : null;
+      const ownEnd = isValidDateValue(g.endDate) ? new Date(g.endDate).getTime() : null;
+      const minStart = ownStart != null ? Math.min(ownStart, ...validChildStarts) : Math.min(...validChildStarts);
+      const maxEnd = ownEnd != null ? Math.max(ownEnd, ...validChildEnds) : Math.max(...validChildEnds);
+      g.startDate = toDateOnlyIso(new Date(minStart));
+      g.endDate = toDateOnlyIso(new Date(maxEnd));
     }
   }
 

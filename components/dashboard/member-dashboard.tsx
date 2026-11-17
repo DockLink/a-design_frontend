@@ -7,8 +7,10 @@ import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useMemberProjects } from "@/hooks/use-member-projects";
-import { useTasks } from "@/hooks/use-tasks";
+import { useMyAssignedTasks } from "@/hooks/use-my-assigned-tasks";
+import { authApiClient } from "@/lib/api/authenticated-client";
 import { canOpenProjectDetail } from "@/lib/navigation/sidebar-role";
+import { isTaskCompleted } from "@/lib/projects/map-stages";
 import {
   dsActionBtn,
   dsBody,
@@ -65,18 +67,17 @@ export function MemberDashboard({
   const { memberProjects, projectIds, isLoading: projectsLoading, error: projectsError } =
     useMemberProjects({ page: 1, limit: projectsLimit, status: "ACTIVE" });
 
-  // NOTE: do NOT filter by status here. Tasks use workflow statuses
-  // (TODO / IN_PROGRESS / COMPLETED / …), never the literal "ACTIVE", so a
-  // status filter would silently hide every task.
-  const { tasks: apiTasks, isLoading: tasksLoading, error: tasksError } = useTasks({
-    page: 1,
-    limit: tasksLimit,
-    taskable_type: "TASK",
-    depth: 1,
-    projects: projectIds.length ? projectIds : undefined,
-  });
+  // Tasks are scoped to ACTIVE assignees for the current user (not all project tasks).
+  // Do NOT filter by task status here — workflow statuses are TODO / IN_PROGRESS / …
+  // and a literal "ACTIVE" status filter would hide every task.
+  const { tasks: apiTasks, isLoading: tasksLoading, error: tasksError, refetch: refetchTasks } =
+    useMyAssignedTasks({
+      projectIds,
+      userId: user?.id,
+      limit: tasksLimit,
+    });
 
-  const [doneTasks, setDoneTasks] = useState<Set<string>>(new Set());
+  const [optimisticStatus, setOptimisticStatus] = useState<Record<string, boolean>>({});
 
   const projectNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -101,16 +102,26 @@ export function MemberDashboard({
 
   const displayName = user ? getUserDisplayName(user) : "there";
 
-  const overdueCount = tasks.filter(
-    (t) => t.urgency === "overdue" && !doneTasks.has(t.id)
-  ).length;
+  const overdueCount = tasks.filter((t) => {
+    const done = optimisticStatus[t.id] ?? isTaskCompleted(t.status);
+    return t.urgency === "overdue" && !done;
+  }).length;
 
-  function toggleDone(id: string) {
-    setDoneTasks((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  async function toggleDone(task: MemberTaskRow) {
+    const currentDone = optimisticStatus[task.id] ?? isTaskCompleted(task.status);
+    const nextDone = !currentDone;
+
+    setOptimisticStatus((prev) => ({ ...prev, [task.id]: nextDone }));
+
+    try {
+      await authApiClient(`/tasks/${task.id}/my-completion`, {
+        method: "PATCH",
+        body: JSON.stringify({ completed: nextDone }),
+      });
+      await refetchTasks();
+    } catch (err) {
+      setOptimisticStatus((prev) => ({ ...prev, [task.id]: currentDone }));
+    }
   }
 
   function goToTasks() {
@@ -193,20 +204,20 @@ export function MemberDashboard({
       >
         <div>
           <div style={dsSectionLabel}>My tasks</div>
-          {tasksLoading && (
+          {(projectsLoading || tasksLoading) && (
             <div style={dsCallout}>Loading tasks…</div>
           )}
           {tasksError && (
             <div style={{ ...dsCallout, color: "var(--ds-destructive)" }}>{tasksError}</div>
           )}
           <div style={dsCard}>
-            {tasks.length === 0 && !tasksLoading && (
+            {tasks.length === 0 && !projectsLoading && !tasksLoading && (
               <div style={{ padding: "18px", ...dsCallout }}>
                 No tasks assigned yet.
               </div>
             )}
             {tasks.map((task, i) => {
-              const done = doneTasks.has(task.id);
+              const done = optimisticStatus[task.id] ?? isTaskCompleted(task.status);
               return (
                 <div
                   key={task.id}
@@ -225,7 +236,7 @@ export function MemberDashboard({
                   }}
                 >
                   <button
-                    onClick={() => toggleDone(task.id)}
+                    onClick={() => toggleDone(task)}
                     style={{
                       width: 20,
                       height: 20,

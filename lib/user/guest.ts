@@ -17,7 +17,7 @@ export function isGuestUser(user: Pick<User, "roles">): boolean {
 }
 
 export function isGuestProjectMember(member: ProjectMember): boolean {
-  return isGuestRole(member.assignee?.roles as UserRole[] | undefined);
+  return member.role === "VIEWER" || isGuestRole(member.assignee?.roles as UserRole[] | undefined);
 }
 
 export function guestAccessLabel(roles: UserRole[] | undefined): string {

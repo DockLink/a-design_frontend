@@ -16,6 +16,7 @@ import {
   holdRequestStatusLabel,
   holdRequestStatusStyle,
 } from "@/lib/hold-requests/display";
+import { canViewHoldRequests } from "@/lib/projects/permissions";
 import type { TaskableHoldRequest } from "@/types/hold-requests";
 
 function HoldRequestCard({
@@ -205,7 +206,7 @@ function HoldRequestCard({
 export default function ProjectHoldRequestsPage() {
   const [filter, setFilter] = useState<"PENDING" | "APPROVED" | "all">("PENDING");
   const { effectiveRole } = useProjectMembers();
-  const canProcess = effectiveRole === "admin" || effectiveRole === "lead";
+  const canProcess = canViewHoldRequests(effectiveRole);
 
   const { requests, isLoading, isProcessing, error, processRequest } = useProjectHoldRequests({
     status: filter === "all" ? undefined : filter,

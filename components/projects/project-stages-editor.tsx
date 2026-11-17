@@ -1,15 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Layers, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { Check, CircleDot, Layers, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDeleteDialog } from "@/components/projects/confirm-delete-dialog";
 import { useProjectTaskables } from "@/hooks/use-project-taskables";
-import { mapStageToView } from "@/lib/projects/map-stages";
-import { resolveTaskEndDateIso } from "@/lib/tasks/task-dates";
+import { STAGE_START_REQUIRED_WITH_END } from "@/lib/projects/default-stages";
+import { mapStageToView, stageHasSchedule } from "@/lib/projects/map-stages";
 import type { CreateTaskRequest, Task } from "@/types/tasks";
 
-function toDateInput(iso: string): string {
+function toDateInput(iso?: string | null): string {
+  if (!iso) return "";
   return iso.slice(0, 10);
 }
 
@@ -28,13 +30,17 @@ export function ProjectStagesEditor({
     updateTaskableDates,
     setTaskableStatus,
     reopenTaskable,
+    deleteTaskable,
   } = useProjectTaskables(projectId, "STAGE");
 
   const [newStageName, setNewStageName] = useState("");
   const [newStageStart, setNewStageStart] = useState("");
   const [newStageEnd, setNewStageEnd] = useState("");
+  const [createStartError, setCreateStartError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -73,6 +79,19 @@ export function ProjectStagesEditor({
     }
   }
 
+  async function handleMarkInProgress(stageId: string) {
+    setBusyId(stageId);
+    try {
+      await setTaskableStatus(stageId, "IN_PROGRESS");
+      await notifyUpdated();
+      toast.success("Stage marked in progress");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update stage");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function handleReopen(stageId: string) {
     setBusyId(stageId);
     try {
@@ -86,13 +105,30 @@ export function ProjectStagesEditor({
     }
   }
 
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setBusyId(deleteTarget.id);
+    try {
+      await deleteTaskable(deleteTarget.id);
+      await notifyUpdated();
+      toast.success(`"${deleteTarget.name}" deleted`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete stage");
+    } finally {
+      setIsDeleting(false);
+      setBusyId(null);
+    }
+  }
+
   function beginEdit(stageId: string) {
     const stage = stageById.get(stageId);
     if (!stage) return;
     setEditingId(stageId);
     setEditName(stage.title);
     setEditStart(toDateInput(stage.start_date));
-    setEditEnd(toDateInput(resolveTaskEndDateIso(stage)));
+    setEditEnd(toDateInput(stage.end_date));
   }
 
   function cancelEdit() {
@@ -105,23 +141,38 @@ export function ProjectStagesEditor({
   async function handleSaveEdit(stageId: string) {
     const stage = stageById.get(stageId);
     if (!stage) return;
-    if (!editName.trim() || !editStart || !editEnd) {
+    const trimmedEditName = editName.trim();
+    if (!trimmedEditName) {
+      toast.error("Stage name is required");
+      return;
+    }
+    const currentStart = toDateInput(stage.start_date);
+    const currentEnd = toDateInput(stage.end_date);
+    const datesChanged = editStart !== currentStart || editEnd !== currentEnd;
+    if (datesChanged && (!editStart || !editEnd)) {
       toast.error("Stage name, start and end dates are required");
       return;
     }
-    if (new Date(editEnd) < new Date(editStart)) {
+    if (editStart && editEnd && new Date(editEnd) < new Date(editStart)) {
       toast.error("End date must be on or after the start date");
+      return;
+    }
+
+    // Prevent editing to a duplicate stage name (excluding the current stage)
+    const isDuplicate = stages.some(
+      (s) => s.id !== stageId && s.title.toLowerCase() === trimmedEditName.toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error("A stage with this name already exists");
       return;
     }
 
     setIsEditSaving(true);
     try {
-      if (editName.trim() !== stage.title) {
-        await updateTaskable(stageId, { title: editName.trim() });
+      if (trimmedEditName !== stage.title) {
+        await updateTaskable(stageId, { title: trimmedEditName });
       }
-      const currentStart = toDateInput(stage.start_date);
-      const currentEnd = toDateInput(resolveTaskEndDateIso(stage));
-      if (editStart !== currentStart || editEnd !== currentEnd) {
+      if (datesChanged && editStart && editEnd) {
         await updateTaskableDates(
           stageId,
           new Date(`${editStart}T00:00:00`).toISOString(),
@@ -139,26 +190,46 @@ export function ProjectStagesEditor({
   }
 
   async function handleCreateStage() {
-    if (!newStageName.trim() || !newStageStart || !newStageEnd) return;
-    if (new Date(newStageEnd) < new Date(newStageStart)) {
+    const trimmedName = newStageName.trim();
+    if (!trimmedName) return;
+
+    const start = newStageStart.trim();
+    const end = newStageEnd.trim();
+    if (end && !start) {
+      setCreateStartError(STAGE_START_REQUIRED_WITH_END);
+      return;
+    }
+    setCreateStartError("");
+
+    if (start && end && new Date(end) < new Date(start)) {
       toast.error("End date must be on or after the start date");
+      return;
+    }
+
+    // Prevent duplicate stage names
+    const isDuplicate = stages.some(
+      (stage) => stage.title.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error("A stage with this name already exists");
       return;
     }
     setIsCreating(true);
     try {
-      const payload: CreateTaskRequest & { end_date: string } = {
+      const payload: CreateTaskRequest = {
         project_id: projectId,
-        title: newStageName.trim(),
-        start_date: new Date(newStageStart).toISOString(),
-        end_date: new Date(newStageEnd + "T23:59:59").toISOString(),
+        title: trimmedName,
         taskable_type: "STAGE",
         order: stages.length,
       };
+      if (start) payload.start_date = new Date(start).toISOString();
+      if (end) payload.end_date = new Date(end + "T23:59:59").toISOString();
       await createTaskable(payload);
       await notifyUpdated();
       setNewStageName("");
       setNewStageStart("");
       setNewStageEnd("");
+      setCreateStartError("");
       toast.success("Stage created");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create stage");
@@ -167,8 +238,7 @@ export function ProjectStagesEditor({
     }
   }
 
-  const canCreate =
-    !!newStageName.trim() && !!newStageStart && !!newStageEnd && !isCreating;
+  const canCreate = !!newStageName.trim() && !isCreating;
 
   return (
     <div className="space-y-3">
@@ -184,7 +254,7 @@ export function ProjectStagesEditor({
       </div>
 
       <p className="text-[12px] leading-relaxed text-[var(--ds-secondary-label)]">
-        Edit stage names and dates, mark stages complete, or add new phases to the project timeline.
+        Edit stage names and dates, mark stages in progress or complete, or add new phases to the project timeline.
       </p>
 
       {stageViews.length === 0 ? (
@@ -196,6 +266,7 @@ export function ProjectStagesEditor({
         <div className="space-y-2">
           {stageViews.map((stage, index) => {
             const isEditing = editingId === stage.id;
+            const isInProgress = stage.status === "IN_PROGRESS";
             return (
               <div
                 key={stage.id}
@@ -250,22 +321,35 @@ export function ProjectStagesEditor({
                         className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
                           stage.isCompleted
                             ? "bg-[#3D8B5E] text-white"
-                            : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
+                            : isInProgress
+                              ? "bg-[#D4A96A] text-white"
+                              : "bg-[#F5E6D0] text-[var(--ds-accent-hover)]"
                         }`}
                       >
-                        {stage.isCompleted ? <Check size={14} /> : index + 1}
+                        {stage.isCompleted ? (
+                          <Check size={14} />
+                        ) : isInProgress ? (
+                          <CircleDot size={14} />
+                        ) : (
+                          index + 1
+                        )}
                       </span>
                       <div className="min-w-0">
                         <div
                           className={`truncate text-[13.5px] font-medium ${
-                            stage.isCompleted ? "text-[#248A3D]" : "text-[var(--ds-label)]"
+                            stage.isCompleted
+                              ? "text-[#248A3D]"
+                              : isInProgress
+                                ? "text-[#C9894A]"
+                                : "text-[var(--ds-label)]"
                           }`}
                         >
                           {stage.name}
                         </div>
                         <div className="text-[11.5px] text-[var(--ds-secondary-label)]">
-                          {new Date(stage.startDate).toLocaleDateString()} –{" "}
-                          {new Date(stage.endDate).toLocaleDateString()}
+                          {stageHasSchedule(stage)
+                            ? `${new Date(stage.startDate).toLocaleDateString()} – ${new Date(stage.endDate).toLocaleDateString()}`
+                            : "Dates not set"}
                         </div>
                       </div>
                     </div>
@@ -279,6 +363,15 @@ export function ProjectStagesEditor({
                       >
                         <Pencil size={13} />
                       </button>
+                      <button
+                        type="button"
+                        title="Delete stage"
+                        onClick={() => setDeleteTarget({ id: stage.id, name: stage.name })}
+                        disabled={busyId === stage.id}
+                        className="flex size-8 items-center justify-center rounded-lg border border-[rgba(90,60,30,0.15)] text-[var(--ds-destructive)] hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                       {stage.isCompleted ? (
                         <button
                           type="button"
@@ -290,15 +383,28 @@ export function ProjectStagesEditor({
                           <RotateCcw size={12} /> Reopen
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => void handleMarkComplete(stage.id)}
-                          disabled={busyId === stage.id}
-                          title="Mark stage complete"
-                          className="flex items-center gap-1 rounded-lg border border-[#3D8B5E]/30 bg-[#3D8B5E]/8 px-2 py-1.5 text-[11px] font-medium text-[#248A3D] hover:bg-[#3D8B5E]/15 disabled:opacity-50"
-                        >
-                          <Check size={12} /> Complete
-                        </button>
+                        <>
+                          {!isInProgress && (
+                            <button
+                              type="button"
+                              onClick={() => void handleMarkInProgress(stage.id)}
+                              disabled={busyId === stage.id}
+                              title="Mark stage in progress"
+                              className="flex items-center gap-1 rounded-lg border border-[#D4A96A]/40 bg-[#D4A96A]/10 px-2 py-1.5 text-[11px] font-medium text-[#C9894A] hover:bg-[#D4A96A]/18 disabled:opacity-50"
+                            >
+                              <CircleDot size={12} /> In progress
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleMarkComplete(stage.id)}
+                            disabled={busyId === stage.id}
+                            title="Mark stage complete"
+                            className="flex items-center gap-1 rounded-lg border border-[#3D8B5E]/30 bg-[#3D8B5E]/8 px-2 py-1.5 text-[11px] font-medium text-[#248A3D] hover:bg-[#3D8B5E]/15 disabled:opacity-50"
+                          >
+                            <Check size={12} /> Complete
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -320,12 +426,21 @@ export function ProjectStagesEditor({
           className="mb-2 h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
         />
         <div className="mb-2.5 grid grid-cols-2 gap-2">
-          <input
-            type="date"
-            value={newStageStart}
-            onChange={(e) => setNewStageStart(e.target.value)}
-            className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
-          />
+          <div>
+            <input
+              type="date"
+              value={newStageStart}
+              onChange={(e) => {
+                setNewStageStart(e.target.value);
+                if (createStartError) setCreateStartError("");
+              }}
+              aria-invalid={Boolean(createStartError)}
+              className="h-9 w-full rounded-lg border border-[rgba(90,60,30,0.18)] bg-white px-3 text-[13px] outline-none focus:border-[var(--ds-accent)]"
+            />
+            {createStartError ? (
+              <p className="mt-1 text-[11px] text-red-500">{createStartError}</p>
+            ) : null}
+          </div>
           <input
             type="date"
             value={newStageEnd}
@@ -344,6 +459,20 @@ export function ProjectStagesEditor({
           {isCreating ? "Creating…" : "Add stage"}
         </button>
       </div>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        title="Delete stage?"
+        description={
+          <>
+            <strong className="text-[var(--ds-label)]">{deleteTarget?.name}</strong> and its
+            milestones and tasks will be removed. This cannot be undone.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -54,5 +54,6 @@ export function mapTaskToMemberRow(task: Task, projectName: string): MemberTaskR
     due,
     dueColor,
     urgency,
+    status: task.status,
   };
 }

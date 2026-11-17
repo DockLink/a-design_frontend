@@ -18,6 +18,7 @@ import { ProjectBriefAttachmentsList } from "@/components/projects/project-brief
 import { ManageTeamSheet } from "@/components/projects/manage-team-sheet";
 import { ManageGuestsSheet } from "@/components/projects/manage-guests-sheet";
 import { ProjectPhaseBar } from "@/components/projects/project-phase-bar";
+import { ProjectMilestonesGlance } from "@/components/projects/project-milestones-glance";
 import { ProjectImageGallery } from "@/components/projects/project-image-gallery";
 import { ProjectLocationSection } from "@/components/projects/project-location-section";
 import { ProjectVimeoSection } from "@/components/projects/project-vimeo-section";
@@ -207,6 +208,8 @@ export function ProjectOverview() {
       </div>
 
       <ProjectPhaseBar stages={stages} />
+
+      <ProjectMilestonesGlance projectId={projectId} />
 
       <div className="project-overview-stats" style={{ marginBottom: "24px" }}>
         <ProjectStatCard

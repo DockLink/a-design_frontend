@@ -100,6 +100,7 @@ export function EditProjectSheet({
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isUploadingBrief, setIsUploadingBrief] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -141,14 +142,59 @@ export function EditProjectSheet({
 
   function handleThumbnailChange(files: FileList | null) {
     if (!files?.length) return;
-    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    if (imageFiles.length === 0) {
+    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (newFiles.length === 0) {
       toast.error("Please choose image files");
       return;
     }
-    pendingImagePreviews.forEach((url) => URL.revokeObjectURL(url));
-    setPendingImageFiles(imageFiles);
-    setPendingImagePreviews(imageFiles.map((f) => URL.createObjectURL(f)));
+    
+    const existingNames = new Set([
+      ...images.map((img) => img.url), // Not great for file name but existing don't have file names easily available
+      ...pendingImageFiles.map((f) => f.name)
+    ]);
+    
+    let skippedCount = 0;
+    const validNewFiles = newFiles.filter(f => {
+      if (existingNames.has(f.name)) {
+        skippedCount++;
+        return false;
+      }
+      return true;
+    });
+
+    if (validNewFiles.length === 0) {
+      if (skippedCount > 0) {
+        toast.error(skippedCount === 1 ? "1 duplicate photo was skipped" : `${skippedCount} duplicate photos were skipped`);
+      }
+      return;
+    }
+    
+    const newPreviews = validNewFiles.map((f) => URL.createObjectURL(f));
+    
+    setPendingImageFiles(prev => [...prev, ...validNewFiles]);
+    setPendingImagePreviews(prev => [...prev, ...newPreviews]);
+    
+    if (skippedCount > 0) {
+      toast.error(skippedCount === 1 ? "1 duplicate photo was skipped" : `${skippedCount} duplicate photos were skipped`);
+    }
+
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+    }
+  }
+
+  function handleRemovePendingImage(index: number) {
+    setPendingImageFiles(prev => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+    setPendingImagePreviews(prev => {
+      const next = [...prev];
+      URL.revokeObjectURL(next[index]);
+      next.splice(index, 1);
+      return next;
+    });
   }
 
   function handleRemoveExistingImage(imageId: string) {
@@ -268,12 +314,13 @@ export function EditProjectSheet({
   }
 
   const allImagePreviews = [
-    ...images.map((img) => ({ key: img.id, src: img.url, existing: true as const, id: img.id })),
+    ...images.map((img) => ({ key: img.id, src: img.url, existing: true as const, id: img.id, pendingIndex: -1 })),
     ...pendingImagePreviews.map((src, i) => ({
       key: `pending-${i}`,
       src,
       existing: false as const,
       id: null as string | null,
+      pendingIndex: i
     })),
   ];
 
@@ -529,12 +576,13 @@ export function EditProjectSheet({
                       <img
                         src={preview.src}
                         alt=""
-                        style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "8px" }}
+                        style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: "8px", cursor: "pointer" }}
+                        onClick={(e) => { e.stopPropagation(); setPreviewPhotoUrl(preview.src); }}
                       />
                       {preview.existing && preview.id ? (
                         <button
                           type="button"
-                          onClick={() => handleRemoveExistingImage(preview.id!)}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveExistingImage(preview.id!); }}
                           style={{
                             position: "absolute",
                             top: 4,
@@ -547,12 +595,39 @@ export function EditProjectSheet({
                             color: "white",
                             fontSize: 14,
                             cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
                           aria-label="Remove photo"
                         >
-                          ×
+                          <X size={14} />
                         </button>
-                      ) : null}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleRemovePendingImage(preview.pendingIndex); }}
+                          style={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            width: 22,
+                            height: 22,
+                            borderRadius: 6,
+                            border: "none",
+                            background: "rgba(0,0,0,0.55)",
+                            color: "white",
+                            fontSize: 14,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          aria-label="Remove photo"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -642,6 +717,51 @@ export function EditProjectSheet({
         }
         onConfirm={handleLocationConfirm}
       />
+      {previewPhotoUrl && (
+        <div 
+          onClick={() => setPreviewPhotoUrl(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px"
+          }}
+        >
+          <img 
+            src={previewPhotoUrl} 
+            alt="Preview fullscreen" 
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setPreviewPhotoUrl(null)}
+            style={{
+              position: "absolute",
+              top: "24px",
+              right: "24px",
+              background: "rgba(255,255,255,0.15)",
+              border: "none",
+              borderRadius: "50%",
+              width: "48px",
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "white",
+              transition: "background 0.2s"
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.25)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.15)")}
+          >
+            <X size={28} />
+          </button>
+        </div>
+      )}
     </>
   );
 }

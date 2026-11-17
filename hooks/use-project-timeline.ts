@@ -73,7 +73,7 @@ export function useProjectTimeline(projectId: string) {
             const detail = await authApiClient<Task & { children?: Task[] }>(
               `/tasks/${stage.id}?include_children=true`
             );
-            for (const child of detail.children ?? []) {
+            for (const child of (detail.children ?? []).filter((c) => c.status !== "INACTIVE")) {
               if (child.taskableType === "MILESTONE") {
                 parentMap[child.id] = { stageId: stage.id, stageName: stage.title };
                 // Load tasks under this milestone
@@ -82,7 +82,7 @@ export function useProjectTimeline(projectId: string) {
                     `/tasks/${child.id}?include_children=true`
                   );
                   tasksByMilestone[child.id] = (milestoneDetail.children ?? [])
-                    .filter((t) => t.taskableType === "TASK")
+                    .filter((t) => t.taskableType === "TASK" && t.status !== "INACTIVE")
                     .map((t) => mapTaskToTimelineItem(t));
                 } catch {
                   // milestone may have no tasks yet
@@ -145,6 +145,22 @@ export function useProjectTimeline(projectId: string) {
       const order = milestoneTasks.filter(
         (m) => milestoneStageMap[m.id]?.stageId === input.stageId
       ).length;
+
+      const inputTitle = input.title.trim();
+      const inputStartDate = new Date(input.startDate).toISOString().slice(0, 10);
+
+      const isDuplicate = milestoneTasks.some((m) => {
+        const mTitle = m.title.trim();
+        const mStartDate = new Date(m.start_date).toISOString().slice(0, 10);
+        return (
+          mTitle.toLowerCase() === inputTitle.toLowerCase() &&
+          mStartDate === inputStartDate
+        );
+      });
+
+      if (isDuplicate) {
+        throw new Error("A milestone with this name and date already exists");
+      }
 
       const payload = withTaskEndDate({
         project_id: projectId,

@@ -6,7 +6,7 @@ export function canManageProject(role: SidebarRole, isViewer = false): boolean {
 }
 
 export function canViewHoldRequests(role: SidebarRole): boolean {
-  return role === "superadmin" || role === "admin";
+  return role === "superadmin" || role === "admin" || role === "lead";
 }
 
 export function canViewAdminInsights(role: SidebarRole): boolean {

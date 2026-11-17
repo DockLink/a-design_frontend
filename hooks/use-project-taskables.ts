@@ -5,8 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApiClient } from "@/lib/api/authenticated-client";
 import { queryKeys } from "@/lib/query/keys";
-import { withTaskEndDate } from "@/lib/tasks/create-task-payload";
+import { normalizeCreateTaskPayload } from "@/lib/tasks/create-task-payload";
 import { toTasksQueryString } from "@/lib/tasks/query-string";
+import { isActiveTaskable, softDeleteTaskableTree } from "@/lib/tasks/soft-delete-taskable";
 import type { CreateTaskRequest, Task, TaskableType, TasksListResponse, TasksQueryParams } from "@/types/tasks";
 
 const EMPTY_TASKS: Task[] = [];
@@ -25,7 +26,7 @@ async function fetchTaskables(
   };
   const query = toTasksQueryString(params);
   const res = await authApiClient<TasksListResponse>(`/tasks${query}`);
-  return res.data;
+  return res.data.filter(isActiveTaskable);
 }
 
 export function useProjectTaskables(
@@ -43,13 +44,13 @@ export function useProjectTaskables(
     staleTime: 20_000,
   });
 
-  const tasks = data ?? EMPTY_TASKS;
+  const tasks = (data ?? EMPTY_TASKS).filter(isActiveTaskable);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
   const createMutation = useMutation({
     mutationFn: async (payload: CreateTaskRequest) => {
-      const normalized = withTaskEndDate(payload);
+      const normalized = normalizeCreateTaskPayload(payload);
       return authApiClient<Task>("/tasks", {
         method: "POST",
         body: JSON.stringify(normalized),
@@ -180,6 +181,28 @@ export function useProjectTaskables(
     [reopenMutation]
   );
 
+  const deleteMutation = useMutation({
+    mutationFn: (taskId: string) => softDeleteTaskableTree(taskId),
+    onSuccess: (deletedIds) => {
+      const idSet = new Set(deletedIds);
+      qc.setQueryData<Task[]>(qKey, (prev) =>
+        prev ? prev.filter((t) => !idSet.has(t.id) && isActiveTaskable(t)) : prev
+      );
+      // Soft-delete can cascade across STAGE / MILESTONE / TASK caches.
+      void qc.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "projects" &&
+          query.queryKey[1] === "taskables",
+      });
+    },
+  });
+
+  const deleteTaskable = useCallback(
+    (taskId: string) => deleteMutation.mutateAsync(taskId),
+    [deleteMutation]
+  );
+
   return {
     tasks,
     isLoading: isPending,
@@ -191,5 +214,6 @@ export function useProjectTaskables(
     patchTaskInCache,
     setTaskableStatus,
     reopenTaskable,
+    deleteTaskable,
   };
 }

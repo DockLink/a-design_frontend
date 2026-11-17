@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Flag, LayoutGrid, List, ListTree, Plus, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,12 +45,27 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
     updateTaskAssignees,
     updateTaskStatus,
     markMyCompletion,
+    deleteTask,
     reopenTask,
     currentUser,
   } = useProjectTasksBoard(projectId);
 
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [selectedTask, setSelectedTask] = useState<ProjectTaskView | null>(null);
+
+  // Sync selected task with latest data from tasks array; close if deleted.
+  useEffect(() => {
+    if (!selectedTask) return;
+    const updated = tasks.find((t) => t.id === selectedTask.id);
+    if (!updated) {
+      setSelectedTask(null);
+      return;
+    }
+    if (updated !== selectedTask) {
+      setSelectedTask(updated);
+    }
+  }, [tasks, selectedTask]);
+
   const [createStatus, setCreateStatus] = useState<BoardColumnId | null>(null);
   const [showStageManagement, setShowStageManagement] = useState(false);
   const [showMilestoneManagement, setShowMilestoneManagement] = useState(false);
@@ -129,7 +144,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
       ? milestoneParents[selectedTask.milestoneId]?.stageId
       : undefined;
     const stage = stageId ? stages.find((s) => s.id === stageId) : undefined;
-    if (!stage) return null;
+    if (!stage?.startDate || !stage.endDate) return null;
     return { start: stage.startDate, end: stage.endDate };
   }, [selectedTask, milestoneParents, stages]);
 
@@ -188,11 +203,7 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
             ))}
           </div>
           <span className="rounded-lg bg-[var(--ds-bg)] px-3 py-1.5 text-xs font-medium text-[var(--ds-secondary-label)]">
-            {viewMode === "milestones" || viewMode === "team"
-              ? `Tasks: ${filteredAll.length}`
-              : isAdmin
-                ? `All tasks: ${filteredVisible.length}`
-                : `My tasks: ${filteredVisible.length}`}
+            Tasks: {viewMode === "milestones" || viewMode === "team" ? filteredAll.length : filteredVisible.length}
           </span>
         </div>
 
@@ -355,7 +366,23 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
         members={memberUsers}
         stageRange={selectedTaskStageRange}
         onUpdateAssignees={updateTaskAssignees}
-        onMarkMyCompletion={markMyCompletion}
+        onMarkMyCompletion={async (taskId, completed) => {
+          setSelectedTask((prev) => {
+            if (prev?.id === taskId) {
+              const now = new Date().toISOString();
+              return {
+                ...prev,
+                assignees: prev.assignees.map((a) =>
+                  a.userId === currentUser?.userId
+                    ? { ...a, completedAt: completed ? now : null }
+                    : a
+                ),
+              };
+            }
+            return prev;
+          });
+          await markMyCompletion(taskId, completed);
+        }}
         onUpdateStatus={handleSheetStatusChange}
         onReopen={async (taskId) => {
           await reopenTask(taskId);
@@ -364,6 +391,10 @@ export function ProjectTasksBoard({ projectId }: { projectId: string }) {
               ? { ...prev, status: "in-progress", apiStatus: "REOPENED" }
               : prev
           );
+        }}
+        onDelete={async (taskId) => {
+          await deleteTask(taskId);
+          setSelectedTask(null);
         }}
       />
 

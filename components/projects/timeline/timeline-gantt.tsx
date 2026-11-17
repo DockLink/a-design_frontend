@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
+import { stageHasSchedule } from "@/lib/projects/map-stages";
 import {
   dayOffset,
   deriveStageDisplayStatus,
@@ -321,8 +322,9 @@ export function TimelineGantt({
           {/* Stage rows */}
           {groups.map((group, groupIndex) => {
             const collapsed = collapsedStages.has(group.id);
-            const stageLeft = barLeft(group.startDate);
-            const stageW = barWidth(group.startDate, group.endDate);
+            const hasBar = stageHasSchedule(group);
+            const stageLeft = hasBar ? barLeft(group.startDate) : 0;
+            const stageW = hasBar ? barWidth(group.startDate, group.endDate) : 0;
             const stageBarH = Math.min(28, Math.max(18, stageH * 0.42));
             const displayStatus = deriveStageDisplayStatus(group);
             const statusLabel = stageStatusLabel(group);
@@ -374,6 +376,7 @@ export function TimelineGantt({
                     className="relative"
                     style={{ width: chartWidth, height: stageH }}
                   >
+                    {hasBar ? (
                     <div
                       role="presentation"
                       onMouseEnter={(e) =>
@@ -410,6 +413,7 @@ export function TimelineGantt({
                         </span>
                       )}
                     </div>
+                    ) : null}
                   </div>
                 </div>
 
